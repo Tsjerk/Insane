@@ -982,9 +982,6 @@ def main(argv=None):
         heads   = head.split()
         linkers = link.split()
         tails   = tail.split()
-        if len(tails) != len(linkers):
-            print "Error, Number of tails has to equal number of linkers"
-            sys.exit(1)
         liplist[name] = Lipid(name=name,head=heads,link=linkers,tail=tails)
 
 
