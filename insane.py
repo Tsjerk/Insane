@@ -12,6 +12,11 @@ previous  = "20160104.18.TAW"
 # 20150920 - Insane can read lipid definitions from MARTINI repository:
 #     ;@INSANE alhead=C P, allink=A A, altail=TCC CCCC, alname=DPSM, charge=0.0
 
+# Set the random seed.
+# The seed is set to an arbitary value set in the INSANE_SEED environment
+# variable. If the environment variable is not set, then the system time is
+# used to set the seed.
+random.seed(os.environ.get('INSANE_SEED', None))
 
 # Modify insane to take in arbitary lipid definition strings and use them as a template for lipids
 # Also take in lipid name 
@@ -1536,7 +1541,6 @@ def main(argv=None):
 
         # Set the XY coordinates
         # To randomize the lipids we add a random number which is used for sorting
-        random.seed(os.environ.get('INSANE_SEED', None))
         upper, lower = [], []
         for i in xrange(up_lipids_x):
             for j in xrange(up_lipids_y):
