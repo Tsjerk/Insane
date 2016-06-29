@@ -30,6 +30,7 @@ from StringIO import StringIO
 HERE = os.path.abspath(os.path.dirname(__file__))
 INSANE = os.path.abspath(os.path.join(HERE, '../insane.py'))
 DATA_DIR = os.path.join(HERE, 'data')
+INSANE_SEED = '42'
 
 # The arguments to test insane with are listed here. The tuple is used both to
 # generate the references, and to run the tests.
@@ -124,7 +125,7 @@ def _open_if_needed(handle):
     """
     Return handle if it is a ContextStringIO instance else try to open it.
     """
-    if isinstance(handle ContextStringIO):
+    if isinstance(handle, ContextStringIO):
         return handle
     return open(handle)
 
@@ -162,7 +163,8 @@ def run_and_compare(arguments, ref_gro, ref_stdout, ref_stderr):
     with tempdir():
         process = subprocess.Popen(command,
                                    stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE)
+                                   stderr=subprocess.PIPE,
+                                   env={'INSANE_SEED': INSANE_SEED})
         out, err = process.communicate()
         assert os.path.exists(gro_output)
         compare(gro_output, ref_gro)
@@ -193,7 +195,8 @@ def generate_simple_case_references():
             print(' '.join(command))
             process = subprocess.Popen(command,
                                        stdout=subprocess.PIPE,
-                                       stderr=subprocess.PIPE)
+                                       stderr=subprocess.PIPE,
+                                       env={'INSANE_SEED': INSANE_SEED})
             out, err = process.communicate()
             with open(ref_stdout, 'w') as outfile:
                 for line in out:
