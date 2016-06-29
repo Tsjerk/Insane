@@ -17,6 +17,8 @@ and compares the output to the reference.
 
 from __future__ import print_function
 
+from nose.tools import assert_equal, assert_raises
+
 import contextlib
 import difflib
 import os
@@ -147,13 +149,10 @@ def compare(output, reference):
     out_file = _open_if_needed(output)
     ref_file = _open_if_needed(reference)
     with out_file, ref_file:
-        out_content = out_file.readlines()
-        ref_content = ref_file.readlines()
-        diff = list(difflib.context_diff(out_content, ref_content))
-    if diff:
-        #for line in diff:
-        #    print(line, end='')
-        raise AssertionError('The two files are not identical.')
+        for out_line, ref_line in zip(out_file, ref_file):
+            assert_equal(out_line, ref_line)
+        assert_raises(StopIteration, next, out_file)
+        assert_raises(StopIteration, next, ref_file)
 
 
 def run_and_compare(arguments, ref_gro, ref_stdout, ref_stderr):
