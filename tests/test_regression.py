@@ -130,6 +130,16 @@ def _open_if_needed(handle):
     return open(handle)
 
 
+def run_insane(arguments):
+    command = [INSANE] + arguments
+    process = subprocess.Popen(command,
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE,
+                               env={'INSANE_SEED': INSANE_SEED})
+    out, err = process.communicate()
+    return out, err
+
+
 def compare(output, reference):
     """
     Assert that two files are identical.
@@ -151,21 +161,17 @@ def run_and_compare(arguments, ref_gro, ref_stdout, ref_stderr):
     # The arguments can be pass to the current function as a string or as a
     # list of arguments. If they are passed as a string, they need to be
     # converted to a list.
-    command = [INSANE] + _arguments_as_list(arguments)
+    arguments =  _arguments_as_list(arguments)
 
     # The name of the output gro file must be provided to insane for insane to
     # work. Since we also need that file name, let's get it from insane's
     # arguments.
-    gro_output = _gro_output_from_arguments(command)
+    gro_output = _gro_output_from_arguments(arguments)
 
     # We want insane to run in a temporary directory. This allows to keep the
     # file system clean, and it avoids mixing output of different tests.
     with tempdir():
-        process = subprocess.Popen(command,
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE,
-                                   env={'INSANE_SEED': INSANE_SEED})
-        out, err = process.communicate()
+        out, err = run_insane(arguments)
         assert os.path.exists(gro_output)
         compare(gro_output, ref_gro)
         compare(ContextStringIO(out), ref_stdout)
@@ -186,18 +192,14 @@ def test_simple_cases():
 def generate_simple_case_references():
     simple_case_ref_data = os.path.join(DATA_DIR, 'simple_case')
     for case in SIMPLE_TEST_CASES:
-        command = [INSANE] + _arguments_as_list(case)
-        out_gro = _gro_output_from_arguments(command)
+        arguments = _arguments_as_list(case)
+        out_gro = _gro_output_from_arguments(arguments)
         ref_gro = os.path.join(simple_case_ref_data, case + '.gro')
         ref_stdout = os.path.join(simple_case_ref_data, case + '.out')
         ref_stderr = os.path.join(simple_case_ref_data, case + '.err')
         with tempdir():
-            print(' '.join(command))
-            process = subprocess.Popen(command,
-                                       stdout=subprocess.PIPE,
-                                       stderr=subprocess.PIPE,
-                                       env={'INSANE_SEED': INSANE_SEED})
-            out, err = process.communicate()
+            print(INSANE + ' ' + ' '.join(arguments))
+            out, err = run_insane(arguments)
             with open(ref_stdout, 'w') as outfile:
                 for line in out:
                     print(line, file=outfile, end='')
