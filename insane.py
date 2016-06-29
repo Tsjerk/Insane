@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import os
 import sys
 import math
 import random
@@ -1535,7 +1536,7 @@ def main(argv=None):
 
         # Set the XY coordinates
         # To randomize the lipids we add a random number which is used for sorting
-        random.seed()
+        random.seed(os.environ.get('INSANE_SEED', None))
         upper, lower = [], []
         for i in xrange(up_lipids_x):
             for j in xrange(up_lipids_y):
