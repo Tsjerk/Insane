@@ -21,6 +21,7 @@ from nose.tools import assert_equal, assert_raises
 
 import contextlib
 import difflib
+import functools
 import os
 import shutil
 import shlex
@@ -186,9 +187,16 @@ def test_simple_cases():
         ref_gro = os.path.join(simple_case_ref_data, case + '.gro')
         ref_stdout = os.path.join(simple_case_ref_data, case + '.out')
         ref_stderr = os.path.join(simple_case_ref_data, case + '.err')
-        def _test_case():
-            run_and_compare(case, ref_gro, ref_stdout, ref_stderr)
-        yield _test_case
+        # The test generator could yield run and compare directly. Bt, then,
+        # the verbose display of nosetests gets crowded with the very long
+        # names of the reference file, that are very redundant. Using a partial
+        # function allows to have only the arguments for insane displayed.
+        _test_case = functools.partial(
+            run_and_compare,
+            ref_gro=ref_gro,
+            ref_stdout=ref_stdout,
+            ref_stderr=ref_stderr)
+        yield (_test_case, case)
 
 
 def generate_simple_case_references():
