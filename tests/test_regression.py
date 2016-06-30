@@ -20,7 +20,6 @@ from __future__ import print_function
 from nose.tools import assert_equal, assert_raises
 
 import contextlib
-import difflib
 import functools
 import glob
 import os
@@ -133,7 +132,6 @@ def _gro_output_from_arguments(arguments):
     """
     for i, argument in reversed(list(enumerate(arguments))):
         if argument == '-o':
-            o_index = i
             break
     else:
         raise ValueError('Output GRO name is not provided to insane. '
@@ -148,6 +146,30 @@ def _open_if_needed(handle):
     if isinstance(handle, ContextStringIO):
         return handle
     return open(handle)
+
+
+def _split_case(case):
+    """
+    Get the arguments and the input directory from a test case.
+    """
+    if len(case) == 2:
+        case_args, input_dir = case
+        input_dir = os.path.join(INPUT_DIR, input_dir)
+    else:
+        case_args = case
+        input_dir = None
+    return case_args, input_dir
+
+
+def _reference_path(arguments):
+    """
+    Get the path to the reference files for the simple test cases.
+    """
+    simple_case_ref_data = os.path.join(DATA_DIR, 'simple_case')
+    ref_gro = os.path.join(simple_case_ref_data, arguments + '.gro')
+    ref_stdout = os.path.join(simple_case_ref_data, arguments + '.out')
+    ref_stderr = os.path.join(simple_case_ref_data, arguments + '.err')
+    return ref_gro, ref_stdout, ref_stderr
 
 
 def run_insane(arguments, input_directory=None):
@@ -205,18 +227,15 @@ def run_and_compare(arguments, input_dir, ref_gro, ref_stdout, ref_stderr):
         compare(ContextStringIO(err), ref_stderr)
 
 
+# This function generates test functions for nosetests. These test functions
+# execute insane with the argument listed in SIMPLE_TEST_CASES.
+# Do not add a docstring to this function. The docstring would be displayed in
+# the verbose mode of nosetests preventing to distinguish among the different
+# tests that are generated.
 def test_simple_cases():
-    simple_case_ref_data = os.path.join(DATA_DIR, 'simple_case')
     for case in SIMPLE_TEST_CASES:
-        if len(case) == 2:
-            case_args, input_dir = case
-            input_dir = os.path.join(INPUT_DIR, input_dir)
-        else:
-            case_args = case
-            input_dir = None
-        ref_gro = os.path.join(simple_case_ref_data, case_args + '.gro')
-        ref_stdout = os.path.join(simple_case_ref_data, case_args + '.out')
-        ref_stderr = os.path.join(simple_case_ref_data, case_args + '.err')
+        case_args, input_dir = _split_case(case)
+        ref_gro, ref_stdout, ref_stderr = _reference_path(case_args)
         # The test generator could yield run and compare directly. Bt, then,
         # the verbose display of nosetests gets crowded with the very long
         # names of the reference file, that are very redundant. Using a partial
@@ -230,21 +249,22 @@ def test_simple_cases():
 
 
 def generate_simple_case_references():
+    """
+    Run insane to generate reference files for the simple regression tests.
+
+    Run insane with the arguments listed in SIMPLE_TEST_CASES. The output GRO
+    file, the standard output, and the standard error are stored in the
+    DATA_DIR/simple_case directory.
+    """
     simple_case_ref_data = os.path.join(DATA_DIR, 'simple_case')
     for case in SIMPLE_TEST_CASES:
-        if len(case) == 2:
-            case, input_directory = case
-            input_directory = os.path.join(INPUT_DIR, input_directory)
-        else:
-            input_directory = None
-        arguments = _arguments_as_list(case)
+        case_args, input_dir = _split_case(case)
+        arguments = _arguments_as_list(case_args)
         out_gro = _gro_output_from_arguments(arguments)
-        ref_gro = os.path.join(simple_case_ref_data, case + '.gro')
-        ref_stdout = os.path.join(simple_case_ref_data, case + '.out')
-        ref_stderr = os.path.join(simple_case_ref_data, case + '.err')
+        ref_gro, ref_stdout, ref_stderr = _reference_path(case_args)
         with tempdir():
             print(INSANE + ' ' + ' '.join(arguments))
-            out, err = run_insane(arguments, input_directory)
+            out, err = run_insane(arguments, input_dir)
             with open(ref_stdout, 'w') as outfile:
                 for line in out:
                     print(line, file=outfile, end='')
