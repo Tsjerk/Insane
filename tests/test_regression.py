@@ -22,6 +22,7 @@ from nose.tools import assert_equal, assert_raises
 import contextlib
 import difflib
 import functools
+import glob
 import os
 import shutil
 import shlex
@@ -33,6 +34,7 @@ from StringIO import StringIO
 HERE = os.path.abspath(os.path.dirname(__file__))
 INSANE = os.path.abspath(os.path.join(HERE, '../insane.py'))
 DATA_DIR = os.path.join(HERE, 'data')
+INPUT_DIR = os.path.join(HERE, 'data', 'inputs')
 INSANE_SEED = '42'
 
 # The arguments to test insane with are listed here. The tuple is used both to
@@ -45,6 +47,10 @@ SIMPLE_TEST_CASES = (
     '-o test.gro -box 10,15,20 -sol W',
     '-o test.gro -box 10,15,20 -sol WF',
     '-o test.gro -box 10,15,20 -sol W -l POPC',
+    '-o test.gro -l POPC -l DPPC -d 10',
+    '-o test.gro -l POPC:2 -l DPPC:1 -d 10',
+    '-o test.gro -pbc hexagonal -x 10 -y 15 -z 20',
+    ('-o test.gro -f CG1a0s.pdb', '1a0s'),
 )
 
 
@@ -136,7 +142,13 @@ def _open_if_needed(handle):
     return open(handle)
 
 
-def run_insane(arguments):
+def run_insane(arguments, input_directory=None):
+    if input_directory is not None:
+        for path in glob.glob(os.path.join(input_directory, '*')):
+            if os.path.isdir(path):
+                shutil.copytree(path, '.')
+            else:
+                shutil.copy2(path, '.')
     command = [INSANE] + arguments
     process = subprocess.Popen(command,
                                stdout=subprocess.PIPE,
@@ -204,6 +216,11 @@ def test_simple_cases():
 def generate_simple_case_references():
     simple_case_ref_data = os.path.join(DATA_DIR, 'simple_case')
     for case in SIMPLE_TEST_CASES:
+        if len(case) == 2:
+            case, input_directory = case
+            input_directory = os.path.join(INPUT_DIR, input_directory)
+        else:
+            input_directory = None
         arguments = _arguments_as_list(case)
         out_gro = _gro_output_from_arguments(arguments)
         ref_gro = os.path.join(simple_case_ref_data, case + '.gro')
@@ -211,7 +228,7 @@ def generate_simple_case_references():
         ref_stderr = os.path.join(simple_case_ref_data, case + '.err')
         with tempdir():
             print(INSANE + ' ' + ' '.join(arguments))
-            out, err = run_insane(arguments)
+            out, err = run_insane(arguments, input_directory)
             with open(ref_stdout, 'w') as outfile:
                 for line in out:
                     print(line, file=outfile, end='')
