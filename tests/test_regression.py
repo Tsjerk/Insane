@@ -40,7 +40,7 @@ INSANE_SEED = '42'
 # The arguments to test insane with are listed here. The tuple is used both to
 # generate the references, and to run the tests.
 # To add a test case, add the arguments to test in the tuple.
-SIMPLE_TEST_CASES = (
+SIMPLE_TEST_CASES = [
     '-o test.gro',
     '-o test.gro -box 10,15,20',
     '-o test.gro -box 10,15,20 -l POPC',
@@ -51,7 +51,14 @@ SIMPLE_TEST_CASES = (
     '-o test.gro -l POPC:2 -l DPPC:1 -d 10',
     '-o test.gro -pbc hexagonal -x 10 -y 15 -z 20',
     ('-o test.gro -f CG1a0s.pdb', '1a0s'),
-)
+    ('-o test.gro -f CG1a0s.pdb -p CG1a0s.top -l POPC -ring', '1a0s'),
+]
+
+# Add test cases for all PBC options.
+for pbc in ('hexagonal', 'rectangular', 'square', 'cubic', 'optimal'):
+    SIMPLE_TEST_CASES.append(
+        ('-o test.gro -pbc {} -f CG1a0s.pdb -p CG1a0s.top'.format(pbc), '1a0s')
+    )
 
 
 class ContextStringIO(StringIO):
@@ -74,6 +81,7 @@ class ContextStringIO(StringIO):
         Does nothing when exiting a 'with' statement.
         """
         pass
+
 
 @contextlib.contextmanager
 def tempdir():
@@ -143,6 +151,8 @@ def _open_if_needed(handle):
 
 
 def run_insane(arguments, input_directory=None):
+    # Copy the content of the input directory in the current directory if an
+    # input directory is provided.
     if input_directory is not None:
         for path in glob.glob(os.path.join(input_directory, '*')):
             if os.path.isdir(path):
@@ -173,12 +183,12 @@ def compare(output, reference):
         assert_raises(StopIteration, next, ref_file)
 
 
-def run_and_compare(arguments, ref_gro, ref_stdout, ref_stderr):
+def run_and_compare(arguments, input_dir, ref_gro, ref_stdout, ref_stderr):
     # Create the command as a list for subprocess.Popen.
     # The arguments can be pass to the current function as a string or as a
     # list of arguments. If they are passed as a string, they need to be
     # converted to a list.
-    arguments =  _arguments_as_list(arguments)
+    arguments = _arguments_as_list(arguments)
 
     # The name of the output gro file must be provided to insane for insane to
     # work. Since we also need that file name, let's get it from insane's
@@ -188,7 +198,7 @@ def run_and_compare(arguments, ref_gro, ref_stdout, ref_stderr):
     # We want insane to run in a temporary directory. This allows to keep the
     # file system clean, and it avoids mixing output of different tests.
     with tempdir():
-        out, err = run_insane(arguments)
+        out, err = run_insane(arguments, input_dir)
         assert os.path.exists(gro_output)
         compare(gro_output, ref_gro)
         compare(ContextStringIO(out), ref_stdout)
@@ -198,9 +208,15 @@ def run_and_compare(arguments, ref_gro, ref_stdout, ref_stderr):
 def test_simple_cases():
     simple_case_ref_data = os.path.join(DATA_DIR, 'simple_case')
     for case in SIMPLE_TEST_CASES:
-        ref_gro = os.path.join(simple_case_ref_data, case + '.gro')
-        ref_stdout = os.path.join(simple_case_ref_data, case + '.out')
-        ref_stderr = os.path.join(simple_case_ref_data, case + '.err')
+        if len(case) == 2:
+            case_args, input_dir = case
+            input_dir = os.path.join(INPUT_DIR, input_dir)
+        else:
+            case_args = case
+            input_dir = None
+        ref_gro = os.path.join(simple_case_ref_data, case_args + '.gro')
+        ref_stdout = os.path.join(simple_case_ref_data, case_args + '.out')
+        ref_stderr = os.path.join(simple_case_ref_data, case_args + '.err')
         # The test generator could yield run and compare directly. Bt, then,
         # the verbose display of nosetests gets crowded with the very long
         # names of the reference file, that are very redundant. Using a partial
@@ -210,7 +226,7 @@ def test_simple_cases():
             ref_gro=ref_gro,
             ref_stdout=ref_stdout,
             ref_stderr=ref_stderr)
-        yield (_test_case, case)
+        yield (_test_case, case_args, input_dir)
 
 
 def generate_simple_case_references():
