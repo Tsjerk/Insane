@@ -41,6 +41,9 @@ SIMPLE_TEST_CASES = (
     '-o test.gro',
     '-o test.gro -box 10,15,20',
     '-o test.gro -box 10,15,20 -l POPC',
+    '-o test.gro -box 10,15,20 -sol W',
+    '-o test.gro -box 10,15,20 -sol WF',
+    '-o test.gro -box 10,15,20 -sol W -l POPC',
 )
 
 
