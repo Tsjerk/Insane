@@ -143,6 +143,8 @@ def run_insane(arguments):
                                stderr=subprocess.PIPE,
                                env={'INSANE_SEED': INSANE_SEED})
     out, err = process.communicate()
+    if process.returncode:
+        print(err)
     return out, err
 
 
