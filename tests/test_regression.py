@@ -26,6 +26,7 @@ import os
 import shutil
 import shlex
 import subprocess
+import sys
 import tempfile
 
 from StringIO import StringIO
@@ -256,7 +257,6 @@ def generate_simple_case_references():
     file, the standard output, and the standard error are stored in the
     DATA_DIR/simple_case directory.
     """
-    simple_case_ref_data = os.path.join(DATA_DIR, 'simple_case')
     for case in SIMPLE_TEST_CASES:
         case_args, input_dir = _split_case(case)
         arguments = _arguments_as_list(case_args)
@@ -274,5 +274,40 @@ def generate_simple_case_references():
             shutil.copy2(out_gro, ref_gro)
 
 
+def clean_simple_case_references():
+    """
+    Delete reference files for the simple tests if they are not in use anymore.
+    """
+    simple_test_cases = [_split_case(case)[0] for case in SIMPLE_TEST_CASES]
+    simple_case_ref_data = os.path.join(DATA_DIR, 'simple_case')
+    for path in glob.glob(os.path.join(simple_case_ref_data, '*')):
+        base_name = os.path.basename(os.path.splitext(path)[0])
+        if base_name not in simple_test_cases:
+            print(path)
+            os.remove(path)
+
+
+def main():
+    help_ = """
+Generate or clean the reference files for insane's regression tests.
+
+{0} gen: generate the files
+{0} clean: clean the unused files
+
+nosetests -v: run the tests
+""".format(sys.argv[0])
+    commands = {'gen': generate_simple_case_references,
+                'clean': clean_simple_case_references,}
+    if len(sys.argv) != 2:
+        print(help_, file=sys.stderr)
+        sys.exit(1)
+    try:
+        commands[sys.argv[1]]()
+    except KeyError:
+        print("Unrecognized keyword '{}'.".format(sys.argv[1]))
+        print(help_, file=sys.stderr)
+        sys.exit(1)
+
+
 if __name__ == '__main__':
-    generate_simple_case_references()
+    main()
