@@ -690,7 +690,7 @@ class Lipid:
                     struc.extend([(j%2,j/2,taillength-1-i) for i in rl])
 
                 mx,my,mz = [ (max(i)+min(i))/2 for i in zip(*struc) ]
-                self.coords = [(i,0.25*(x-mx),0.25*(y-my),z) for i,(x,y,z) in zip(beads,struc)]
+                self.coords = [[i,0.25*(x-mx),0.25*(y-my),z] for i,(x,y,z) in zip(beads,struc)]
 
         # Scale the x/y based on the lipid's APL - diameter is less than sqrt(APL)
         diam   = kwargs.get("diam",self.diam)
@@ -708,13 +708,13 @@ class Lipid:
 
 
     def h(self,head):
-        self.head = head.split()
+        self.head = head.replace("."," ").split()
 
     def l(self,link):
-        self.link = link.split()
+        self.link = link.replace("."," ").split()
 
     def t(self,tail):
-        self.tail = tail.split()
+        self.tail = tail.replace("."," ").split()
 
     def c(self,charge):
         self.charge = float(charge)
