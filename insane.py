@@ -985,9 +985,9 @@ def main(argv=None):
 
     # Last, add lipids from command line
     for name, head, link, tail in zip(usrnames,usrheads,usrlinks,usrtails):
-        heads   = head.split()
-        linkers = link.split()
-        tails   = tail.split()
+        heads   = head.replace("."," ").split()
+        linkers = link.replace("."," ").split()
+        tails   = tail.replace("."," ").split()
         liplist[name] = Lipid(name=name,head=heads,link=linkers,tail=tails)
 
 
