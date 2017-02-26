@@ -1851,7 +1851,7 @@ def main(argv=None):
             print >>oStream, "\n".join([i[0]+"%8.3f%8.3f%8.3f"%i[1] for i in sol])
 
         # Print the box
-        print >>oStream, "%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f\n"%grobox
+        print >>oStream, "%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f"%grobox
     else:
         # Print the title
         if membrane.atoms:
