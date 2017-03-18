@@ -202,8 +202,10 @@ def compare(output, reference):
     with out_file, ref_file:
         for out_line, ref_line in zip(out_file, ref_file):
             assert_equal(out_line, ref_line)
-        assert_raises(StopIteration, next, out_file)
-        assert_raises(StopIteration, next, ref_file)
+        extra_out = list(out_file)
+        extra_ref = list(ref_file)
+        assert_equal(extra_out, [])
+        assert_equal(extra_ref, [])
 
 
 def run_and_compare(arguments, input_dir, ref_gro, ref_stdout, ref_stderr):
