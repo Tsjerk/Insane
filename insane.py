@@ -679,10 +679,56 @@ class Structure:
         self.coord = [(ux*i+uy*j+uz*k,vx*i+vy*j+vz*k,wx*i+wy*j+wz*k)
                       for i,j,k in self.coord]
 
+    def rotate_princ(self):
+        x, y, z = zip(*self.coord)
+
+        # The rotation matrix in the plane equals the transpose
+        # of the matrix of eigenvectors from the 2x2 covariance
+        # matrix of the positions.
+        # For numerical stability we do
+        # d_i     = x_i - x_0
+        # mean(x) = x_0 + sum(d_i)/N =
+        # var(x)  = sum((d_i - mean(d))**2)/(N-1)
+        xy        = ssd(x,y)
+        if xy != 0:
+            xx     = ssd(x,x)
+            yy     = ssd(y,y)
+
+            # The eigenvalues are the roots of the 2nd order
+            # characteristic polynomial, with the coefficients
+            # equal to the trace and the determinant of the 
+            # matrix.
+            t,  d  = xx+yy, xx*yy - xy*xy
+            # The two eigenvectors form a 2D rotation matrix
+            # R = ((cos,sin),(-sin,cos)), which means that
+            # the second eigenvector follows directly from
+            # the first. We thus only need to determine one.
+            l1     = t/2 + math.sqrt(0.25*t*t-d)
+
+            ux, uy = l1-yy, xy
+            lu     = math.sqrt(ux*ux+uy*uy)
+
+            ux    /=  lu
+            uy    /=  lu
+
+            # Finally we rotate the system in the plane by 
+            # matrix multiplication with the transpose of 
+            # the matrix of eigenvectors
+            self.coord = [(ux*i+uy*j,ux*j-uy*i,k) for i,j,k in zip(x,y,z)]
+
+    def rotate_random(self):
+        ux   = math.cos(R()*2*math.pi)
+        uy   = math.sqrt(1-ux*ux)
+        self.coord = [(ux*i+uy*j,ux*j-uy*i,k) for i,j,k in self.coord]
+
+    def rotate_degrees(self, angle):
+        ux   = math.cos(angle*math.pi/180.)
+        uy   = math.sin(angle*math.pi/180.)
+        self.coord = [(ux*i+uy*j,ux*j-uy*i,k) for i,j,k in self.coord]
 
 
 headbeads = { # Define supported lipid head beads. One letter name mapped to atom name
-    "C":  "NC3", # NC3 = Choline
+"C":  "NC3", # NC3 = Choline
     "E":  "NH3", # NH3 = Ethanolamine 
     "G":  "GL0", # GL0 = Glycerol
     "S":  "CNO", # CNO = Serine
@@ -1188,76 +1234,30 @@ def main(argv=None):
                 # Have to build a membrane around the protein. 
                 # So first put the protein in properly.
 
-
                 # Center the protein and store the shift
                 shift = prot.center((0,0,0))
-
 
                 ## 1. Orient with respect to membrane
                 # Orient the protein according to the TM region, if requested
                 # This doesn't actually work very well...
                 if options["-orient"]:
-
                     # Grid spacing (nm)
                     d  = options["-od"].value
                     pw = options["-op"].value
 
                     prot.orient(d, pw)
-
                     
                 ## 4. Orient the protein in the xy-plane
                 ## i. According to principal axes and unit cell
                 if options["-rotate"].value == "princ":
-
-                    x, y, z = zip(*prot.coord)
-
-                    # The rotation matrix in the plane equals the transpose
-                    # of the matrix of eigenvectors from the 2x2 covariance
-                    # matrix of the positions.
-                    # For numerical stability we do
-                    # d_i     = x_i - x_0
-                    # mean(x) = x_0 + sum(d_i)/N =
-                    # var(x)  = sum((d_i - mean(d))**2)/(N-1)
-                    xy        = ssd(x,y)
-                    if xy != 0:
-                        xx     = ssd(x,x)
-                        yy     = ssd(y,y)
-
-                        # The eigenvalues are the roots of the 2nd order
-                        # characteristic polynomial, with the coefficients
-                        # equal to the trace and the determinant of the 
-                        # matrix.
-                        t,  d  = xx+yy, xx*yy - xy*xy
-                        # The two eigenvectors form a 2D rotation matrix
-                        # R = ((cos,sin),(-sin,cos)), which means that
-                        # the second eigenvector follows directly from
-                        # the first. We thus only need to determine one.
-                        l1     = t/2 + math.sqrt(0.25*t*t-d)
-
-                        ux, uy = l1-yy, xy
-                        lu     = math.sqrt(ux*ux+uy*uy)
-
-                        ux    /=  lu
-                        uy    /=  lu
-
-                        # Finally we rotate the system in the plane by 
-                        # matrix multiplication with the transpose of 
-                        # the matrix of eigenvectors
-                        prot.coord = [(ux*i+uy*j,ux*j-uy*i,k) for i,j,k in zip(x,y,z)]
-
+                    prot.rotate_princ()
                 ## ii. Randomly
                 elif options["-rotate"].value == "random":
-                    ux   = math.cos(R()*2*math.pi)
-                    uy   = math.sqrt(1-ux*ux)
-                    prot.coord = [(ux*i+uy*j,ux*j-uy*i,k) for i,j,k in prot.coord]
+                    prot.rotate_random()
 
                 ## iii. Specifically
                 elif options["-rotate"]:
-                    ux   = math.cos(float(options["-rotate"].value)*math.pi/180.)
-                    uy   = math.sin(float(options["-rotate"].value)*math.pi/180.)
-                    prot.coord = [(ux*i+uy*j,ux*j-uy*i,k) for i,j,k in prot.coord]
-
-
+                    prot.rotate_degrees(float(options["-rotate"].value))
 
                 ## 5. Determine the minimum and maximum x and y of the protein 
                 pmin, pmax = prot.fun(min), prot.fun(max)
@@ -1272,11 +1272,13 @@ def main(argv=None):
                 pbcz += options["-dz"].value or options["-d"].value or 0
 
 
-                # At this point we should shift the subsequent proteins such that they end up
-                # at the specified distance, in case we have a number of them to do
+                # At this point we should shift the subsequent proteins such
+                # that they end up at the specified distance, in case we have
+                # a number of them to do
                 # y-shift is always -ycenter
                 # x-shift is -xmin+distance+xmax(current)
-                xshft, yshft = xshifts[-1]-pmin[0]+(options["-d"].value or 0), -center[1]
+                xshft, yshft = (xshifts[-1]-pmin[0]+(options["-d"].value or 0),
+                                -center[1])
                 xshifts.append(xshifts[-1]+pmax[0]+(options["-d"].value or 0))
 
 
