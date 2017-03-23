@@ -606,6 +606,81 @@ class Structure:
     def fun(self,fn):
         return [fn(i) for i in zip(*self.coord)]
 
+    def orient(self, d, pw):
+        # Determine grid size
+        mx,my,mz = self.fun(min)
+        rx,ry,rz = self.fun(lambda x: max(x)-min(x)+1e-8)
+
+        # Number of grid cells
+        nx,ny,nz = int(rx/d+0.5),int(ry/d+0.5),int(rz/d+0.5)
+
+        # Initialize grids
+        atom     = [[[0 for i in range(nz+2)]
+                     for j in range(ny+2)] for k in range(nx+2)]
+        phobic   = [[[0 for i in range(nz+2)]
+                     for j in range(ny+2)] for k in range(nx+2)]
+        surface  = []
+        for i, (ix, iy, iz) in zip(self.atoms, self.coord):
+            if i[1] != "DUM":
+                jx, jy, jz = (int(nx*(ix-mx)/rx),
+                              int(ny*(iy-my)/ry),
+                              int(nz*(iz-mz)/rz))
+                atom[jx][jy][jz]   += 1
+                phobic[jx][jy][jz] += (i[1].strip() in apolar)
+
+        # Determine average density
+        occupd = sum([bool(k) for i in atom for j in i for k in j])
+        avdens = float(sum([sum(j) for i in atom for j in i]))/occupd
+
+        #cgofile  = open('density.cgo',"w")
+        #cgofile.write('[\n')
+        for i in range(nx):
+            for j in range(ny):
+                for k in range(nz):
+                    if atom[i][j][k] > 0.1*avdens:
+                        # Check the neighbouring cells;
+                        # if one of them is not occupied, count cell as surface
+                        if not (atom[i-1][j][k] and atom[i+1][j][k] and
+                                atom[i][j-1][k] and atom[i][j+1][k] and
+                                atom[i][j][k-1] and atom[i][j][k+1]):
+                            sx, sy, sz = (mx+rx*(i+0.5)/nx,
+                                          my+ry*(j+0.5)/ny,
+                                          mz+rz*(k+0.5)/nz)
+                            sw       = (2.0*phobic[i][j][k]/atom[i][j][k])**pw
+                            surface.append((sx,sy,sz,sw))
+                            #cgofile.write("    7.0, %f, %f, %f, %f,\n"%(10*sx,10*sy,10*sz,0.25*sw))
+        #cgofile.write(']\n')
+        #cgofile.close()
+
+        sx, sy, sz, w = zip(*surface)
+        W             = 1.0/sum(w)
+
+        # Weighted center of apolar region; has to go to (0,0,0) 
+        sxm,sym,szm   = [sum(p)*W
+                         for p in zip(*[(m*i,m*j,m*k)
+                                        for m,i,j,k in zip(w,sx,sy,sz)])]
+
+        # Place apolar center at origin
+        self.center((-sxm,-sym,-szm))
+        sx, sy, sz    = zip(*[(i-sxm,j-sym,k-szm) for i,j,k in zip(sx,sy,sz)])
+
+        # Determine weighted deviations from centers 
+        dx,dy,dz      = zip(*[(m*i,m*j,m*k) for m,i,j,k in zip(w,sx,sy,sz)]) 
+
+        # Covariance matrix for surface
+        xx,yy,zz,xy,yz,zx = [sum(p)*W
+                             for p in zip(*[(i*i,j*j,k*k,i*j,j*k,k*i)
+                                            for i,j,k in zip(dx,dy,dz)])]
+
+        # PCA: u,v,w are a rotation matrix
+        (ux,uy,uz),(vx,vy,vz),(wx,wy,wz),r = mijn_eigen_sym_3x3(xx,yy,zz,xy,zx,yz)
+
+        # Rotate the coordinates
+        self.coord = [(ux*i+uy*j+uz*k,vx*i+vy*j+vz*k,wx*i+wy*j+wz*k)
+                      for i,j,k in self.coord]
+
+
+
 headbeads = { # Define supported lipid head beads. One letter name mapped to atom name
     "C":  "NC3", # NC3 = Choline
     "E":  "NH3", # NH3 = Ethanolamine 
@@ -1127,67 +1202,9 @@ def main(argv=None):
                     d  = options["-od"].value
                     pw = options["-op"].value
 
-                    # Determine grid size
-                    mx,my,mz = prot.fun(min)
-                    rx,ry,rz = prot.fun(lambda x: max(x)-min(x)+1e-8)
+                    prot.orient(d, pw)
 
-                    # Number of grid cells
-                    nx,ny,nz = int(rx/d+0.5),int(ry/d+0.5),int(rz/d+0.5)
-
-                    # Initialize grids
-                    atom     = [[[0 for i in range(nz+2)] for j in range(ny+2)] for k in range(nx+2)]
-                    phobic   = [[[0 for i in range(nz+2)] for j in range(ny+2)] for k in range(nx+2)]
-                    surface  = []
-                    for i, (ix, iy, iz) in zip(prot.atoms,prot.coord):
-                        if i[1] != "DUM":
-                            jx,jy,jz = int(nx*(ix-mx)/rx), int(ny*(iy-my)/ry), int(nz*(iz-mz)/rz)
-                            atom[jx][jy][jz]   += 1
-                            phobic[jx][jy][jz] += (i[1].strip() in apolar)
-
-                    # Determine average density
-                    occupd = sum([bool(k) for i in atom for j in i for k in j])
-                    avdens = float(sum([sum(j) for i in atom for j in i]))/occupd
-
-                    #cgofile  = open('density.cgo',"w")
-                    #cgofile.write('[\n')
-                    for i in range(nx):
-                        for j in range(ny):
-                            for k in range(nz):
-                                if atom[i][j][k] > 0.1*avdens:
-                                    # Check the neighbouring cells; If one of them is not occupied, count cell as surface
-                                    if not (atom[i-1][j][k] and atom[i+1][j][k] and
-                                            atom[i][j-1][k] and atom[i][j+1][k] and
-                                            atom[i][j][k-1] and atom[i][j][k+1]):
-                                        sx,sy,sz = mx+rx*(i+0.5)/nx, my+ry*(j+0.5)/ny, mz+rz*(k+0.5)/nz
-                                        sw       = (2.0*phobic[i][j][k]/atom[i][j][k])**pw
-                                        surface.append((sx,sy,sz,sw))
-                                        #cgofile.write("    7.0, %f, %f, %f, %f,\n"%(10*sx,10*sy,10*sz,0.25*sw))
-                    #cgofile.write(']\n')
-                    #cgofile.close()
-
-                    sx, sy, sz, w = zip(*surface)
-                    W             = 1.0/sum(w)
-
-                    # Weighted center of apolar region; has to go to (0,0,0) 
-                    sxm,sym,szm   = [sum(p)*W for p in zip(*[(m*i,m*j,m*k) for m,i,j,k in zip(w,sx,sy,sz)])]
-
-                    # Place apolar center at origin
-                    prot.center((-sxm,-sym,-szm))
-                    sx, sy, sz    = zip(*[(i-sxm,j-sym,k-szm) for i,j,k in zip(sx,sy,sz)])
-
-                    # Determine weighted deviations from centers 
-                    dx,dy,dz      = zip(*[(m*i,m*j,m*k) for m,i,j,k in zip(w,sx,sy,sz)]) 
-
-                    # Covariance matrix for surface
-                    xx,yy,zz,xy,yz,zx = [sum(p)*W for p in zip(*[(i*i,j*j,k*k,i*j,j*k,k*i) for i,j,k in zip(dx,dy,dz)])]
-
-                    # PCA: u,v,w are a rotation matrix
-                    (ux,uy,uz),(vx,vy,vz),(wx,wy,wz),r = mijn_eigen_sym_3x3(xx,yy,zz,xy,zx,yz)
-
-                    # Rotate the coordinates
-                    prot.coord = [(ux*i+uy*j+uz*k,vx*i+vy*j+vz*k,wx*i+wy*j+wz*k) for i,j,k in prot.coord]
-
-
+                    
                 ## 4. Orient the protein in the xy-plane
                 ## i. According to principal axes and unit cell
                 if options["-rotate"].value == "princ":
