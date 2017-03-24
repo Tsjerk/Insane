@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/home/jon/dev/Insane/insane.py", line 1916, in <module>
+    sys.exit(main())
+  File "/home/jon/dev/Insane/insane.py", line 945, in main
+    options[ar].setvalue([args.pop(0) for i in range(options[ar].num)])
+KeyError: '-shift'
