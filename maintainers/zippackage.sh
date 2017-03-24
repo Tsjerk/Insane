@@ -17,7 +17,11 @@ SIMOPT_URL='https://raw.githubusercontent.com/Tsjerk/simopt/master/simopt.py'
 # Zip is annoying when it comes to path inside the archive.
 # We make a copy of the repository that we can modify without worrying to much.
 mkdir -p build
-rsync -ruv ../* build --exclude 'tests' --exclude 'maintainers'
+rsync -ruv ../* build \
+    --exclude 'tests' \
+    --exclude 'maintainers' \
+    --exclude='*.egg-info' \
+    --exclude='setup.py'
 cd build
 
 # Download simopt
@@ -27,9 +31,9 @@ wget "${SIMOPT_URL}" -O simopt.py
 # module as it makes no sense to have it there, so we write it here.
 cat << EOF > __main__.py
 import sys
-import insane
+import insane.cli
 
-sys.exit(insane.main(sys.argv))
+sys.exit(insane.cli.main(sys.argv))
 EOF
 
 # Actually make the zip file. Finally!
