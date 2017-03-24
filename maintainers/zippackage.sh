@@ -12,7 +12,7 @@ set -euo pipefail
 # shebang.
 
 # Path from which to download simopt
-SIMOPT_URL='https://raw.githubusercontent.com/Tsjerk/simopt/master/simopt/__init__.py'
+SIMOPT_URL='https://raw.githubusercontent.com/Tsjerk/simopt/master/simopt.py'
 
 # Zip is annoying when it comes to path inside the archive.
 # We make a copy of the repository that we can modify without worrying to much.
@@ -36,12 +36,12 @@ EOF
 zip -r insane.zip *
 
 # Make it executable
-echo '#!/usr/bin/env python' | cat - insane.zip > insane
-chmod +x insane
+echo '#!/usr/bin/env python' | cat - insane.zip > package
+chmod +x package
 
 # Clean the mess
 cd ../
-mv build/insane ./
+mv build/package ./insane
 rm -rf build
 
 # Were are done. Let's say good bye.
