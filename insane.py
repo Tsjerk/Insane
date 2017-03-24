@@ -1,13 +1,133 @@
 #!/usr/bin/env python
 
+"""
+INSANE: A versatile tool for building membranes and/or solvent with proteins.
+
+... Someone ought to write a more extensive docstring here... 
+"""
+
+
+__authors__ = ["Tsjerk A. Wassenaar", "Jonathan Barnoud"]
+__version__ = "1.0-dev"
+__year__    = "2017"
+
+version   = "20160625.15.TAW"
+previous  = "20160104.18.TAW"
+
+
 import os
 import sys
 import math
 import random
 import collections
 
-version   = "20160625.15.TAW"
-previous  = "20160104.18.TAW"
+import simopt
+
+
+# These functions are not to stay here... -TAW
+def vector(v):
+    if type(v) == str and "," in v:
+        return [float(i) for i in v.split(",")]
+    return float(v)
+
+
+def pdbBoxRead(a):
+    # Convert a PDB CRYST1 entry to a lattice definition.
+    # Convert from Angstrom to nanometer
+    fa, fb, fc, aa, ab, ac = [float(i) for i in a.split()[1:7]]
+    ca, cb, cg, sg         = math.cos(d2r*aa), math.cos(d2r*ab), math.cos(d2r*ac) , math.sin(d2r*ac)
+    wx, wy                 = 0.1*fc*cb, 0.1*fc*(ca-cb*cg)/sg
+    wz                     = math.sqrt(0.01*fc*fc - wx*wx - wy*wy)
+    return [0.1*fa, 0, 0, 0.1*fb*cg, 0.1*fb*sg, 0, wx, wy, wz]
+
+
+def box3d(a):
+    x = [ float(i) for i in a.split(",") ] + 6*[0]
+    if len(x) == 12: # PDB format
+        return pdbBoxRead("CRYST1 "+" ".join([str(i) for i in x]))
+    else:            # GRO format
+        return x[0],x[3],x[4],x[5],x[1],x[6],x[7],x[8],x[2]
+
+
+# Option list
+options = simopt.Options([
+    #   opt          attribute        type  num     default    multi    description
+    #   option           type number default description
+        """
+    Input/output related options
+    """,
+        ("-f", "solute",     str,         1,        None,  True, "Input GRO or PDB file 1: Solute (e.g. Protein)"),
+        ("-o", "output",     str,         1,        None, False, "Output GRO file: Membrane with Protein"),
+        ("-p", "topology",     str,         1,        None, False, "Optional rudimentary topology file"),
+        """
+    Periodic boundary conditions 
+    If -d is given, set up PBC according to -pbc such that no periodic
+    images are closer than the value given.  This will make the numbers
+    provided for lipids be interpreted as relative numbers. If -d is
+    omitted, those numbers are interpreted as absolute numbers, and the
+    PBC are set to fit the given number of lipids in.
+    """,
+        ("-pbc", "pbc",       str,         1, "hexagonal", False, "PBC type: hexagonal, rectangular, square, cubic, optimal or keep"),
+        ("-d",   "distance",  float,       1,           0, False, "Distance between periodic images (nm)"),
+        ("-dz",  "zdistance", float,       1,           0, False, "Z distance between periodic images (nm)"),
+        ("-x",   "xvector",   vector,      1,           0, False, "X dimension or first lattice vector of system (nm)"),
+        ("-y",   "yvector",   vector,      1,           0, False, "Y dimension or first lattice vector of system (nm)"),
+        ("-z",   "zvector",   vector,      1,           0, False, "Z dimension or first lattice vector of system (nm)"),
+        ("-box", "box",       box3d,       1,        None, False, "Box in GRO (3 or 9 floats) or PDB (6 floats) format, comma separated"),
+        ("-n",   "index",     str,         1,        None, False, "Index file --- TO BE IMPLEMENTED"),
+        """
+    Membrane/lipid related options.  
+    The options -l and -u can be given multiple times. Option -u can be
+    used to set the lipid type and abundance for the upper leaflet. Option
+    -l sets the type and abundance for the lower leaflet if option -u is
+    also given, or for both leaflets if option -u is not given. The
+    meaning of the number depends on whether option -d is used to set up
+    PBC
+    """,
+        ("-l",    "lower",     str,         1,        None,  True, "Lipid type and relative abundance (NAME[:#])"),
+        ("-u",    "upper",     str,         1,        None,  True, "Lipid type and relative abundance (NAME[:#])"),
+        ("-a",    "area",      float,       1,        0.60, False, "Area per lipid (nm*nm)"),
+        ("-au",   "uparea",    float,       1,        None, False, "Area per lipid (nm*nm) for upper layer"),
+        ("-asym", "asymmetry", int,         1,        None, False, "Membrane asymmetry (number of lipids)"),
+        ("-hole", "hole",      float,       1,        None, False, "Make a hole in the membrane with specified radius"),
+        ("-disc", "disc",      float,       1,        None, False, "Make a membrane disc with specified radius"),
+        ("-rand", "randkick",  float,       1,         0.1, False, "Random kick size (maximum atom displacement)"),
+        ("-bd",   "beaddist",  float,       1,         0.3, False, "Bead distance unit for scaling z-coordinates (nm)"),
+        """
+    Protein related options.
+    """,
+        ("-center", "center",      bool,        0,        None, False, "Center the protein on z"),
+        ("-orient", "orient",      bool,        0,        None, False, "Orient protein in membrane"),
+        ("-rotate", "rotate",      str,         1,        None, False, "Rotate protein (random|princ|angle(float)"),
+        ("-od",     "origriddist", float,       1,         1.0, False, "Grid spacing for determining orientation"),
+        ("-op",     "oripower",    float,       1,         4.0, False, "Hydrophobic ratio power for determining orientation"),
+        ("-fudge",  "fudge",       float,       1,         0.1, False, "Fudge factor for allowing lipid-protein overlap"),
+        ("-ring",   "inside",      bool,        0,        None, False, "Put lipids inside the protein"),
+        ("-dm",     "memshift",    float,       1,        None, False, "Shift protein with respect to membrane"),
+        """
+    Solvent related options.
+    """,
+        ("-sol",    "solvent",     str,         1,        None,  True, "Solvent type and relative abundance (NAME[:#])"),
+        ("-sold",   "soldiam",     float,       1,         0.5, False, "Solvent diameter"),
+        ("-solr",   "solrandom",   float,       1,         0.1, False, "Solvent random kick"),
+        ("-excl",   "solexcl",     float,       1,         1.5, False, "Exclusion range (nm) for solvent addition relative to membrane center"),
+        """
+    Salt related options.
+    """,
+        ("-salt",   "salt",        str,         1,        None, False, "Salt concentration"),
+        ("-charge", "charge",      str,         1,      "auto", False, "Charge of system. Set to auto to infer from residue names"),
+        """
+    Define additional lipid types (same format as in lipid-martini-itp-v01.py)
+    """,
+        ("-alname",   "lipnames",  str,  1,  None, True, "Additional lipid name, x4 letter"),
+        ("-alhead",   "lipheads",  str,  1,  None, True, "Additional lipid head specification string"),
+        ("-allink",   "liplinks",  str,  1,  None, True, "Additional lipid linker specification string"),
+        ("-altail",   "liptails",  str,  1,  None, True, "Additional lipid tail specification string"),
+        ("-alcharge", "lipcharge", str,  1,  None, True, "Additional lipid charge"),
+        ("-m",        "molfile",   str,   1,  None, True, "Read molecule definitions from file"),
+        ])
+
+
 
 # 20150920 - Insane can read lipid definitions from MARTINI repository:
 #     ;@INSANE alhead=C P, allink=A A, altail=TCC CCCC, alname=DPSM, charge=0.0
@@ -452,11 +572,6 @@ F = float
 I = int
 R = random.random
 
-def vector(v):
-    if type(v) == str and "," in v:
-        return [float(i) for i in v.split(",")]
-    return float(v)
-
 def vvadd(a,b):    
     if type(b) in (int,float):
         return [i+b for i in a]
@@ -511,15 +626,6 @@ def pdbBoxString(box):
 
     return pdbBoxLine % (10*norm(u),10*norm(v),10*norm(w),alpha,beta,gamma)
 
-def pdbBoxRead(a):
-    # Convert a PDB CRYST1 entry to a lattice definition.
-    # Convert from Angstrom to nanometer
-    fa, fb, fc, aa, ab, ac = [float(i) for i in a.split()[1:7]]
-    ca, cb, cg, sg         = math.cos(d2r*aa), math.cos(d2r*ab), math.cos(d2r*ac) , math.sin(d2r*ac)
-    wx, wy                 = 0.1*fc*cb, 0.1*fc*(ca-cb*cg)/sg
-    wz                     = math.sqrt(0.01*fc*fc - wx*wx - wy*wy)
-    return [0.1*fa, 0, 0, 0.1*fb*cg, 0.1*fb*sg, 0, wx, wy, wz]
-
 
 def groAtom(a):
     #012345678901234567890123456789012345678901234567890
@@ -531,12 +637,6 @@ def groBoxRead(a):
     b = [F(i) for i in a.split()] + 6*[0] # Padding for rectangular boxes
     return b[0],b[3],b[4],b[5],b[1],b[6],b[7],b[8],b[2]
 
-def readBox(a):
-    x = [ float(i) for i in a.split(",") ] + 6*[0]
-    if len(x) == 12: # PDB format
-        return pdbBoxRead("CRYST1 "+" ".join([str(i) for i in x]))
-    else:            # GRO format
-        return x[0],x[3],x[4],x[5],x[1],x[6],x[7],x[8],x[2]
 
 class Structure:
     def __init__(self,filename=None):
@@ -989,7 +1089,7 @@ def old_main(argv):
         ("-x",      Option(vector,      1,           0, "X dimension or first lattice vector of system (nm)")),
         ("-y",      Option(vector,      1,           0, "Y dimension or first lattice vector of system (nm)")),
         ("-z",      Option(vector,      1,           0, "Z dimension or first lattice vector of system (nm)")),
-        ("-box",    Option(readBox,     1,        None, "Box in GRO (3 or 9 floats) or PDB (6 floats) format, comma separated")),
+        ("-box",    Option(box3d,       1,        None, "Box in GRO (3 or 9 floats) or PDB (6 floats) format, comma separated")),
         ("-n",      Option(str,         1,        None, "Index file --- TO BE IMPLEMENTED")),
         """
     Membrane/lipid related options.  
