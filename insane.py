@@ -50,15 +50,15 @@ def box3d(a):
 
 
 # Option list
-options = simopt.Options([
+OPTIONS = simopt.Options([
     #   opt          attribute        type  num     default    multi    description
     #   option           type number default description
         """
     Input/output related options
     """,
-        ("-f", "solute",     str,         1,        None,  True, "Input GRO or PDB file 1: Solute (e.g. Protein)"),
-        ("-o", "output",     str,         1,        None, False, "Output GRO file: Membrane with Protein"),
-        ("-p", "topology",     str,         1,        None, False, "Optional rudimentary topology file"),
+        ("-f", "solute",      str,         1,        None,  True, "Input GRO or PDB file 1: Solute (e.g. Protein)"),
+        ("-o", "output",      str,         1,        None, False, "Output GRO file: Membrane with Protein"),
+        ("-p", "topology",    str,         1,        None, False, "Optional rudimentary topology file"),
         """
     Periodic boundary conditions 
     If -d is given, set up PBC according to -pbc such that no periodic
@@ -1048,7 +1048,7 @@ class Option:
             self.value = [ self.func(i) for i in v ]
 
 
-def old_main(argv):
+def old_main(argv, OPTS):
 
     tm        = []
     lipL      = []
@@ -1168,17 +1168,22 @@ def old_main(argv):
 
 
     # Read in the structures (if any)    
-    tm    = [ Structure(i) for i in tm ]
-
-
-    absoluteNumbers = not options["-d"]
-
+    tm    = [ Structure(i) for i in OPTS.solute ]
+    
 
     ## I. STRUCTURES
 
     ## a. LIPIDS
 
     liplist = Lipid_List()
+
+
+    ## ==> LIPID  BOOKKEEPING:
+    # import lipids
+    # lipid_list = lipids.get_list()
+    # lipid_list.add_from_file(*OPTS.mollist)
+    # lipid_list.add_from_def(*zip(OPTS.lipnames,OPTS.lipheads,OPTS.liplinks,OPTS.liptails,OPTS.lipcharge))
+    
 
     # First add internal lipids
     for name,lip in lipidsa.items():
@@ -1187,7 +1192,7 @@ def old_main(argv):
         liplist[name] = Lipid(name=name,beads=lip[1],template=template)
 
     # Then add lipids from file
-    for filename in mollist:
+    for filename in OPTS.molfile:
         stuff = open(filename).read().split("@INSANE")
         for group in stuff[1:]:
             lines  = group.split("\n")
@@ -1201,7 +1206,6 @@ def old_main(argv):
             lip = Lipid(string=lipdef,beads=beads)
             liplist[lip.name] = lip
 
-
     # Last, add lipids from command line
     for name, head, link, tail in zip(usrnames,usrheads,usrlinks,usrtails):
         heads   = head.replace("."," ").split()
@@ -1209,6 +1213,7 @@ def old_main(argv):
         tails   = tail.replace("."," ").split()
         liplist[name] = Lipid(name=name,head=heads,link=linkers,tail=tails)
 
+    # <=== END OF LIPID BOOKKEEPING
 
 
     # Periodic boundary conditions
@@ -2084,8 +2089,9 @@ def main(argv):
     # Build topology
     # Build index
 
+    OPTIONS.parse(argv[1:])
 
-    old_main(argv)
+    old_main(argv, OPTIONS)
 
     return exit_code
 
