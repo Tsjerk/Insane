@@ -948,9 +948,7 @@ class Option:
             self.value = [ self.func(i) for i in v ]
 
 
-def main(argv=None):
-    if argv is None:
-        argv = sys.argv
+def old_main(argv):
 
     tm        = []
     lipL      = []
@@ -1931,5 +1929,67 @@ def main(argv=None):
         print >>sys.stderr, "\n".join("%-10s %7d"%i for i in topmolecules)
 
 
+def insane(**options):
+
+    ## PROTEINS
+    # Collect and build input structures (proteins)
+    # Determine protein/hole layout
+    # Collect and build lipid/solvent dictionaries
+
+    ## PBC
+    # Determine size of system
+
+    # MEMBRANE
+    # Make grid - two leaflets
+    # Mask grid occupied cells
+    # Determine lipid compositions per leaflet
+    # Build membrane
+
+    ## SOLVENT
+    # Determine solvent composition
+    # Build solvent
+
+    return 0
+
+
+def main(argv):
+
+    exit_code =0
+
+    ## TEMPORARY ---
+    # Exception is defined in option parser (simopt)
+    class OptionParseException(BaseException): pass
+
+    # Exception to be defined in insane
+    class InsaneBuildException(BaseException): pass
+    ## <---
+
+    ## OPTIONS
+    # Parse options    
+    try:
+        options = {}
+    except OptionParseException as e:
+        print(e)
+        exit_code = 1
+
+    ## WORK
+    try:
+        system = insane(**options)
+    except InsaneBuildException as e:
+        print(e)
+        exit_code = 2
+
+    ## OUTPUT
+    # Build atom list
+    # Build topology
+    # Build index
+
+
+    old_main(argv)
+
+    return exit_code
+
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv))
