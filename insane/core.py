@@ -147,6 +147,17 @@ class Structure:
             self.coord[i] = linalg.vvadd(self.coord[i], s)
         return self
 
+    def __add__(self, other):
+        if hasattr(other, 'atoms') and hasattr(other, 'coord'):
+            result = self.__class__()
+            result.atoms.extend(self.atoms)
+            result.atoms.extend(other.atoms)
+            result.coord.extend(self.coord)
+            result.coord.extend(other.coord)
+            return result
+        raise TypeError('Cannot add {} to {}'
+                        .format(self.__class__, other.__class__))
+
     def center(self, other=None):
         if not self._center:
             self._center = [ sum(i)/len(i) for i in zip(*self.coord)]
@@ -1232,7 +1243,7 @@ def old_main(argv, options):
                 #sol.append(("%5d%-5s%5s%5d"%(resi%1e5, resn, solmol and solmol[0][0] or resn, atid%1e5), (x, y, z)))
                 atid += 1
     else:
-        solvent, sol = None, []
+        solvent, sol = None, Structure()
 
     return (molecules, protein, membrane, solvent, sol,
             mcharge, pcharge, lipU, lipL, numU, numL, box)
@@ -1246,36 +1257,20 @@ def iter_atoms(atoms):
         yield at, rn, ri, x, y, z
 
 
-def write_gro(oStream, title, protein, membrane, sol, box):
+def write_gro(oStream, title, atoms, box):
     # Print the title
     print(title, file=oStream)
 
     # Print the number of atoms
-    natoms = len(protein) + len(membrane) + len(sol)
-    print("{:5d}".format(natoms), file=oStream)
+    print("{:5d}".format(len(atoms)), file=oStream)
 
     # Print the atoms
     atom_template = "{:5d}{:<5s}{:>5s}{:5d}{:8.3f}{:8.3f}{:8.3f}"
-    id = 1
-    if protein:
-        for at, rn, ri, x, y, z in iter_atoms(protein):
-            print(atom_template
-                  .format(int(ri % 1e5), rn, at, int(id % 1e5), x, y, z),
-                  file=oStream)
-            id += 1
-    if membrane:
-        for at, rn, ri, x, y, z in iter_atoms(membrane):
-            print(atom_template
-                  .format(int(ri % 1e5), rn, at, int(id % 1e5), x, y, z),
-                  file=oStream)
-            id += 1
-    if sol:
-        for at, rn, ri, x, y, z in iter_atoms(sol):
-            print(atom_template
-                  .format(int(ri % 1e5), rn, at, int(id % 1e5), x, y, z),
-                  file=oStream)
-            id += 1
-
+    for idx, (at, rn, ri, x, y, z) in enumerate(iter_atoms(atoms), start=1):
+        print(atom_template
+              .format(int(ri % 1e5), rn, at, int(idx % 1e5), x, y, z),
+              file=oStream)
+ 
     # Print the box
     grobox = (box[0][0], box[1][1], box[2][2],
               box[0][1], box[0][2], box[1][0],
@@ -1284,7 +1279,7 @@ def write_gro(oStream, title, protein, membrane, sol, box):
     print(box_template.format(*grobox), file=oStream)
 
 
-def write_pdb(oStream, title, protein, membrane, sol, box):
+def write_pdb(oStream, title, atoms, box):
     # Print the title
     print(title, oStream)
 
@@ -1292,20 +1287,10 @@ def write_pdb(oStream, title, protein, membrane, sol, box):
     print(pdbBoxString(box), file=oStream)
 
     # Print the atoms
-    id = 1
-    if protein:
-        for at, rn, ri, x, y, z in iter_atoms(protein):
-            oStream.write(pdbline%(id%1e5, at, rn, "", ri%1e5, '', 10*x, 10*y, 10*z, 0, 0, ''))
-            id += 1
-    if membrane:
-        for at, rn, ri, x, y, z in iter_atoms(membrane):
-            oStream.write(pdbline%(id%1e5, at, rn, "", ri%1e5, '', 10*x, 10*y, 10*z, 0, 0, ''))
-            id += 1
-    if sol:
-        # Print the solvent
-        for at, rn, ri, x, y, z in iter_atoms(sol):
-            print(pdbline%(id%1e5, at.strip(), rn.strip(), "", int(ri)%1e5, '', 10*x, 10*y, 10*z, 0, 0, ''), file=oStream)
-            id += 1
+    for idx, (at, rn, ri, x, y, z) in enumerate(iter_atoms(atoms), start=1):
+        print(pdbline % (idx % 1e5, at, rn, "", ri % 1e5, '',
+                         10*x, 10*y, 10*z, 0, 0, ''),
+              file=oStream)
 
 
 def write_all(output, topology, molecules, protein, membrane,
@@ -1340,10 +1325,12 @@ def write_all(output, topology, molecules, protein, membrane,
     else:
         title = "Insanely solvated protein."
 
+    atoms = protein + membrane + sol
+
     if output.endswith(".gro"):
-        write_gro(oStream, title, protein, membrane, sol, box)
+        write_gro(oStream, title, atoms, box)
     else:
-        write_pdb(oStream, title, protein, membrane, sol, box)
+        write_pdb(oStream, title, atoms, box)
 
     topmolecules = []
     for i in molecules:
