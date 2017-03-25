@@ -118,7 +118,7 @@ def main(argv):
     ## OPTIONS
     # Parse options
     try:
-        options = {}
+        options = OPTIONS.parse(argv[1:])
     except OptionParseException as e:
         print(e)
         exit_code = 1
@@ -135,9 +135,8 @@ def main(argv):
     # Build topology
     # Build index
 
-    OPTIONS.parse(argv[1:])
 
-    core.old_main(argv, OPTIONS)
+    core.old_main(argv, options)
 
     return exit_code
 
