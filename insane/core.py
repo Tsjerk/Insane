@@ -21,6 +21,7 @@ import math
 import random
 import collections
 
+from . import linalg
 from .converters import *
 from .constants import d2r
 from .data import (lipidsa, lipidsx, lipidsy, lipidsz, headbeads, linkbeads,
@@ -41,16 +42,6 @@ F = float
 I = int
 R = random.random
 
-def vvadd(a,b):    
-    if type(b) in (int,float):
-        return [i+b for i in a]
-    return [i+j for i,j in zip(a,b)]
-
-def vvsub(a,b):
-    if type(b) in (int,float):
-        return [i-b for i in a]
-    return [i-j for i,j in zip(a,b)]
-
 def mean(a):
     return sum(a)/len(a)
 
@@ -69,30 +60,22 @@ pdbBoxLine  = "CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f P 1           1\n"
 pdbline = "ATOM  %5i  %-3s %4s%1s%4i%1s   %8.3f%8.3f%8.3f%6.2f%6.2f           %1s  \n"
 
 
-def norm2(a):
-    return sum([i*i for i in a])
-
-def norm(a):
-    return math.sqrt(norm2(a))
-
-def cos_angle(a,b):
-    p = sum([i*j for i,j in zip(a,b)])
-    q = math.sqrt(sum([i*i for i in a])*sum([j*j for j in b]))
-    return min(max(-1,p/q),1)
-
 def pdbBoxString(box):
     # Box vectors
     u, v, w  = box
 
     # Box vector lengths
-    nu,nv,nw = [math.sqrt(norm2(i)) for i in (u,v,w)]
+    nu,nv,nw = [math.sqrt(linalg.norm2(i)) for i in (u,v,w)]
 
     # Box vector angles
-    alpha = nv*nw == 0 and 90 or math.acos(cos_angle(v,w))/d2r
-    beta  = nu*nw == 0 and 90 or math.acos(cos_angle(u,w))/d2r
-    gamma = nu*nv == 0 and 90 or math.acos(cos_angle(u,v))/d2r
+    alpha = nv*nw == 0 and 90 or math.acos(linalg.cos_angle(v,w))/d2r
+    beta  = nu*nw == 0 and 90 or math.acos(linalg.cos_angle(u,w))/d2r
+    gamma = nu*nv == 0 and 90 or math.acos(linalg.cos_angle(u,v))/d2r
 
-    return pdbBoxLine % (10*norm(u),10*norm(v),10*norm(w),alpha,beta,gamma)
+    return pdbBoxLine % (10*linalg.norm(u),
+                         10*linalg.norm(v),
+                         10*linalg.norm(w),
+                         alpha,beta,gamma)
 
 
 def groAtom(a):
@@ -147,16 +130,16 @@ class Structure:
 
     def __iadd__(self,s):
         for i in range(len(self)):
-            self.coord[i] = vvadd(self.coord[i],s)
+            self.coord[i] = linalg.vvadd(self.coord[i],s)
         return self
 
     def center(self,other=None):
         if not self._center:
             self._center = [ sum(i)/len(i) for i in zip(*self.coord)]
         if other:
-            s = vvsub(other,self._center)
+            s = linalg.vvsub(other,self._center)
             for i in range(len(self)):
-                self.coord[i] = vvadd(self.coord[i],s)
+                self.coord[i] = linalg.vvadd(self.coord[i],s)
             self._center = other
             return s # return the shift
         return self._center
@@ -241,7 +224,7 @@ class Structure:
                                             for i,j,k in zip(dx,dy,dz)])]
 
         # PCA: u,v,w are a rotation matrix
-        (ux,uy,uz),(vx,vy,vz),(wx,wy,wz),r = mijn_eigen_sym_3x3(xx,yy,zz,xy,zx,yz)
+        (ux,uy,uz),(vx,vy,vz),(wx,wy,wz),r = linalg.mijn_eigen_sym_3x3(xx,yy,zz,xy,zx,yz)
 
         # Rotate the coordinates
         self.coord = [(ux*i+uy*j+uz*k,vx*i+vy*j+vz*k,wx*i+wy*j+wz*k)
@@ -445,45 +428,6 @@ def ssd(u,v):
 def parse_mol(x):
     l = x.split(":")
     return l[0], len(l) == 1 and 1 or float(l[1])
-
-## MIJN EIGEN ROUTINE ##
-
-# Quite short piece of code for diagonalizing symmetric 3x3 matrices :)
-
-# Analytic solution for third order polynomial
-def solve_p3( a, b, c ):
-    Q,R,a3 = (3*b-a**2)/9.0, (-27*c+a*(9*b-2*a**2))/54.0, a/3.0
-    if Q**3 + R**2:
-        t,R13 = math.acos(R/math.sqrt(-Q**3))/3, 2*math.sqrt(-Q)
-        u,v,w = math.cos(t), math.sin(t+math.pi/6), math.cos(t+math.pi/3)
-        return R13*u-a3, -R13*v-a3, -R13*w-a3
-    else:
-        R13   = math.sqrt3(R)
-        return 2*R13-a3, -R13-a3, -R13-a3
-
-# Normalization of 3-vector
-def normalize(a):
-    f = 1.0/math.sqrt(a[0]*a[0]+a[1]*a[1]+a[2]*a[2])
-    return f*a[0],f*a[1],f*a[2]
-
-# Eigenvectors for a symmetric 3x3 matrix:
-# For symmetric matrix A the eigenvector v with root r satisfies
-#   v.Aw = Av.w = rv.w = v.rw
-#   v.(A-rI)w = v.Aw - v.rw = 0 for all w
-# This means that for any two vectors p,q the eigenvector v follows from:
-#   (A-rI)p x (A-rI)q
-# The input is var(x),var(y),var(z),cov(x,y),cov(x,z),cov(y,z)
-# The routine has been checked and yields proper eigenvalues/-vectors
-def mijn_eigen_sym_3x3(a,d,f,b,c,e):
-    a,d,f,b,c,e=1,d/a,f/a,b/a,c/a,e/a
-    b2, c2, e2, df = b*b, c*c, e*e, d*f
-    roots = list(solve_p3(-a-d-f, df-b2-c2-e2+a*(f+d), a*e2+d*c2+f*b2-a*df-2*b*c*e))
-    roots.sort(reverse=True)
-    ux, uy, uz = b*e-c*d, b*c-a*e, a*d-b*b
-    u = (ux+roots[0]*c,uy+roots[0]*e,uz+roots[0]*(roots[0]-a-d))
-    v = (ux+roots[1]*c,uy+roots[1]*e,uz+roots[1]*(roots[1]-a-d))
-    w = u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0] # Cross product
-    return normalize(u),normalize(v),normalize(w),roots
 
 
 # Very simple option class
@@ -768,7 +712,7 @@ def old_main(argv, OPTS):
                 if "cubic".startswith(options["-pbc"].value):
                     pbcx = pbcy = pbcz = prot.diam()+options["-d"].value
                 elif "rectangular".startswith(options["-pbc"].value):                
-                    pbcx, pbcy, pbcz = vvadd(vvsub(prot.fun(max),prot.fun(min)),options["-d"].value)
+                    pbcx, pbcy, pbcz = linalg.vvadd(linalg.vvsub(prot.fun(max),prot.fun(min)),options["-d"].value)
                 else:
                     # Rhombic dodecahedron
                     pbcx = pbcy = prot.diam()+options["-d"].value
