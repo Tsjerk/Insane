@@ -30,8 +30,14 @@ wget "${SIMOPT_URL}" -O simopt.py
 # __main__.py is the entry point of the script. We do not want it in the
 # module as it makes no sense to have it there, so we write it here.
 cat << EOF > __main__.py
+import os
 import sys
 import insane.cli
+
+# When running the zipped package, __file__ is set to insane.__main__.py
+# Hide the internals to the user; he does not need to know what is inside the
+# zip. If anything else than simopt uses __main__.__file__ it may be broken.
+__file__ = os.path.dirname(__file__)
 
 sys.exit(insane.cli.main(sys.argv))
 EOF
