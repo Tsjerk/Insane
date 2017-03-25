@@ -629,7 +629,13 @@ def old_main(argv, OPTS):
     # <=== END OF LIPID BOOKKEEPING
 
 
+    # ==> PBC INITIAL BOOKKEEPING
+
     # Periodic boundary conditions
+    box = OPTS.get("box",[[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    if OPTS["pbc"] == 'keep' and tm:
+        box = tm[0].box
+    
 
     # option -box overrides everything
     if options["-box"]:
@@ -662,23 +668,6 @@ def old_main(argv, OPTS):
     elif options["-z"].value:
         pbcSetZ = [0, 0, options["-z"].value]
 
-
-    lo_lipd  = math.sqrt(options["-a"].value)
-    if options["-au"].value:
-        up_lipd = math.sqrt(options["-au"].value)
-    else:
-        up_lipd = lo_lipd
-
-
-    ################
-    ## I. PROTEIN ##
-    ################
-
-
-    protein  = Structure()
-    prot     = []
-    xshifts  = [0] # Shift in x direction per protein
-
     ## A. NO PROTEIN ---
     if not tm:
 
@@ -709,8 +698,29 @@ def old_main(argv, OPTS):
         pbcz = pbcSetZ and pbcSetZ[2] or pbcz
 
 
-    ## B. PROTEIN ---
+    # <== END OF PBC INITIAL BOOKKEEPING
+
+
+    lo_lipd  = math.sqrt(options["-a"].value)
+    if options["-au"].value:
+        up_lipd = math.sqrt(options["-au"].value)
     else:
+        up_lipd = lo_lipd
+
+
+
+    ################
+    ## I. PROTEIN ##
+    ################
+
+
+    protein  = Structure()
+    prot     = []
+    xshifts  = [0] # Shift in x direction per protein
+
+
+    ## B. PROTEIN ---
+    if tm:
 
         for prot in tm:
 
