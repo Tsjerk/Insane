@@ -1205,7 +1205,7 @@ def old_main(argv, options):
 
 
         # Build the solvent
-        sol = []
+        sol = Structure()
         for resn, (rndm, x, y, z) in solvent:
             resi += 1
             solmol = solventParticles.get(resn)
@@ -1220,10 +1220,16 @@ def old_main(argv, options):
                     rx = x + qp*qx + qq*px + qw*(qy*pz-qz*py)
                     ry = y + qp*qy + qq*py + qw*(qz*px-qx*pz)
                     rz = z + qp*qz + qq*pz + qw*(qx*py-qy*px)
-                    sol.append(("%5d%-5s%5s%5d"%(resi%1e5, resn, atnm, atid%1e5), (rx, ry, rz)))
+                    sol.atoms.append((atnm, resn, resi, 0, 0, 0))
+                    sol.coord.append((rx, ry, rz))
+                    #sol.append(("%5d%-5s%5s%5d"%(resi%1e5, resn, atnm, atid%1e5), (rx, ry, rz)))
                     atid += 1
             else:
-                sol.append(("%5d%-5s%5s%5d"%(resi%1e5, resn, solmol and solmol[0][0] or resn, atid%1e5), (x, y, z)))
+                sol.atoms.append((solmol and solmol[0][0] or resn,
+                                  resn, resi,
+                                  0, 0, 0))
+                sol.coord.append((x, y, z))
+                #sol.append(("%5d%-5s%5s%5d"%(resi%1e5, resn, solmol and solmol[0][0] or resn, atid%1e5), (x, y, z)))
                 atid += 1
     else:
         solvent, sol = None, []
@@ -1259,8 +1265,11 @@ def write_gro(oStream, title, protein, membrane, sol, box):
             print(atom_template%(ri%1e5, rn, at, id%1e5, x, y, z), file=oStream)
             id += 1
     if sol:
+        for at, rn, ri, x, y, z in iter_atoms(sol):
+            print(atom_template%(ri%1e5, rn, at, id%1e5, x, y, z), file=oStream)
+            id += 1
         # Print the solvent
-        print("\n".join([i[0]+"%8.3f%8.3f%8.3f"%i[1] for i in sol]), file=oStream)
+        #print("\n".join([i[0]+"%8.3f%8.3f%8.3f"%i[1] for i in sol]), file=oStream)
 
     # Print the box
     grobox = (box[0][0], box[1][1], box[2][2],
@@ -1288,12 +1297,8 @@ def write_pdb(oStream, title, protein, membrane, sol, box):
             id += 1
     if sol:
         # Print the solvent
-        for i in range(len(sol)):
-            ri, rn, at, ai = sol[i][0][:5], sol[i][0][5:10], sol[i][0][10:15], sol[i][0][15:20]
-            x, y, z    = sol[i][1]
-            if rn.endswith('.o'):
-                rn = rn[:-2]
-            oStream.write(pdbline%(id%1e5, at.strip(), rn.strip(), "", int(ri)%1e5, '', 10*x, 10*y, 10*z, 0, 0, ''))
+        for at, rn, ri, x, y, z in iter_atoms(sol):
+            print(pdbline%(id%1e5, at.strip(), rn.strip(), "", int(ri)%1e5, '', 10*x, 10*y, 10*z, 0, 0, ''), file=oStream)
             id += 1
 
 
