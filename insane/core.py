@@ -55,11 +55,6 @@ random.seed(os.environ.get('INSANE_SEED', None))
 
 ## PRIVATE PARTS FROM THIS POINT ON ##
 
-S = str
-F = float
-I = int
-R = random.random
-
 def mean(a):
     return sum(a)/len(a)
 
@@ -70,7 +65,7 @@ def pdbAtom(a):
     ##01234567890123456789012345678901234567890123456789012345678901234567890123456789
     ##ATOM   2155 HH11 ARG C 203     116.140  48.800   6.280  1.00  0.00
     ## ===>   atom name,   res name,     res id, chain,       x,            y,             z
-    return (S(a[12:16]), S(a[17:20]), I(a[22:26]), a[21], F(a[30:38])/10, F(a[38:46])/10, F(a[46:54])/10)
+    return (a[12:16], a[17:20], int(a[22:26]), a[21], float(a[30:38])/10, float(a[38:46])/10, float(a[46:54])/10)
 
 
 # Reformatting of lines in structure file
@@ -100,10 +95,10 @@ def groAtom(a):
     #012345678901234567890123456789012345678901234567890
     #    1PRN      N    1   4.168  11.132   5.291
     ## ===>   atom name,   res name,     res id, chain,       x,          y,          z
-    return (S(a[10:15]), S(a[5:10]),   I(a[:5]), " ", F(a[20:28]), F(a[28:36]), F(a[36:44]))
+    return (a[10:15], a[5:10],   int(a[:5]), " ", float(a[20:28]), float(a[28:36]), float(a[36:44]))
 
 def groBoxRead(a):
-    b = [F(i) for i in a.split()] + 6*[0] # Padding for rectangular boxes
+    b = [float(i) for i in a.split()] + 6*[0] # Padding for rectangular boxes
     return b[0], b[3], b[4], b[5], b[1], b[6], b[7], b[8], b[2]
 
 
@@ -286,7 +281,7 @@ class Structure:
             self.coord = [(ux*i+uy*j, ux*j-uy*i, k) for i, j, k in zip(x, y, z)]
 
     def rotate_random(self):
-        ux   = math.cos(R()*2*math.pi)
+        ux   = math.cos(random.random()*2*math.pi)
         uy   = math.sqrt(1-ux*ux)
         self.coord = [(ux*i+uy*j, ux*j-uy*i, k) for i, j, k in self.coord]
 
@@ -1252,9 +1247,10 @@ def old_main(argv, OPTS):
                     x += box[0][0]
                 grid[int(nx*x/rx)][int(ny*y/ry)][int(nz*z/rz)] = False
 
+        ##-T grid should be a wrapper around a numpy.ndarray
         # Set the center for each solvent molecule
         kick = options["-solr"].value
-        grid = [ (R(), (i+0.5+R()*kick)*dx, (j+0.5+R()*kick)*dy, (k+0.5+R()*kick)*dz)
+        grid = [ (random.random(), (i+0.5+random.random()*kick)*dx, (j+0.5+random.random()*kick)*dy, (k+0.5+random.random()*kick)*dz)
                  for i in xrange(nx) for j in xrange(ny) for k in xrange(nz) if grid[i][j][k] ]
 
         # Sort on the random number
