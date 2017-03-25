@@ -1251,31 +1251,37 @@ def write_gro(oStream, title, protein, membrane, sol, box):
     print(title, file=oStream)
 
     # Print the number of atoms
-    print("%5d"%(len(protein)+len(membrane)+len(sol)), file=oStream)
+    natoms = len(protein) + len(membrane) + len(sol)
+    print("{:5d}".format(natoms), file=oStream)
 
     # Print the atoms
-    atom_template = "%5d%-5s%5s%5d%8.3f%8.3f%8.3f"
+    atom_template = "{:5d}{:<5s}{:>5s}{:5d}{:8.3f}{:8.3f}{:8.3f}"
     id = 1
     if protein:
         for at, rn, ri, x, y, z in iter_atoms(protein):
-            print(atom_template%(ri%1e5, rn, at, id%1e5, x, y, z), file=oStream)
+            print(atom_template
+                  .format(int(ri % 1e5), rn, at, int(id % 1e5), x, y, z),
+                  file=oStream)
             id += 1
     if membrane:
         for at, rn, ri, x, y, z in iter_atoms(membrane):
-            print(atom_template%(ri%1e5, rn, at, id%1e5, x, y, z), file=oStream)
+            print(atom_template
+                  .format(int(ri % 1e5), rn, at, int(id % 1e5), x, y, z),
+                  file=oStream)
             id += 1
     if sol:
         for at, rn, ri, x, y, z in iter_atoms(sol):
-            print(atom_template%(ri%1e5, rn, at, id%1e5, x, y, z), file=oStream)
+            print(atom_template
+                  .format(int(ri % 1e5), rn, at, int(id % 1e5), x, y, z),
+                  file=oStream)
             id += 1
-        # Print the solvent
-        #print("\n".join([i[0]+"%8.3f%8.3f%8.3f"%i[1] for i in sol]), file=oStream)
 
     # Print the box
     grobox = (box[0][0], box[1][1], box[2][2],
               box[0][1], box[0][2], box[1][0],
               box[1][2], box[2][0], box[2][1])
-    print("%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f"%grobox, file=oStream)
+    box_template = '{:10.5f}' * 9
+    print(box_template.format(*grobox), file=oStream)
 
 
 def write_pdb(oStream, title, protein, membrane, sol, box):
