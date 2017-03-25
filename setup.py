@@ -14,7 +14,7 @@ setup(
     # Author details
     author='Tsjerk A. Wassenaar',
 
-    license='MIT',
+    license='GPLv2',
 
     classifiers=[
         'Development Status :: 4 - Beta',
