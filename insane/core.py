@@ -1,9 +1,27 @@
 #!/usr/bin/env python
 
+# INSert membrANE
+# A simple, versatile tool for building coarse-grained simulation systems
+# Copyright (C) 2017  Tsjerk A. Wassenaar and contributors
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
 """
 INSANE: A versatile tool for building membranes and/or solvent with proteins.
 
-... Someone ought to write a more extensive docstring here... 
+... Someone ought to write a more extensive docstring here...
 """
 
 
@@ -21,13 +39,12 @@ import math
 import random
 import collections
 
+from . import linalg
 from .converters import *
 from .constants import d2r
+from .data import (lipidsa, lipidsx, lipidsy, lipidsz, headbeads, linkbeads,
+                   solventParticles, charges, apolar)
 
-
-
-# 20150920 - Insane can read lipid definitions from MARTINI repository:
-#     ;@INSANE alhead=C P, allink=A A, altail=TCC CCCC, alname=DPSM, charge=0.0
 
 # Set the random seed.
 # The seed is set to an arbitary value set in the INSANE_SEED environment
@@ -35,432 +52,6 @@ from .constants import d2r
 # used to set the seed.
 random.seed(os.environ.get('INSANE_SEED', None))
 
-# Modify insane to take in arbitary lipid definition strings and use them as a template for lipids
-# Also take in lipid name 
-# Edits: by Helgi I. Ingolfsson (all edits are marked with: # HII edit - lipid definition )
-
-# PROTOLIPID (diacylglycerol), 18 beads
-#
-# 1-3-4-6-7--9-10-11-12-13-14
-#  \| |/  |
-#   2 5   8-15-16-17-18-19-20
-#
-
-lipidsx = {}
-lipidsy = {}
-lipidsz = {}
-lipidsa = {}
-#
-## Diacyl glycerols
-moltype = "lipid"
-lipidsx[moltype] = (    0, .5,  0,  0, .5,  0,  0, .5,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,  1,  1)
-lipidsy[moltype] = (    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0)
-lipidsz[moltype] = (   10,  9,  9,  8,  8,  7,  6,  6,  5,  4,  3,  2,  1,  0,  5,  4,  3,  2,  1,  0)
-lipidsa.update({      # 1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20
-## Phospholipids
-    "DTPC": (moltype, " -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A  -   -   -   -  C1B C2B  -   -   -   - "),
-    "DLPC": (moltype, " -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A C3A  -   -   -  C1B C2B C3B  -   -   - "),
-    "DPPC": (moltype, " -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  C1B C2B C3B C4B  -   - "),
-    "DBPC": (moltype, " -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A C3A C4A C5A  -  C1B C2B C3B C4B C5B  - "),
-    "POPC": (moltype, " -   -   -  NC3  -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B C2B C3B C4B  -   - "),
-    "DOPC": (moltype, " -   -   -  NC3  -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B D2B C3B C4B  -   - "),
-    "DAPC": (moltype, " -   -   -  NC3  -  PO4 GL1 GL2 D1A D2A D3A D4A C5A  -  D1B D2B D3B D4B C5B  - "),
-    "DIPC": (moltype, " -   -   -  NC3  -  PO4 GL1 GL2 C1A D2A D3A C4A  -   -  C1B D2B D3B C4B  -   - "),
-    "DGPC": (moltype, " -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A D3A C4A C5A  -  C1B C2B D3B C4B C5B  - "),
-    "DNPC": (moltype, " -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A C3A D4A C5A C6A C1B C2B C3B D4B C5B C6B"),
-    "DTPE": (moltype, " -   -   -  NH3  -  PO4 GL1 GL2 C1A C2A  -   -   -   -  C1B C2B  -   -   -   - "),
-    "DLPE": (moltype, " -   -   -  NH3  -  PO4 GL1 GL2 C1A C2A C3A  -   -   -  C1B C2B C3B  -   -   - "),
-    "DPPE": (moltype, " -   -   -  NH3  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  C1B C2B C3B C4B  -   - "),
-    "DBPE": (moltype, " -   -   -  NH3  -  PO4 GL1 GL2 C1A C2A C3A C4A C5A  -  C1B C2B C3B C4B C5B  - "),
-    "POPE": (moltype, " -   -   -  NH3  -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B C2B C3B C4B  -   - "),
-    "DOPE": (moltype, " -   -   -  NH3  -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B D2B C3B C4B  -   - "),
-    "POPG": (moltype, " -   -   -  GL0  -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B C2B C3B C4B  -   - "),
-    "DOPG": (moltype, " -   -   -  GL0  -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B D2B C3B C4B  -   - "),
-    "POPS": (moltype, " -   -   -  CNO  -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B C2B C3B C4B  -   - "),
-    "DOPS": (moltype, " -   -   -  CNO  -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B D2B C3B C4B  -   - "),
-    "DPSM": (moltype, " -   -   -  NC3  -  PO4 AM1 AM2 T1A C2A C3A  -   -   -  C1B C2B C3B C4B  -   - "),
-    "DBSM": (moltype, " -   -   -  NC3  -  PO4 AM1 AM2 T1A C2A C3A C4A  -   -  C1B C2B C3B C4B C5B  - "),
-    "BNSM": (moltype, " -   -   -  NC3  -  PO4 AM1 AM2 T1A C2A C3A C4A  -   -  C1B C2B C3B C4B C5B C6B"),
-# PG for thylakoid membrane   
-    "OPPG": (moltype, " -   -   -  GL0  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  C1B D2B C3B C4B  -   - "),
-# PG for thylakoid membrane of spinach (PPT with a trans-unsaturated bond at sn1 and a triple-unsaturated bond at sn2, 
-# and PPG  with a transunsaturated bond at sn1 and a palmitoyl tail at sn2)
-    "JPPG": (moltype, " -   -   -  GL0  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  D1B C2B C3B C4B  -   - "),
-    "JFPG": (moltype, " -   -   -  GL0  -  PO4 GL1 GL2 C1A D2A D3A D4A  -   -  D1B C2B C3B C4B  -   - "),
-## Monoacylglycerol
-    "GMO":  (moltype, " -   -   -   -   -   -  GL1 GL2 C1A C2A D3A C4A C5A  -   -   -   -   -   -   - "),
-## Templates using the old lipid names and definitions
-  "DHPC.o": (moltype, " -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A  -   -   -   -  C1B C2B  -   -   -   - "),
-  "DMPC.o": (moltype, " -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A C3A  -   -   -  C1B C2B C3B  -   -   - "),
-  "DSPC.o": (moltype, " -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A C3A C4A C5A  -  C1B C2B C3B C4B C5B  - "),
-  "POPC.o": (moltype, " -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  C1B C2B D3B C4B C5B  - "),
-  "DOPC.o": (moltype, " -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A D3A C4A C5A  -  C1B C2B D3B C4B C5B  - "),
-  "DUPC.o": (moltype, " -   -   -  NC3  -  PO4 GL1 GL2 C1A D2A D3A C4A  -   -  C1B D2B D3B C4B  -   - "),
-  "DEPC.o": (moltype, " -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A C3A D4A C5A C6A C1B C2B C3B D4B C5B C6B"),
-  "DHPE.o": (moltype, " -   -   -  NH3  -  PO4 GL1 GL2 C1A C2A  -   -   -   -  C1B C2B  -   -   -   - "),
-  "DLPE.o": (moltype, " -   -   -  NH3  -  PO4 GL1 GL2 C1A C2A C3A  -   -   -  C1B C2B C3B  -   -   - "),
-  "DMPE.o": (moltype, " -   -   -  NH3  -  PO4 GL1 GL2 C1A C2A C3A  -   -   -  C1B C2B C3B  -   -   - "),
-  "DSPE.o": (moltype, " -   -   -  NH3  -  PO4 GL1 GL2 C1A C2A C3A C4A C5A  -  C1B C2B C3B C4B C5B  - "),
-  "POPE.o": (moltype, " -   -   -  NH3  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  C1B C2B D3B C4B C5B  - "),
-  "DOPE.o": (moltype, " -   -   -  NH3  -  PO4 GL1 GL2 C1A C2A D3A C4A C5A  -  C1B C2B D3B C4B C5B  - "),
-  "PPCS.o": (moltype, " -   -   -  NC3  -  PO4 AM1 AM2 C1A C2A C3A C4A  -   -  D1B C2B C3B C4B  -   - "),
-  "DOPG.o": (moltype, " -   -   -  GL0  -  PO4 GL1 GL2 C1A C2A D3A C4A C5A  -  C1B C2B D3B C4B C5B  - "),
-  "POPG.o": (moltype, " -   -   -  GL0  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  C1B C2B D3B C4B C5B  - "),
-  "DOPS.o": (moltype, " -   -   -  CNO  -  PO4 GL1 GL2 C1A C2A D3A C4A C5A  -  C1B C2B D3B C4B C5B  - "),
-  "POPS.o": (moltype, " -   -   -  CNO  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  C1B C2B D3B C4B C5B  - "),
-   "CPG.o": (moltype, " -   -   -  GL0  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  C1B C2B D3B C4B  -   - "),
-   "PPG.o": (moltype, " -   -   -  GL0  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  D1B C2B C3B C4B  -   - "),
-   "PPT.o": (moltype, " -   -   -  GL0  -  PO4 GL1 GL2 C1A D2A D3A D4A  -   -  D1B C2B C3B C4B  -   - "),
-  "DSMG.o": (moltype, " -   -   -  C6   C4 C1  GL1 GL2 C1A C2A C3A C4A C5A  -  C1B C2B C3B C4B C5B  - "),
-  "DSDG.o": (moltype, "C61 C41 C11 C62 C42 C12 GL1 GL2 C1A C2A C3A C4A C5A  -  C1B C2B C3B C4B C5B  - "),
-  "DSSQ.o": (moltype, " -   -   S6 C6   C4 C1  GL1 GL2 C1A C2A C3A C4A C5A  -  C1B C2B C3B C4B C5B  - "),
-})
-
-
-# HII fix for PI templates and new templates PI(s) with diffrent tails, PO-PIP1(3) and POPIP2(4,5)  
-#Prototopology for phosphatidylinositol type lipids 5,6,7 are potentail phosphates (PIP1,PIP2 and PIP3)
-# 1,2,3 - is the inositol and 4 is the phosphate that links to the tail part.
-#  5
-#   \
-#  6-2-1-4-8--10-11-12-13-14-15
-#    |/    |
-#  7-3     9--16-17-18-19-20-21 
-moltype = "INOSITOLLIPIDS"
-lipidsx[moltype] = (   .5,  .5,   0,   0,   1, .5,  0,  0,   .5,   0,   0,   0,   0,   0,   0,   1,   1,   1,   1,   1,   1)
-lipidsy[moltype] = (    0,   0,   0,   0,   0,  0,  0,  0,    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0)
-lipidsz[moltype] = (    8,   9,   9,   7,  10, 10, 10,  6,    6,   5,   4,   3,   2,   1,   0,   5,   4,   3,   2,   1,   0)
-lipidsa.update({      # 1     2    3    4    5   6   7   8    9    10    11    12    13    14   15    16    17    18    19   20 
-     "OPI": (moltype, " C1   C2   C3   PO4   -   -   -  GL1  GL2   -    -    -    -    -    -   C1B  D2B  C3B  C4B   -    - "),
-     "PPI": (moltype, " C1   C2   C3   PO4   -   -   -  GL1  GL2   -    -    -    -    -    -   C1B  C2B  C3B  C4B   -    - "),
-    "DLPI": (moltype, " C1   C2   C3   PO4   -   -   -  GL1  GL2  C1A  C2A  C3A   -    -    -   C1B  C2B  C3B   -    -    - "),
-    "DPPI": (moltype, " C1   C2   C3   PO4   -   -   -  GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - "),
-    "DOPI": (moltype, " C1   C2   C3   PO4   -   -   -  GL1  GL2  C1A  D2A  C3A  C4A   -    -   C1B  D2B  C3B  C4B   -    - "),
-    "TPPI": (moltype, " C1   C2   C3   PO4   -   -   -  GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  C2B   -    -    -    - "),
-    "LPPI": (moltype, " C1   C2   C3   PO4   -   -   -  GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B   -    -    - "),
-    "LOPI": (moltype, " C1   C2   C3   PO4   -   -   -  GL1  GL2  C1A  D2A  C3A  C4A   -    -   C1B  C2B  C3B   -    -    - "),
-    "YPPI": (moltype, " C1   C2   C3   PO4   -   -   -  GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  D2B  C3B   -    -    - "),
-    "POPI": (moltype, " C1   C2   C3   PO4   -   -   -  GL1  GL2  C1A  D2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - "),
-    "PIPI": (moltype, " C1   C2   C3   PO4   -   -   -  GL1  GL2  C1A  D2A  D3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - "),
-    "PAPI": (moltype, " C1   C2   C3   PO4   -   -   -  GL1  GL2  D1A  D2A  D3A  D4A  C5A   -   C1B  C2B  C3B  C4B   -    - "),
-    "PUPI": (moltype, " C1   C2   C3   PO4   -   -   -  GL1  GL2  D1A  D2A  D3A  D4A  D5A   -   C1B  C2B  C3B  C4B   -    - "),
-    "POP1": (moltype, " C1   C2   C3   PO4  P1   -   -  GL1  GL2  C1A  C2A  D3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - "),
-    "POP2": (moltype, " C1   C2   C3   PO4  P1  P2   -  GL1  GL2  C1A  C2A  D3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - "),
-    "POP3": (moltype, " C1   C2   C3   PO4  P1  P2  P3  GL1  GL2  C1A  C2A  D3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - "),
-## Templates using the old lipid names and definitions
-  "PI.o"  : (moltype, " C1   C2   C3    CP   -   -   -  GL1  GL2  C1A  C2A  C3A  C4A   -    -   CU1  CU2  CU3  CU4  CU5   - "),
-  "PI34.o": (moltype, " C1   C2   C3    CP PO1 PO2   -  GL1  GL2  C1A  C2A  C3A  C4A   -    -   CU1  CU2  CU3  CU4  CU5   - "),
-})
-
-
-#Prototopology for IPC yeast lipid: MIP2C2OH, MIPC2OH, IPC2OH - Added by HII 2016.01.13
-# 
-# 3-1-4-7-6
-# |/     \|
-# 2      5
-#        |
-#        9-8-11-12--14-15-16-17-18-19 
-#        \ |     |
-#         10    13--20-21-22-23-24-25
-moltype = "IPC"
-lipidsx[moltype] = (    1,  .5,   1,   1,  .5,   1,   1,  0,   0,  .5,    0,   0,   .5,   0,   0,   0,   0,   0,   0,   1,   1,   1,   1,   1,   1)
-lipidsy[moltype] = (    0,   0,   0,   0,   0,   0,   0,  0,   0,   0,    0,   0,    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0)
-lipidsz[moltype] = (   12,  13,  13,  11,   9,   9,  10,  8,   9,   8,    7,   6,    6,   5,   4,   3,   2,   1,   0,   5,   4,   3,   2,   1,   0)
-lipidsa.update({      # 1    2    3    4    5    6    7   8    9   10    11   12    13   14   15   16   17   18   19   20   21   22   23   24   25  
-    "PXI2": (moltype, "H31  H32  H33  H3P  H21  H22  H23 H11  H12  H13  PO4   AM1   AM2  O1A  C2A  C3A   -    -    -   C1B  C2B  C3B  C4B  C5B  C6B"),
-    "BXI2": (moltype, "H31  H32  H33  H3P  H21  H22  H23 H11  H12  H13  PO4   AM1   AM2  O1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B  C5B  C6B"),
-    "PXI1": (moltype, " -    -    -    -   H21  H22  H23 H11  H12  H13  PO4   AM1   AM2  O1A  C2A  C3A   -    -    -   C1B  C2B  C3B  C4B  C5B  C6B"),
-    "PXI0": (moltype, " -    -    -    -    -    -    -  H11  H12  H13  PO4   AM1   AM2  O1A  C2A  C3A   -    -    -   C1B  C2B  C3B  C4B  C5B  C6B"),
-})
-
-
-#Prototopology for longer and branched glycosil and ceramide based glycolipids
-#
-#     17-15-14-16
-#         |/
-#        13
-#         |
-# 12-10-9-7-6-4-3-1--18--20-21-22-23-24-25
-#  |/   |/  |/  |/    |
-#  11   8   5   2    19--26-27-28-29-30-31 
-moltype = "GLYCOLIPIDS"
-lipidsx[moltype] = (    0,  .5,   0,   0,  .5,  0,  0, .5,  0,    0,   .5,    0,    0,    0,   0,    0,    0,    0,   .5,   0,   0,   0,   0,   0,   0,   1,   1,   1,   1,   1,   1)
-lipidsy[moltype] = (    0,   0,   0,   0,   0,  0,  0,  0,  0,    0,    0,    0,   .5,    1,   1,    1,    1,    0,    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0)
-lipidsz[moltype] = (    7,   8,   8,   9,  10, 10, 11, 12, 12,   13,   14,   14,   11,   10,  11,    9,   12,    6,    6,   5,   4,   3,   2,   1,   0,   5,   4,   3,   2,   1,   0)
-lipidsa.update({      # 1     2    3    4    5   6   7   8   9    10    11    12    13    14   15    16    17    18    19   20   21   22   23   24   25   26   27   28   29   30   31
-    "DPG1": (moltype, "GM1  GM2  GM3  GM4  GM5 GM6 GM7 GM8 GM9  GM10  GM11  GM12  GM13  GM14 GM15  GM16  GM17   AM1   AM2  T1A  C2A  C3A   -    -    -   C1B  C2B  C3B  C4B   -    - "),
-    "DXG1": (moltype, "GM1  GM2  GM3  GM4  GM5 GM6 GM7 GM8 GM9  GM10  GM11  GM12  GM13  GM14 GM15  GM16  GM17   AM1   AM2  T1A  C2A  C3A  C4A  C5A   -   C1B  C2B  C3B  C4B  C5B  C6B"),
-    "PNG1": (moltype, "GM1  GM2  GM3  GM4  GM5 GM6 GM7 GM8 GM9  GM10  GM11  GM12  GM13  GM14 GM15  GM16  GM17   AM1   AM2  T1A  C2A  C3A   -    -    -   C1B  C2B  C3B  D4B  C5B  C6B"),
-    "XNG1": (moltype, "GM1  GM2  GM3  GM4  GM5 GM6 GM7 GM8 GM9  GM10  GM11  GM12  GM13  GM14 GM15  GM16  GM17   AM1   AM2  T1A  C2A  C3A  C4A  C5A   -   C1B  C2B  C3B  D4B  C5B  C6B"),
-    "DPG3": (moltype, "GM1  GM2  GM3  GM4  GM5 GM6  -   -   -    -     -     -    GM13  GM14 GM15  GM16  GM17   AM1   AM2  T1A  C2A  C3A   -    -    -   C1B  C2B  C3B  C4B   -    - "),
-    "DXG3": (moltype, "GM1  GM2  GM3  GM4  GM5 GM6  -   -   -    -     -     -    GM13  GM14 GM15  GM16  GM17   AM1   AM2  T1A  C2A  C3A  C4A  C5A   -   C1B  C2B  C3B  C4B  C5B  C6B"),
-    "PNG3": (moltype, "GM1  GM2  GM3  GM4  GM5 GM6  -   -   -    -     -     -    GM13  GM14 GM15  GM16  GM17   AM1   AM2  T1A  C2A  C3A   -    -    -   C1B  C2B  C3B  D4B  C5B  C6B"),
-    "XNG3": (moltype, "GM1  GM2  GM3  GM4  GM5 GM6  -   -   -    -     -     -    GM13  GM14 GM15  GM16  GM17   AM1   AM2  T1A  C2A  C3A  C4A  C5A   -   C1B  C2B  C3B  D4B  C5B  C6B"),
-    "DPCE": (moltype, "  -    -    -    -    -   -   -   -   -     -     -     -     -     -    -     -     -   AM1   AM2  T1A  C2A  C3A   -    -    -   C1B  C2B  C3B  C4B   -    - "),
-    "DPGS": (moltype, " C1   C2   C3    -    -   -   -   -   -     -     -     -     -     -    -     -     -   AM1   AM2  T1A  C2A  C3A   -    -    -   C1B  C2B  C3B  C4B   -    - "),
-    "DPMG": (moltype, " C1   C2   C3    -    -   -   -   -   -     -     -     -     -     -    -     -     -   GL1   GL2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - "),
-    "DPSG": (moltype, " S1   C1   C2   C3    -   -   -   -   -     -     -     -     -     -    -     -     -   GL1   GL2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - "),
-    "DPGG": (moltype, "GB2  GB3  GB1  GA1  GA2 GA3   -   -   -     -     -     -     -     -    -     -     -   GL1   GL2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - "),
-#lipids for thylakoid membrane of cyanobacteria: oleoyl tail at sn1 and palmiotyl chain at sn2. SQDG no double bonds
-    "OPMG": (moltype, " C1   C2   C3    -    -   -   -   -   -     -     -     -     -     -    -     -     -   GL1   GL2  C1A  C2A  C3A  C4A   -    -   C1B  D2B  C3B  C4B   -    - "),
-    "OPSG": (moltype, " S1   C1   C2   C3    -   -   -   -   -     -     -     -     -     -    -     -     -   GL1   GL2  C1A  C2A  C3A  C4A   -    -   C1B  D2B  C3B  C4B   -    - "),
-    "OPGG": (moltype, "GB2  GB3  GB1  GA1  GA2 GA3   -   -   -     -     -     -     -     -    -     -     -   GL1   GL2  C1A  C2A  C3A  C4A   -    -   C1B  D2B  C3B  C4B   -    - "),
-#lipids for thylakoid membrane of spinach: for the *T both chains are triple unsaturated and the *G have a triple unsaturated chain at sn1 and a palmitoyl chain at sn2. 
-    "FPMG": (moltype, " C1   C2   C3    -    -   -   -   -   -     -     -     -     -     -    -     -     -   GL1   GL2  C1A  C2A  C3A  C4A   -    -   C1B  D2B  D3B  D4B   -    - "),
-    "DFMG": (moltype, " C1   C2   C3    -    -   -   -   -   -     -     -     -     -     -    -     -     -   GL1   GL2  C1A  D2A  D3A  D4A   -    -   C1B  D2B  D3B  D4B   -    - "),
-    "FPSG": (moltype, " S1   C1   C2   C3    -   -   -   -   -     -     -     -     -     -    -     -     -   GL1   GL2  C1A  C2A  C3A  C4A   -    -   C1B  D2B  D3B  D4B   -    - "),
-    "FPGG": (moltype, "GB2  GB3  GB1  GA1  GA2 GA3   -   -   -     -     -     -     -     -    -     -     -   GL1   GL2  C1A  C2A  C3A  C4A   -    -   C1B  D2B  D3B  D4B   -    - "),
-    "DFGG": (moltype, "GB2  GB3  GB1  GA1  GA2 GA3   -   -   -     -     -     -     -     -    -     -     -   GL1   GL2  C1A  D2A  D3A  D4A   -    -   C1B  D2B  D3B  D4B   -    - "),
-## Templates using the old lipid names and definitions
-  "GM1.o" : (moltype, "GM1  GM2  GM3  GM4  GM5 GM6 GM7 GM8 GM9  GM10  GM11  GM12  GM13  GM14 GM15  GM16  GM17   AM1   AM2  C1A  C2A  C3A  C4A  C5A   -   C1B  C2B  C3B  C4B   -    - "), 
-  "DGDG.o": (moltype, "GB2  GB3  GB1  GA1  GA2 GA3   -   -   -     -     -     -     -     -    -     -     -   GL1   GL2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - "),
-  "MGDG.o": (moltype, " C1   C2   C3    -    -   -   -   -   -     -     -     -     -     -    -     -     -   GL1   GL2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - "),
-  "SQDG.o": (moltype, " S1   C1   C2   C3    -   -   -   -   -     -     -     -     -     -    -     -     -   GL1   GL2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - "),
-  "CER.o" : (moltype, "  -    -    -    -    -   -   -   -   -     -     -     -     -     -    -     -     -   AM1   AM2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - "),
-  "GCER.o": (moltype, " C1   C2   C3    -    -   -   -   -   -     -     -     -     -     -    -     -     -   AM1   AM2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - "),
-  "DPPI.o": (moltype, " C1   C2   C3    -   CP   -   -   -   -     -     -     -     -     -    -     -     -   GL1   GL2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - "),
-})
-
-
-moltype = "QUINONES"
-lipidsx[moltype] = (    0,  .5,   0,    0,   0,   0,   0,   0,   0,    0,    0,    0)
-lipidsy[moltype] = (    0,   0,   0,    0,   0,   0,   0,   0,   0,    0,    0,    0)
-lipidsz[moltype] = (    6,   7,   7,   5.5,  5,  4.5,  4,  3.5, 2.5,   2,  1.5,    1)
-lipidsa.update({      # 1     2    3    4    5    6    7    8    9    10    11    12
-    "PLQ": (moltype, " PLQ3 PLQ2 PLQ1 PLQ4 PLQ5 PLQ6 PLQ7 PLQ8 PLQ9 PLQ10 PLQ11 PLQ12"),
-})
-
-
-# Prototopology for cardiolipins
-#  
-#       4-11-12-13-14-15-16
-#       |
-#   2---3--5--6--7--8--9-10
-#  / 
-# 1
-#  \
-#   17-18-20-21-22-23-24-25
-#       |
-#      19-26-27-28-29-30-31
-#
-moltype = "CARDIOLIPINS"
-lipidsx[moltype] = (   0.5,   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,   1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1)
-lipidsy[moltype] = (     1,   0,  0,  1,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,  1,  1,   0,  0,  1,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,  1,  1)
-lipidsz[moltype] = (     8,   7,  6,  6,  5,  4,  3,  2,  1,  0,  5,  4,  3,  2,  1,  0,   7,  6,  6,  5,  4,  3,  2,  1,  0,  5,  4,  3,  2,  1,  0)
-lipidsa.update({      #  1    2   3   4   5   6   7   8   9  10  11  12  13  14  15  16   17  18  19  20  21  22  23  24  25  26  27  28  29  30  31
-    "CDL0": (moltype, "GL5 PO41 GL1 GL2 C1A C2A D3A C4A C5A   - C1B C2B D3B C4B C5B   - PO42 GL3 GL4 C1C C2C D3C C4C C5C   - C1D C2D D3D C4D C5D   -"), # Warning not the same names is in .itp
-    "CDL1": (moltype, "GL5 PO41 GL1 GL2 C1A C2A D3A C4A C5A   - C1B C2B D3B C4B C5B   - PO42 GL3 GL4 C1C C2C D3C C4C C5C   - C1D C2D D3D C4D C5D   -"), # Warning not the same names is in .itp
-    "CDL2": (moltype, "GL5 PO41 GL1 GL2 C1A C2A D3A C4A C5A   - C1B C2B D3B C4B C5B   - PO42 GL3 GL4 C1C C2C D3C C4C C5C   - C1D C2D D3D C4D C5D   -"), # Warning not the same names is in .itp 
-    "CL4P": (moltype, "GL5 PO41 GL1 GL2 C1A C2A C3A C4A C5A   - C1B C2B C3B C4B C5B   - PO42 GL3 GL4 C1C C2C C3C C4C C5C   - C1D C2D C3D C4D C5D   -"), 
-    "CL4M": (moltype, "GL5 PO41 GL1 GL2 C1A C2A C3A   -   -   - C1B C2B C3B   -   -   - PO42 GL3 GL4 C1C C2C C3C   -   -   - C1D C2D C3D   -   -   -"), 
-## Templates using the old lipid names and definitions
-  "CL4.o" : (moltype, "GL5 PO41 GL1 GL2 C1A C2A D3A C4A C5A   - C1B C2B D3B C4B C5B   - PO42 GL3 GL4 C1C C2C D3C C4C C5C   - C1D C2D D3D C4D C5D   -"), 
-  "CL4O.o": (moltype, "GL5 PO41 GL1 GL2 C1A C2A D3A C4A C5A   - C1B C2B D3B C4B C5B   - PO42 GL3 GL4 C1C C2C D3C C4C C5C   - C1D C2D D3D C4D C5D   -"),
-})
-
-
-# Prototopology for mycolic acid(s)
-#
-#  1--2--3--4--5--6--7--8
-#                       |
-# 16-15-14-13-12-11-10--9
-# |
-# 17-18-19-20-21-22-23-24
-#                     /
-# 32-31-30-29-28-27-25-26
-#
-
-moltype = "MYCOLIC ACIDS"
-lipidsx[moltype] = (      0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,    0,    1,    1,    1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,  1,   1,   1)
-lipidsy[moltype] = (      0,   0,   0,   0,   0,   0,   0,   0,   1,   1,   1,   1,   1,   1,   1,    1,    1,    1,    1,   1,   1,   1,   1,   1,   0,   0,   0,   0,   0,  0,   0,   0)
-lipidsz[moltype] = (      7,   6,   5,   4,   3,   2,   1,   0,   0,   1,   2,   3,   4,   5,   6,    7,    7,    6,    5,   4,   3,   2,   1,   0,   1,   0,   2,   3,   4,  5,   6,   7)
-lipidsa.update({        # 1    2    3    4    5    6    7    8    9   10   11   12   13   14   15    16    17    18    19   20   21   22   23   24   25   26   27   28   29   30   31   32
-    "AMA":   (moltype, "  -    -    -  C1A  C2A  C3A  C4A  C5A  M1A  C1B  C2B  C3B  C4B    -    -     -     -     -   M1B  C1C  C2C  C3C    -    -  COH  OOH  C1D  C2D  C3D  C4D  C5D  C6D"),
-    "AMA.w": (moltype, "  -    -    -  C1A  C2A  C3A  C4A  C5A  M1A  C1B  C2B  C3B  C4B    -    -     -     -     -   M1B  C1C  C2C  C3C    -    -  COH  OOH  C1D  C2D  C3D  C4D  C5D  C6D"),
-    "KMA":   (moltype, "  -    -    -  C1A  C2A  C3A  C4A  C5A  M1A  C1B  C2B  C3B  C4B    -    -     -     -     -   M1B  C1C  C2C  C3C    -    -  COH  OOH  C1D  C2D  C3D  C4D  C5D  C6D"),
-    "MMA":   (moltype, "  -    -    -  C1A  C2A  C3A  C4A  C5A  M1A  C1B  C2B  C3B  C4B    -    -     -     -     -   M1B  C1C  C2C  C3C    -    -  COH  OOH  C1D  C2D  C3D  C4D  C5D  C6D"),
-})
-
-
-# Sterols
-moltype = "sterol"
-lipidsx[moltype] = (     0,  0,  0,  0,  0, 0,   0,  0,  1,  0,  1,  0,  0,  0,  0,  0,  0,  0)
-lipidsy[moltype] = (     0,  0,  0,  0,  0, 0,   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0)
-lipidsz[moltype] = (     0,  0,  0,  0,  0, 0, 5.3,4.5,3.9,3.3, 3 ,2.6,1.4,  0,  0,  0,  0,  0)
-lipidsa.update({
-    "CHOL": (moltype, " -   -   -   -   -   -  ROH  R1  R2  R3  R4  R5  C1  C2  -   -   -   - "),
-    "ERGO": (moltype, " -   -   -   -   -   -  ROH  R1  R2  R3  R4  R5  C1  C2  -   -   -   - "),
-})
-
-
-# Hopanoids
-moltype = "Hopanoids"
-lipidsx[moltype] = (     0,  0,  0,  0, 0.5,-0.5,   0,   0, 0.5, 0.5,   0,   0,   0,   0,  0,  0,  0,  0)
-lipidsy[moltype] = (     0,  0,  0,  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,  0,  0,  0,  0)
-lipidsz[moltype] = (     0,  0,  0,  0, 0.5, 1.4, 2.6,   3, 3.3, 3.9, 4.5, 5.0, 5.5, 6.0,  0,  0,  0,  0) 
-lipidsa.update({
-    "HOPR": (moltype, " -   -   -   R1   R2   R3   R4   R5   R6   R7   R8   -    -    -    -   -   -   - "),
-    "HHOP": (moltype, " -   -   -   R1   R2   R3   R4   R5   R6   R7   R8   C1   -    -    -   -   -   - "),
-    "HDPT": (moltype, " -   -   -   R1   R2   R3   R4   R5   R6   R7   R8   C1   -    -    -   -   -   - "),
-    "HBHT": (moltype, " -   -   -   R1   R2   R3   R4   R5   R6   R7   R8   C1   C2   C3   -   -   -   - "),
-})
-
-
-# Lists for automatic charge determination
-charges = {"ARG":1, "LYS":1, "ASP":-1, "GLU":-1, "DOPG":-1, "POPG":-1, "DOPS":-1, "POPS":-1, "DSSQ":-1}
-
-a,  b  = math.sqrt(2)/20, math.sqrt(2)/60
-ct, st = math.cos(math.pi*109.47/180), math.sin(math.pi*109.47/180) # Tetrahedral
-
-# Get a set of coordinates for a solvent particle with a given name
-# Dictionary of solvents; First only those with multiple atoms
-solventParticles = {
-    "PW":       (("W",(-0.07,0,0)),                          # Polarizable water
-                 ("WP",(0.07,0,0)),
-                 ("WM",(0.07,0,0))),
-    "BMW":      (("C",(0,0,0)),
-                 ("Q1",(0.12,0,0)),
-                 ("Q2",(-0.06,math.cos(math.pi/6)*0.12,0))), # BMW water
-    "SPC":      (("OW",(0,0,0)),                             # SPC
-                 ("HW1",(0.01,0,0)),
-                 ("HW2",(0.01*ct,0.01*st,0))),
-    "SPCM":     (("OW",(0,0,0)),                             # Multiscale/Martini SPC 
-                 ("HW1",(0.01,0,0)),
-                 ("HW2",(0.01*ct,0.01*st,0)),
-                 ("vW",(0,0,0))),
-    "FG4W":     (("OW1",(a,a,a)),                            # Bundled water
-                 ("HW11",(a,a-b,a-b)),
-                 ("HW12",(a,a+b,a+b)),
-                 ("OW2",(a,-a,-a)),
-                 ("HW21",(a-b,-a,-a+b)),
-                 ("HW22",(a+b,-a,-a-b)),
-                 ("OW3",(-a,-a,a)),
-                 ("HW31",(-a,-a+b,a-b)),
-                 ("HW32",(-a,-a-b,a+b)),
-                 ("OW4",(-a,a,-a)),
-                 ("HW41",(-a+b,a,-a+b)),
-                 ("HW42",(-a-b,a,-a-b))),
-    "FG4W-MS":  (("OW1",(a,a,a)),                            # Bundled water, multiscaled
-                 ("HW11",(a,a-b,a-b)),
-                 ("HW12",(a,a+b,a+b)),
-                 ("OW2",(a,-a,-a)),
-                 ("HW21",(a-b,-a,-a+b)),
-                 ("HW22",(a+b,-a,-a-b)),
-                 ("OW3",(-a,-a,a)),
-                 ("HW31",(-a,-a+b,a-b)),
-                 ("HW32",(-a,-a-b,a+b)),
-                 ("OW4",(-a,a,-a)),
-                 ("HW41",(-a+b,a,-a+b)),
-                 ("HW42",(-a-b,a,-a-b)),
-                 ("VZ",(0,0,0))),
-    "GLUC":     (("B1",(-0.11, 0,   0)),
-                 ("B2",( 0.05, 0.16,0)),
-                 ("B3",( 0.05,-0.16,0))),
-    "FRUC":     (("B1",(-0.11, 0,   0)),
-                 ("B2",( 0.05, 0.16,0)),
-                 ("B3",( 0.05,-0.16,0))),
-    "SUCR":     (("B1",(-0.25, 0.25,0)),
-                 ("B2",(-0.25, 0,   0)),
-                 ("B3",(-0.25,-0.25,0)),
-                 ("B4",( 0.25, 0,   0)),
-                 ("B5",( 0.25, 0.25,0)),
-                 ("B6",( 0.25,-0.25,0))),
-    "MALT":     (("B1",(-0.25, 0.25,0)),
-                 ("B2",(-0.25, 0,   0)),
-                 ("B3",(-0.25,-0.25,0)),
-                 ("B4",( 0.25, 0,   0)),
-                 ("B5",( 0.25, 0.25,0)),
-                 ("B6",( 0.25,-0.25,0))),
-    "CELL":     (("B1",(-0.25, 0.25,0)),
-                 ("B2",(-0.25, 0,   0)),
-                 ("B3",(-0.25,-0.25,0)),
-                 ("B4",( 0.25, 0,   0)),
-                 ("B5",( 0.25, 0.25,0)),
-                 ("B6",( 0.25,-0.25,0))),
-    "KOJI":     (("B1",(-0.25, 0.25,0)),
-                 ("B2",(-0.25, 0,   0)),
-                 ("B3",(-0.25,-0.25,0)),
-                 ("B4",( 0.25, 0,   0)),
-                 ("B5",( 0.25, 0.25,0)),
-                 ("B6",( 0.25,-0.25,0))),
-    "SOPH":     (("B1",(-0.25, 0.25,0)),
-                 ("B2",(-0.25, 0,   0)),
-                 ("B3",(-0.25,-0.25,0)),
-                 ("B4",( 0.25, 0,   0)),
-                 ("B5",( 0.25, 0.25,0)),
-                 ("B6",( 0.25,-0.25,0))),
-    "NIGE":     (("B1",(-0.25, 0.25,0)),
-                 ("B2",(-0.25, 0,   0)),
-                 ("B3",(-0.25,-0.25,0)),
-                 ("B4",( 0.25, 0,   0)),
-                 ("B5",( 0.25, 0.25,0)),
-                 ("B6",( 0.25,-0.25,0))),
-    "LAMI":     (("B1",(-0.25, 0.25,0)),
-                 ("B2",(-0.25, 0,   0)),
-                 ("B3",(-0.25,-0.25,0)),
-                 ("B4",( 0.25, 0,   0)),
-                 ("B5",( 0.25, 0.25,0)),
-                 ("B6",( 0.25,-0.25,0))),
-    "TREH":     (("B1",(-0.25, 0.25,0)),
-                 ("B2",(-0.25, 0,   0)),
-                 ("B3",(-0.25,-0.25,0)),
-                 ("B4",( 0.25, 0,   0)),
-                 ("B5",( 0.25, 0.25,0)),
-                 ("B6",( 0.25,-0.25,0))),
-# Loose aminoacids
-    "GLY":      (("BB", ( 0,    0,   0)),),
-    "ALA":      (("BB", ( 0,    0,   0)),),
-    "ASN":      (("BB", ( 0.25, 0,   0)),
-                 ("SC1",(-0.25, 0,   0))), 
-    "ASP":      (("BB", ( 0.25, 0,   0)),
-                 ("SC1",(-0.25, 0,   0))),
-    "GLU":      (("BB", ( 0.25, 0,   0)),
-                 ("SC1",(-0.25, 0,   0))),
-    "GLN":      (("BB", ( 0.25, 0,   0)),
-                 ("SC1",(-0.25, 0,   0))),
-    "LEU":      (("BB", ( 0.25, 0,   0)),
-                 ("SC1",(-0.25, 0,   0))),
-    "ILE":      (("BB", ( 0.25, 0,   0)),
-                 ("SC1",(-0.25, 0,   0))),
-    "VAL":      (("BB", ( 0.25, 0,   0)),
-                 ("SC1",(-0.25, 0,   0))),
-    "SER":      (("BB", ( 0.25, 0,   0)),
-                 ("SC1",(-0.25, 0,   0))),
-    "THR":      (("BB", ( 0.25, 0,   0)),
-                 ("SC1",(-0.25, 0,   0))),
-    "CYS":      (("BB", ( 0.25, 0,   0)),
-                 ("SC1",(-0.25, 0,   0))),
-    "MET":      (("BB", ( 0.25, 0,   0)),
-                 ("SC1",(-0.25, 0,   0))),
-    "LYS":      (("BB", ( 0.25, 0,   0)),
-                 ("SC1",(-0.25, 0,   0))),
-    "PRO":      (("BB", ( 0.25, 0,   0)),
-                 ("SC1",(-0.25, 0,   0))),
-    "HYP":      (("BB", ( 0.25, 0,   0)),
-                 ("SC1",(-0.25, 0,   0))),
-    "ARG":      (("BB", ( 0.25, 0,   0)),
-                 ("SC1",( 0,    0,   0)),
-                 ("SC2",(-0.25, 0.125, 0))),
-    "PHE":      (("BB", ( 0.25, 0,   0)),
-                 ("SC1",( 0,    0,   0)),
-                 ("SC2",(-0.25,-0.125, 0)),
-                 ("SC3",(-0.25, 0.125, 0))),
-    "TYR":      (("BB", ( 0.25, 0,   0)),
-                 ("SC1",( 0,    0,   0)),
-                 ("SC2",(-0.25,-0.125, 0)),
-                 ("SC3",(-0.25, 0.125, 0))),
-    "TRP":      (("BB", ( 0.25, 0.125, 0)),
-                 ("SC1",( 0.25, 0,   0)),
-                 ("SC2",( 0,   -0.125, 0)),
-                 ("SC3",( 0,    0.125, 0)),
-                 ("SC4",(-0.25, 0,     0))),
-    }
-
-# Update the solvents dictionary with single atom ones
-for s in ["W","NA","CL","Mg","K","BUT"]:
-    solventParticles[s] = ((s,(0,0,0)),)
-
-# Apolar amino acids nd stuff for orienting proteins in membrane 
-apolar = "ALA CYS PHE ILE LEU MET VAL TRP PLM CLR".split()
 
 ## PRIVATE PARTS FROM THIS POINT ON ##
 
@@ -468,16 +59,6 @@ S = str
 F = float
 I = int
 R = random.random
-
-def vvadd(a,b):    
-    if type(b) in (int,float):
-        return [i+b for i in a]
-    return [i+j for i,j in zip(a,b)]
-
-def vvsub(a,b):
-    if type(b) in (int,float):
-        return [i-b for i in a]
-    return [i-j for i,j in zip(a,b)]
 
 def mean(a):
     return sum(a)/len(a)
@@ -488,48 +69,40 @@ def isPDBAtom(l):
 def pdbAtom(a):
     ##01234567890123456789012345678901234567890123456789012345678901234567890123456789
     ##ATOM   2155 HH11 ARG C 203     116.140  48.800   6.280  1.00  0.00
-    ## ===>   atom name,   res name,     res id, chain,       x,            y,             z       
+    ## ===>   atom name,   res name,     res id, chain,       x,            y,             z
     return (S(a[12:16]),S(a[17:20]),I(a[22:26]),a[21],F(a[30:38])/10,F(a[38:46])/10,F(a[46:54])/10)
 
 
-# Reformatting of lines in structure file                                     
-pdbBoxLine  = "CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f P 1           1\n"        
+# Reformatting of lines in structure file
+pdbBoxLine  = "CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f P 1           1\n"
 pdbline = "ATOM  %5i  %-3s %4s%1s%4i%1s   %8.3f%8.3f%8.3f%6.2f%6.2f           %1s  \n"
 
-
-def norm2(a):
-    return sum([i*i for i in a])
-
-def norm(a):
-    return math.sqrt(norm2(a))
-
-def cos_angle(a,b):
-    p = sum([i*j for i,j in zip(a,b)])
-    q = math.sqrt(sum([i*i for i in a])*sum([j*j for j in b]))
-    return min(max(-1,p/q),1)
 
 def pdbBoxString(box):
     # Box vectors
     u, v, w  = box
 
     # Box vector lengths
-    nu,nv,nw = [math.sqrt(norm2(i)) for i in (u,v,w)]
+    nu,nv,nw = [math.sqrt(linalg.norm2(i)) for i in (u,v,w)]
 
     # Box vector angles
-    alpha = nv*nw == 0 and 90 or math.acos(cos_angle(v,w))/d2r
-    beta  = nu*nw == 0 and 90 or math.acos(cos_angle(u,w))/d2r
-    gamma = nu*nv == 0 and 90 or math.acos(cos_angle(u,v))/d2r
+    alpha = nv*nw == 0 and 90 or math.acos(linalg.cos_angle(v,w))/d2r
+    beta  = nu*nw == 0 and 90 or math.acos(linalg.cos_angle(u,w))/d2r
+    gamma = nu*nv == 0 and 90 or math.acos(linalg.cos_angle(u,v))/d2r
 
-    return pdbBoxLine % (10*norm(u),10*norm(v),10*norm(w),alpha,beta,gamma)
+    return pdbBoxLine % (10*linalg.norm(u),
+                         10*linalg.norm(v),
+                         10*linalg.norm(w),
+                         alpha,beta,gamma)
 
 
 def groAtom(a):
     #012345678901234567890123456789012345678901234567890
     #    1PRN      N    1   4.168  11.132   5.291
-    ## ===>   atom name,   res name,     res id, chain,       x,          y,          z       
+    ## ===>   atom name,   res name,     res id, chain,       x,          y,          z
     return (S(a[10:15]), S(a[5:10]),   I(a[:5]), " ", F(a[20:28]),F(a[28:36]),F(a[36:44]))
 
-def groBoxRead(a):    
+def groBoxRead(a):
     b = [F(i) for i in a.split()] + 6*[0] # Padding for rectangular boxes
     return b[0],b[3],b[4],b[5],b[1],b[6],b[7],b[8],b[2]
 
@@ -540,7 +113,7 @@ class Structure:
         self.atoms   = []
         self.coord   = []
         self.rest    = []
-        self.box     = []        
+        self.box     = []
         self._center = None
 
         if filename:
@@ -548,7 +121,7 @@ class Structure:
             # Try extracting PDB atom/hetatm definitions
             self.rest   = []
             self.atoms  = [pdbAtom(i) for i in lines if isPDBAtom(i) or self.rest.append(i)]
-            if self.atoms:             
+            if self.atoms:
                 # This must be a PDB file
                 self.title = "THIS IS INSANE!\n"
                 for i in self.rest:
@@ -557,7 +130,7 @@ class Structure:
                 self.box   = [0,0,0,0,0,0,0,0,0]
                 for i in self.rest:
                     if i.startswith("CRYST1"):
-                        self.box = pdbBoxRead(i)                
+                        self.box = pdbBoxRead(i)
             else:
                 # This should be a GRO file
                 self.atoms = [groAtom(i) for i in lines[2:-1]]
@@ -575,16 +148,16 @@ class Structure:
 
     def __iadd__(self,s):
         for i in range(len(self)):
-            self.coord[i] = vvadd(self.coord[i],s)
+            self.coord[i] = linalg.vvadd(self.coord[i],s)
         return self
 
     def center(self,other=None):
         if not self._center:
             self._center = [ sum(i)/len(i) for i in zip(*self.coord)]
         if other:
-            s = vvsub(other,self._center)
+            s = linalg.vvsub(other,self._center)
             for i in range(len(self)):
-                self.coord[i] = vvadd(self.coord[i],s)
+                self.coord[i] = linalg.vvadd(self.coord[i],s)
             self._center = other
             return s # return the shift
         return self._center
@@ -651,7 +224,7 @@ class Structure:
         sx, sy, sz, w = zip(*surface)
         W             = 1.0/sum(w)
 
-        # Weighted center of apolar region; has to go to (0,0,0) 
+        # Weighted center of apolar region; has to go to (0,0,0)
         sxm,sym,szm   = [sum(p)*W
                          for p in zip(*[(m*i,m*j,m*k)
                                         for m,i,j,k in zip(w,sx,sy,sz)])]
@@ -660,8 +233,8 @@ class Structure:
         self.center((-sxm,-sym,-szm))
         sx, sy, sz    = zip(*[(i-sxm,j-sym,k-szm) for i,j,k in zip(sx,sy,sz)])
 
-        # Determine weighted deviations from centers 
-        dx,dy,dz      = zip(*[(m*i,m*j,m*k) for m,i,j,k in zip(w,sx,sy,sz)]) 
+        # Determine weighted deviations from centers
+        dx,dy,dz      = zip(*[(m*i,m*j,m*k) for m,i,j,k in zip(w,sx,sy,sz)])
 
         # Covariance matrix for surface
         xx,yy,zz,xy,yz,zx = [sum(p)*W
@@ -669,7 +242,7 @@ class Structure:
                                             for i,j,k in zip(dx,dy,dz)])]
 
         # PCA: u,v,w are a rotation matrix
-        (ux,uy,uz),(vx,vy,vz),(wx,wy,wz),r = mijn_eigen_sym_3x3(xx,yy,zz,xy,zx,yz)
+        (ux,uy,uz),(vx,vy,vz),(wx,wy,wz),r = linalg.mijn_eigen_sym_3x3(xx,yy,zz,xy,zx,yz)
 
         # Rotate the coordinates
         self.coord = [(ux*i+uy*j+uz*k,vx*i+vy*j+vz*k,wx*i+wy*j+wz*k)
@@ -692,7 +265,7 @@ class Structure:
 
             # The eigenvalues are the roots of the 2nd order
             # characteristic polynomial, with the coefficients
-            # equal to the trace and the determinant of the 
+            # equal to the trace and the determinant of the
             # matrix.
             t,  d  = xx+yy, xx*yy - xy*xy
             # The two eigenvectors form a 2D rotation matrix
@@ -707,8 +280,8 @@ class Structure:
             ux    /=  lu
             uy    /=  lu
 
-            # Finally we rotate the system in the plane by 
-            # matrix multiplication with the transpose of 
+            # Finally we rotate the system in the plane by
+            # matrix multiplication with the transpose of
             # the matrix of eigenvectors
             self.coord = [(ux*i+uy*j,ux*j-uy*i,k) for i,j,k in zip(x,y,z)]
 
@@ -722,18 +295,6 @@ class Structure:
         uy   = math.sin(angle*math.pi/180.)
         self.coord = [(ux*i+uy*j,ux*j-uy*i,k) for i,j,k in self.coord]
 
-
-headbeads = { # Define supported lipid head beads. One letter name mapped to atom name
-"C":  "NC3", # NC3 = Choline
-    "E":  "NH3", # NH3 = Ethanolamine 
-    "G":  "GL0", # GL0 = Glycerol
-    "S":  "CNO", # CNO = Serine
-    "P":  "PO4", # PO4 = Phosphate
-    }
-linkbeads = { # Define supported lipid link beads. One letter name mapped to atom name
-    "G":  "GL",  # Glycerol
-    "A":  "AM",  # Amide (Ceramide/Sphingomyelin)
-}
 
 class Lipid:
     """Lipid structure"""
@@ -757,9 +318,9 @@ class Lipid:
     def parse(self,string):
         """
         Parse lipid definition from string:
-        
+
             alhead=C P, allink=A A, altail=TCC CCCC, alname=DPSM, charge=0.0
-        """        
+        """
         fields = [i.split("=") for i in string.split(',')]
         for what,val in fields:
             what = what.strip()
@@ -784,7 +345,7 @@ class Lipid:
         if not self.coords:
             if self.beads and self.template:
                 stuff = zip(self.beads,self.template)
-                self.coords = [[i,x,y,z] for i,(x,y,z) in stuff if i != "-"]                
+                self.coords = [[i,x,y,z] for i,(x,y,z) in stuff if i != "-"]
             else:
                 # Set beads/structure from head/link/tail
                 # Set bead names
@@ -800,7 +361,7 @@ class Lipid:
                 length = len(self.head)+taillength
 
                 # Add the pseudocoordinates for the head
-                rl     = range(len(self.head))        
+                rl     = range(len(self.head))
                 struc  = [(0,0,length-i) for i in rl]
 
                 # Add the linkers
@@ -881,49 +442,10 @@ def meand(v):
 def ssd(u,v):
     return sum([(i-u[0])*(j-v[0]) for i,j in zip(u,v)])/(len(u)-1)
 
-# Parse a string for a lipid as given on the command line (LIPID[:NUMBER]) 
+# Parse a string for a lipid as given on the command line (LIPID[:NUMBER])
 def parse_mol(x):
     l = x.split(":")
     return l[0], len(l) == 1 and 1 or float(l[1])
-
-## MIJN EIGEN ROUTINE ##
-
-# Quite short piece of code for diagonalizing symmetric 3x3 matrices :)
-
-# Analytic solution for third order polynomial
-def solve_p3( a, b, c ):
-    Q,R,a3 = (3*b-a**2)/9.0, (-27*c+a*(9*b-2*a**2))/54.0, a/3.0
-    if Q**3 + R**2:
-        t,R13 = math.acos(R/math.sqrt(-Q**3))/3, 2*math.sqrt(-Q)
-        u,v,w = math.cos(t), math.sin(t+math.pi/6), math.cos(t+math.pi/3)
-        return R13*u-a3, -R13*v-a3, -R13*w-a3
-    else:
-        R13   = math.sqrt3(R)
-        return 2*R13-a3, -R13-a3, -R13-a3
-
-# Normalization of 3-vector
-def normalize(a):
-    f = 1.0/math.sqrt(a[0]*a[0]+a[1]*a[1]+a[2]*a[2])
-    return f*a[0],f*a[1],f*a[2]
-
-# Eigenvectors for a symmetric 3x3 matrix:
-# For symmetric matrix A the eigenvector v with root r satisfies
-#   v.Aw = Av.w = rv.w = v.rw
-#   v.(A-rI)w = v.Aw - v.rw = 0 for all w
-# This means that for any two vectors p,q the eigenvector v follows from:
-#   (A-rI)p x (A-rI)q
-# The input is var(x),var(y),var(z),cov(x,y),cov(x,z),cov(y,z)
-# The routine has been checked and yields proper eigenvalues/-vectors
-def mijn_eigen_sym_3x3(a,d,f,b,c,e):
-    a,d,f,b,c,e=1,d/a,f/a,b/a,c/a,e/a
-    b2, c2, e2, df = b*b, c*c, e*e, d*f
-    roots = list(solve_p3(-a-d-f, df-b2-c2-e2+a*(f+d), a*e2+d*c2+f*b2-a*df-2*b*c*e))
-    roots.sort(reverse=True)
-    ux, uy, uz = b*e-c*d, b*c-a*e, a*d-b*b
-    u = (ux+roots[0]*c,uy+roots[0]*e,uz+roots[0]*(roots[0]-a-d))
-    v = (ux+roots[1]*c,uy+roots[1]*e,uz+roots[1]*(roots[1]-a-d))
-    w = u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0] # Cross product
-    return normalize(u),normalize(v),normalize(w),roots
 
 
 # Very simple option class
@@ -933,7 +455,7 @@ class Option:
         self.num         = num
         self.value       = default
         self.description = description
-    def __nonzero__(self): 
+    def __nonzero__(self):
         return self.value != None
     def __str__(self):
         return self.value and str(self.value) or ""
@@ -972,7 +494,7 @@ def old_main(argv, OPTS):
         ("-o",      Option(str,         1,        None, "Output GRO file: Membrane with Protein")),
         ("-p",      Option(str,         1,        None, "Optional rudimentary topology file")),
         """
-    Periodic boundary conditions 
+    Periodic boundary conditions
     If -d is given, set up PBC according to -pbc such that no periodic
     images are closer than the value given.  This will make the numbers
     provided for lipids be interpreted as relative numbers. If -d is
@@ -988,7 +510,7 @@ def old_main(argv, OPTS):
         ("-box",    Option(box3d,       1,        None, "Box in GRO (3 or 9 floats) or PDB (6 floats) format, comma separated")),
         ("-n",      Option(str,         1,        None, "Index file --- TO BE IMPLEMENTED")),
         """
-    Membrane/lipid related options.  
+    Membrane/lipid related options.
     The options -l and -u can be given multiple times. Option -u can be
     used to set the lipid type and abundance for the upper leaflet. Option
     -l sets the type and abundance for the lower leaflet if option -u is
@@ -1059,13 +581,13 @@ def old_main(argv, OPTS):
         ar = args.pop(0)
         options[ar].setvalue([args.pop(0) for i in range(options[ar].num)])
 
-    
+
     ## end of options
 
 
-    # Read in the structures (if any)    
+    # Read in the structures (if any)
     tm    = [ Structure(i) for i in OPTS.solute ]
-    
+
 
     ## I. STRUCTURES
 
@@ -1079,7 +601,7 @@ def old_main(argv, OPTS):
     # lipid_list = lipids.get_list()
     # lipid_list.add_from_file(*OPTS.mollist)
     # lipid_list.add_from_def(*zip(OPTS.lipnames,OPTS.lipheads,OPTS.liplinks,OPTS.liptails,OPTS.lipcharge))
-    
+
 
     # First add internal lipids
     for name,lip in lipidsa.items():
@@ -1124,7 +646,7 @@ def old_main(argv, OPTS):
     if options["-pbc"].value == "keep" and tm:
         options["-x"].value = tm[0].box[:3]
         options["-y"].value = tm[0].box[3:6]
-        options["-z"].value = tm[0].box[6:]    
+        options["-z"].value = tm[0].box[6:]
 
     # options -x, -y, -z take precedence over automatic determination
     pbcSetX = 0
@@ -1150,7 +672,7 @@ def old_main(argv, OPTS):
     if options["-au"].value:
         up_lipd = math.sqrt(options["-au"].value)
     else:
-        up_lipd = lo_lipd 
+        up_lipd = lo_lipd
 
 
     ################
@@ -1179,11 +701,11 @@ def old_main(argv, OPTS):
             # Hexagonal prism -- y derived from x directly
             pbcy = math.sqrt(3)*pbcx/2
             pbcz = options["-dz"].value or options["-z"].value or options["-d"].value
-        elif "optimal".startswith(options["-pbc"].value): 
+        elif "optimal".startswith(options["-pbc"].value):
             # Rhombic dodecahedron with hexagonal XY plane
             pbcy = math.sqrt(3)*pbcx/2
             pbcz = math.sqrt(6)*options["-d"].value/3
-        if "rectangular".startswith(options["-pbc"].value): 
+        if "rectangular".startswith(options["-pbc"].value):
             pbcz = options["-dz"].value or options["-z"].value or options["-d"].value
 
         # Possibly override
@@ -1207,8 +729,8 @@ def old_main(argv, OPTS):
                 # Set PBC starting from diameter and adding distance
                 if "cubic".startswith(options["-pbc"].value):
                     pbcx = pbcy = pbcz = prot.diam()+options["-d"].value
-                elif "rectangular".startswith(options["-pbc"].value):                
-                    pbcx, pbcy, pbcz = vvadd(vvsub(prot.fun(max),prot.fun(min)),options["-d"].value)
+                elif "rectangular".startswith(options["-pbc"].value):
+                    pbcx, pbcy, pbcz = linalg.vvadd(linalg.vvsub(prot.fun(max),prot.fun(min)),options["-d"].value)
                 else:
                     # Rhombic dodecahedron
                     pbcx = pbcy = prot.diam()+options["-d"].value
@@ -1230,7 +752,7 @@ def old_main(argv, OPTS):
             ## b. PROTEIN AND MEMBRANE --
             else:
 
-                # Have to build a membrane around the protein. 
+                # Have to build a membrane around the protein.
                 # So first put the protein in properly.
 
                 # Center the protein and store the shift
@@ -1245,7 +767,7 @@ def old_main(argv, OPTS):
                     pw = options["-op"].value
 
                     prot.orient(d, pw)
-                    
+
                 ## 4. Orient the protein in the xy-plane
                 ## i. According to principal axes and unit cell
                 if options["-rotate"].value == "princ":
@@ -1258,7 +780,7 @@ def old_main(argv, OPTS):
                 elif options["-rotate"]:
                     prot.rotate_degrees(float(options["-rotate"].value))
 
-                ## 5. Determine the minimum and maximum x and y of the protein 
+                ## 5. Determine the minimum and maximum x and y of the protein
                 pmin, pmax = prot.fun(min), prot.fun(max)
                 prng       = (pmax[0]-pmin[0],pmax[1]-pmin[1],pmax[2]-pmin[2])
                 center     = (0.5*(pmin[0]+pmax[0]),0.5*(pmin[1]+pmax[1]))
@@ -1284,7 +806,7 @@ def old_main(argv, OPTS):
                 ## 6. Set box (brick) dimensions
                 if options["-disc"]:
                     pbcx = options["-d"].value + 2*options["-disc"].value
-                    if ("square".startswith(options["-pbc"].value) or 
+                    if ("square".startswith(options["-pbc"].value) or
                         "rectangular".startswith(options["-pbc"].value)):
                         pbcy = pbcx
                     else:
@@ -1305,7 +827,7 @@ def old_main(argv, OPTS):
                 # If we need to add a hole, we have to scale the system
                 # The scaling depends on the type of PBC
                 if options["-hole"]:
-                    if ("square".startswith(options["-pbc"].value) or 
+                    if ("square".startswith(options["-pbc"].value) or
                         "rectangular".startswith(options["-pbc"].value)):
                         scale = 1+options["-hole"].value/min(pbcx,pbcy)
                     else:
@@ -1324,10 +846,10 @@ def old_main(argv, OPTS):
                 if options["-dm"]:
                     if options["-dm"].value < 0:
                         zshift += options["-dm"].value # - max(zip(*prot.coord)[2])
-                    else:                        
+                    else:
                         zshift += options["-dm"].value # - min(zip(*prot.coord)[2])
 
-                # Now we center the system in the rectangular 
+                # Now we center the system in the rectangular
                 # brick corresponding to the unit cell
                 # If -center is given, also center z in plane
                 prot += (0.5*pbcx, 0.5*pbcy, zshift)
@@ -1396,7 +918,7 @@ def old_main(argv, OPTS):
 
         lipd = lo_lipd
 
-        # Number of lipids in x and y in lower leaflet if there were no solute 
+        # Number of lipids in x and y in lower leaflet if there were no solute
         lo_lipids_x = int(pbcx/lipd+0.5)
         lo_lipdx    = pbcx/lo_lipids_x
         lo_rlipx    = range(lo_lipids_x)
@@ -1407,7 +929,7 @@ def old_main(argv, OPTS):
         if options["-au"]:
             lipd = up_lipd
 
-        # Number of lipids in x and y in upper leaflet if there were no solute 
+        # Number of lipids in x and y in upper leaflet if there were no solute
         up_lipids_x = int(pbcx/lipd+0.5)
         up_lipdx    = pbcx/up_lipids_x
         up_rlipx    = range(up_lipids_x)
@@ -1423,9 +945,9 @@ def old_main(argv, OPTS):
         # If there is a protein, mark the corresponding cells as occupied
         if protein:
             # Calculate number density per cell
-            for i in prot_lo: 
+            for i in prot_lo:
                 grid_lo[ int(lo_lipids_x*i[0]/rx)%lo_lipids_x ][ int(lo_lipids_y*i[1]/ry)%lo_lipids_y ] += 1
-            for i in prot_up: 
+            for i in prot_up:
                 grid_up[ int(up_lipids_x*i[0]/rx)%up_lipids_x ][ int(up_lipids_y*i[1]/ry)%up_lipids_y ] += 1
 
 
@@ -1473,11 +995,11 @@ def old_main(argv, OPTS):
                         grid_lo[ii][jj] = False
 
 
-        # If we make a circular patch, we flag the cells further from the 
+        # If we make a circular patch, we flag the cells further from the
         # protein or box center than the given radius as occupied.
         if options["-disc"]:
             if protein:
-                cx,cy = protein.center()[:2]            
+                cx,cy = protein.center()[:2]
             else:
                 cx,cy = 0.5*pbcx, 0.5*pbcy
             for i in range(len(grid_lo)):
@@ -1492,12 +1014,12 @@ def old_main(argv, OPTS):
 
         # If we need to add a hole, we simply flag the corresponding cells
         # as occupied. The position of the hole depends on the type of PBC,
-        # to ensure an optimal arrangement of holes around the protein. If 
+        # to ensure an optimal arrangement of holes around the protein. If
         # there is no protein, the hole is just put in the center.
         if options["-hole"]:
             # Lower leaflet
             if protein:
-                if ("square".startswith(options["-pbc"].value) or 
+                if ("square".startswith(options["-pbc"].value) or
                     "rectangular".startswith(options["-pbc"].value)):
                     hx,hy = (0,0)
                 else:
@@ -1526,7 +1048,7 @@ def old_main(argv, OPTS):
                         grid_up[xi][yj] = False
             # Upper leaflet
             if protein:
-                if ("square".startswith(options["-pbc"].value) or 
+                if ("square".startswith(options["-pbc"].value) or
                     "rectangular".startswith(options["-pbc"].value)):
                     hx,hy = (0,0)
                 else:
@@ -1620,7 +1142,7 @@ def old_main(argv, OPTS):
                 #atoms    = zip(lipidsa[lipid][1].split(),lipidsx[lipidsa[lipid][0]],lipidsy[lipidsa[lipid][0]],lipidsz[lipidsa[lipid][0]])
                 # Only keep atoms appropriate for the lipid
                 #at,ax,ay,az = zip(*[i for i in atoms if i[0] != "-"])
-                at,ax,ay,az = zip(*liplist[lipid].build(diam=lipd)) 
+                at,ax,ay,az = zip(*liplist[lipid].build(diam=lipd))
                 # The z-coordinates are spaced at 0.3 nm,
                 # starting with the first bead at 0.15 nm
                 az       = [ leaflet*(0.5+(i-min(az)))*options["-bd"].value for i in az ]
@@ -1652,17 +1174,17 @@ def old_main(argv, OPTS):
     mcharge = 0
     for j in membrane.atoms:
         if not j[0].strip().startswith('v') and j[1:3] != last:
-            mcharge += charges.get(j[1].strip(),0)  
+            mcharge += charges.get(j[1].strip(),0)
         last = j[1:3]
 
     last = None
     pcharge = 0
     for j in protein.atoms:
         if not j[0].strip().startswith('v') and j[1:3] != last:
-            pcharge += charges.get(j[1].strip(),0)  
+            pcharge += charges.get(j[1].strip(),0)
         last = j[1:3]
 
-    #mcharge = sum([charges.get(i[0].strip(),0) for i in set([j[1:3] for j in membrane.atoms])]) 
+    #mcharge = sum([charges.get(i[0].strip(),0) for i in set([j[1:3] for j in membrane.atoms])])
     #pcharge = sum([charges.get(i[0].strip(),0) for i in set([j[1:3] for j in protein.atoms if not j[0].strip().startswith('v')])])
 
     charge  = mcharge + pcharge
@@ -1718,21 +1240,21 @@ def old_main(argv, OPTS):
                     x += box[2][0]
                     y += box[2][1]
                     z += box[2][2]
-                if y >= pbcy: 
+                if y >= pbcy:
                     x -= box[1][0]
                     y -= box[1][1]
-                if y < 0: 
+                if y < 0:
                     x += box[1][0]
                     y += box[1][1]
-                if x >= pbcx: 
+                if x >= pbcx:
                     x -= box[0][0]
-                if x < 0: 
+                if x < 0:
                     x += box[0][0]
                 grid[int(nx*x/rx)][int(ny*y/ry)][int(nz*z/rz)] = False
 
         # Set the center for each solvent molecule
         kick = options["-solr"].value
-        grid = [ (R(),(i+0.5+R()*kick)*dx,(j+0.5+R()*kick)*dy,(k+0.5+R()*kick)*dz) 
+        grid = [ (R(),(i+0.5+R()*kick)*dx,(j+0.5+R()*kick)*dy,(k+0.5+R()*kick)*dz)
                  for i in xrange(nx) for j in xrange(ny) for k in xrange(nz) if grid[i][j][k] ]
 
         # Sort on the random number
@@ -1800,20 +1322,20 @@ def old_main(argv, OPTS):
         for resn,(rndm,x,y,z) in solvent:
             resi += 1
             solmol = solventParticles.get(resn)
-            if solmol and len(solmol) > 1:       
+            if solmol and len(solmol) > 1:
                 # Random rotation (quaternion)
                 u,  v,  w       = random.random(), 2*math.pi*random.random(), 2*math.pi*random.random()
                 s,  t           = math.sqrt(1-u), math.sqrt(u)
                 qw, qx, qy, qz  = s*math.sin(v), s*math.cos(v), t*math.sin(w), t*math.cos(w)
-                qq              = qw*qw-qx*qx-qy*qy-qz*qz         
-                for atnm,(px,py,pz) in solmol:                
+                qq              = qw*qw-qx*qx-qy*qy-qz*qz
+                for atnm,(px,py,pz) in solmol:
                     qp = 2*(qx*px + qy*py + qz*pz)
                     rx = x + qp*qx + qq*px + qw*(qy*pz-qz*py)
                     ry = y + qp*qy + qq*py + qw*(qz*px-qx*pz)
                     rz = z + qp*qz + qq*pz + qw*(qx*py-qy*px)
                     sol.append(("%5d%-5s%5s%5d"%(resi%1e5,resn,atnm,atid%1e5),(rx,ry,rz)))
                     atid += 1
-            else:          
+            else:
                 sol.append(("%5d%-5s%5s%5d"%(resi%1e5,resn,solmol and solmol[0][0] or resn,atid%1e5),(x,y,z)))
                 atid += 1
     else:
