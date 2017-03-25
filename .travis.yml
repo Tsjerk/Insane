@@ -1,0 +1,32 @@
+language: python
+env:
+    matrix:
+        - BUILD="test"
+        - BUILD="package"
+install:
+    - |
+        if [[ $BUILD == 'test' ]]; \
+        then \
+        git clone https://github.com/Tsjerk/simopt.git && pip install ./simopt; \
+        fi
+    - |
+        if [[ $BUILD == 'test' ]]; \
+        then \
+        pip install ./ ; \
+        fi
+    - |
+        if [[ $BUILD == 'test' ]]; \
+        then \
+        pip install nose; \
+        fi
+script:
+    - |
+        if [[ $BUILD == 'test' ]]; \
+        then \
+        cd tests && nosetests -v; \
+        fi
+    - |
+        if [[ $BUILD == 'package' ]]; \
+        then \
+        cd maintainers && ./zippackage.sh && ./insane -h; \
+        fi
