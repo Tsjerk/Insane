@@ -104,13 +104,7 @@ OPTIONS = simopt.Options([
 
 
 def main(argv):
-
-    exit_code =0
-
     ## TEMPORARY ---
-    # Exception is defined in option parser (simopt)
-    class OptionParseException(BaseException): pass
-
     # Exception to be defined in insane
     class InsaneBuildException(BaseException): pass
     ## <---
@@ -119,16 +113,19 @@ def main(argv):
     # Parse options
     try:
         options = OPTIONS.parse(argv[1:])
-    except OptionParseException as e:
+    except simopt.SimoptHelp:
+        print(OPTIONS.help(argv[1:]))
+        return 0
+    except simopt.Usage as e:
         print(e)
-        exit_code = 1
+        return 1
 
     ## WORK
     try:
         system = core.insane(**options)
     except InsaneBuildException as e:
         print(e)
-        exit_code = 2
+        return 2
 
     ## OUTPUT
     # Build atom list
@@ -138,7 +135,7 @@ def main(argv):
 
     core.old_main(argv, options)
 
-    return exit_code
+    return 0
 
 
 def cli():
