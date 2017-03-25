@@ -23,8 +23,8 @@ from .constants import d2r
 
 # These functions are not to stay here... -TAW
 def vector(v):
-    if type(v) == str and "," in v:
-        return [float(i) for i in v.split(",")]
+    if type(v) == str and ", " in v:
+        return [float(i) for i in v.split(", ")]
     return float(v)
 
 
@@ -39,8 +39,8 @@ def pdbBoxRead(a):
 
 
 def box3d(a):
-    x = [ float(i) for i in a.split(",") ] + 6*[0]
+    x = [ float(i) for i in a.split(", ") ] + 6*[0]
     if len(x) == 12: # PDB format
         return pdbBoxRead("CRYST1 "+" ".join([str(i) for i in x]))
     else:            # GRO format
-        return x[0],x[3],x[4],x[5],x[1],x[6],x[7],x[8],x[2]
+        return x[0], x[3], x[4], x[5], x[1], x[6], x[7], x[8], x[2]

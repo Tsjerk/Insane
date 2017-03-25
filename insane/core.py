@@ -70,7 +70,7 @@ def pdbAtom(a):
     ##01234567890123456789012345678901234567890123456789012345678901234567890123456789
     ##ATOM   2155 HH11 ARG C 203     116.140  48.800   6.280  1.00  0.00
     ## ===>   atom name,   res name,     res id, chain,       x,            y,             z
-    return (S(a[12:16]),S(a[17:20]),I(a[22:26]),a[21],F(a[30:38])/10,F(a[38:46])/10,F(a[46:54])/10)
+    return (S(a[12:16]), S(a[17:20]), I(a[22:26]), a[21], F(a[30:38])/10, F(a[38:46])/10, F(a[46:54])/10)
 
 
 # Reformatting of lines in structure file
@@ -83,32 +83,32 @@ def pdbBoxString(box):
     u, v, w  = box
 
     # Box vector lengths
-    nu,nv,nw = [math.sqrt(linalg.norm2(i)) for i in (u,v,w)]
+    nu, nv, nw = [math.sqrt(linalg.norm2(i)) for i in (u, v, w)]
 
     # Box vector angles
-    alpha = nv*nw == 0 and 90 or math.acos(linalg.cos_angle(v,w))/d2r
-    beta  = nu*nw == 0 and 90 or math.acos(linalg.cos_angle(u,w))/d2r
-    gamma = nu*nv == 0 and 90 or math.acos(linalg.cos_angle(u,v))/d2r
+    alpha = nv*nw == 0 and 90 or math.acos(linalg.cos_angle(v, w))/d2r
+    beta  = nu*nw == 0 and 90 or math.acos(linalg.cos_angle(u, w))/d2r
+    gamma = nu*nv == 0 and 90 or math.acos(linalg.cos_angle(u, v))/d2r
 
     return pdbBoxLine % (10*linalg.norm(u),
                          10*linalg.norm(v),
                          10*linalg.norm(w),
-                         alpha,beta,gamma)
+                         alpha, beta, gamma)
 
 
 def groAtom(a):
     #012345678901234567890123456789012345678901234567890
     #    1PRN      N    1   4.168  11.132   5.291
     ## ===>   atom name,   res name,     res id, chain,       x,          y,          z
-    return (S(a[10:15]), S(a[5:10]),   I(a[:5]), " ", F(a[20:28]),F(a[28:36]),F(a[36:44]))
+    return (S(a[10:15]), S(a[5:10]),   I(a[:5]), " ", F(a[20:28]), F(a[28:36]), F(a[36:44]))
 
 def groBoxRead(a):
     b = [F(i) for i in a.split()] + 6*[0] # Padding for rectangular boxes
-    return b[0],b[3],b[4],b[5],b[1],b[6],b[7],b[8],b[2]
+    return b[0], b[3], b[4], b[5], b[1], b[6], b[7], b[8], b[2]
 
 
 class Structure:
-    def __init__(self,filename=None):
+    def __init__(self, filename=None):
         self.title   = ""
         self.atoms   = []
         self.coord   = []
@@ -127,14 +127,14 @@ class Structure:
                 for i in self.rest:
                     if i.startswith("TITLE"):
                         self.title = i
-                self.box   = [0,0,0,0,0,0,0,0,0]
+                self.box   = [0, 0, 0, 0, 0, 0, 0, 0, 0]
                 for i in self.rest:
                     if i.startswith("CRYST1"):
                         self.box = pdbBoxRead(i)
             else:
                 # This should be a GRO file
                 self.atoms = [groAtom(i) for i in lines[2:-1]]
-                self.rest  = [lines[0],lines[1],lines[-1]]
+                self.rest  = [lines[0], lines[1], lines[-1]]
                 self.box   = groBoxRead(lines[-1])
                 self.title = lines[0]
             self.coord = [i[4:7] for i in self.atoms]
@@ -146,42 +146,42 @@ class Structure:
     def __len__(self):
         return len(self.atoms)
 
-    def __iadd__(self,s):
+    def __iadd__(self, s):
         for i in range(len(self)):
-            self.coord[i] = linalg.vvadd(self.coord[i],s)
+            self.coord[i] = linalg.vvadd(self.coord[i], s)
         return self
 
-    def center(self,other=None):
+    def center(self, other=None):
         if not self._center:
             self._center = [ sum(i)/len(i) for i in zip(*self.coord)]
         if other:
-            s = linalg.vvsub(other,self._center)
+            s = linalg.vvsub(other, self._center)
             for i in range(len(self)):
-                self.coord[i] = linalg.vvadd(self.coord[i],s)
+                self.coord[i] = linalg.vvadd(self.coord[i], s)
             self._center = other
             return s # return the shift
         return self._center
 
     def diam(self):
-        if self._center != (0,0,0):
-            self.center((0,0,0))
-        return 2*math.sqrt(max([i*i+j*j+k*k for i,j,k in self.coord]))
+        if self._center != (0, 0, 0):
+            self.center((0, 0, 0))
+        return 2*math.sqrt(max([i*i+j*j+k*k for i, j, k in self.coord]))
 
     def diamxy(self):
-        if self._center != (0,0,0):
-            self.center((0,0,0))
-        return 2*math.sqrt(max([i*i+j*j for i,j,k in self.coord]))
+        if self._center != (0, 0, 0):
+            self.center((0, 0, 0))
+        return 2*math.sqrt(max([i*i+j*j for i, j, k in self.coord]))
 
-    def fun(self,fn):
+    def fun(self, fn):
         return [fn(i) for i in zip(*self.coord)]
 
     def orient(self, d, pw):
         # Determine grid size
-        mx,my,mz = self.fun(min)
-        rx,ry,rz = self.fun(lambda x: max(x)-min(x)+1e-8)
+        mx, my, mz = self.fun(min)
+        rx, ry, rz = self.fun(lambda x: max(x)-min(x)+1e-8)
 
         # Number of grid cells
-        nx,ny,nz = int(rx/d+0.5),int(ry/d+0.5),int(rz/d+0.5)
+        nx, ny, nz = int(rx/d+0.5), int(ry/d+0.5), int(rz/d+0.5)
 
         # Initialize grids
         atom     = [[[0 for i in range(nz+2)]
@@ -201,7 +201,7 @@ class Structure:
         occupd = sum([bool(k) for i in atom for j in i for k in j])
         avdens = float(sum([sum(j) for i in atom for j in i]))/occupd
 
-        #cgofile  = open('density.cgo',"w")
+        #cgofile  = open('density.cgo', "w")
         #cgofile.write('[\n')
         for i in range(nx):
             for j in range(ny):
@@ -216,37 +216,37 @@ class Structure:
                                           my+ry*(j+0.5)/ny,
                                           mz+rz*(k+0.5)/nz)
                             sw       = (2.0*phobic[i][j][k]/atom[i][j][k])**pw
-                            surface.append((sx,sy,sz,sw))
-                            #cgofile.write("    7.0, %f, %f, %f, %f,\n"%(10*sx,10*sy,10*sz,0.25*sw))
+                            surface.append((sx, sy, sz, sw))
+                            #cgofile.write("    7.0, %f, %f, %f, %f, \n"%(10*sx, 10*sy, 10*sz, 0.25*sw))
         #cgofile.write(']\n')
         #cgofile.close()
 
         sx, sy, sz, w = zip(*surface)
         W             = 1.0/sum(w)
 
-        # Weighted center of apolar region; has to go to (0,0,0)
-        sxm,sym,szm   = [sum(p)*W
-                         for p in zip(*[(m*i,m*j,m*k)
-                                        for m,i,j,k in zip(w,sx,sy,sz)])]
+        # Weighted center of apolar region; has to go to (0, 0, 0)
+        sxm, sym, szm   = [sum(p)*W
+                         for p in zip(*[(m*i, m*j, m*k)
+                                        for m, i, j, k in zip(w, sx, sy, sz)])]
 
         # Place apolar center at origin
-        self.center((-sxm,-sym,-szm))
-        sx, sy, sz    = zip(*[(i-sxm,j-sym,k-szm) for i,j,k in zip(sx,sy,sz)])
+        self.center((-sxm, -sym, -szm))
+        sx, sy, sz    = zip(*[(i-sxm, j-sym, k-szm) for i, j, k in zip(sx, sy, sz)])
 
         # Determine weighted deviations from centers
-        dx,dy,dz      = zip(*[(m*i,m*j,m*k) for m,i,j,k in zip(w,sx,sy,sz)])
+        dx, dy, dz      = zip(*[(m*i, m*j, m*k) for m, i, j, k in zip(w, sx, sy, sz)])
 
         # Covariance matrix for surface
-        xx,yy,zz,xy,yz,zx = [sum(p)*W
-                             for p in zip(*[(i*i,j*j,k*k,i*j,j*k,k*i)
-                                            for i,j,k in zip(dx,dy,dz)])]
+        xx, yy, zz, xy, yz, zx = [sum(p)*W
+                             for p in zip(*[(i*i, j*j, k*k, i*j, j*k, k*i)
+                                            for i, j, k in zip(dx, dy, dz)])]
 
-        # PCA: u,v,w are a rotation matrix
-        (ux,uy,uz),(vx,vy,vz),(wx,wy,wz),r = linalg.mijn_eigen_sym_3x3(xx,yy,zz,xy,zx,yz)
+        # PCA: u, v, w are a rotation matrix
+        (ux, uy, uz), (vx, vy, vz), (wx, wy, wz), r = linalg.mijn_eigen_sym_3x3(xx, yy, zz, xy, zx, yz)
 
         # Rotate the coordinates
-        self.coord = [(ux*i+uy*j+uz*k,vx*i+vy*j+vz*k,wx*i+wy*j+wz*k)
-                      for i,j,k in self.coord]
+        self.coord = [(ux*i+uy*j+uz*k, vx*i+vy*j+vz*k, wx*i+wy*j+wz*k)
+                      for i, j, k in self.coord]
 
     def rotate_princ(self):
         x, y, z = zip(*self.coord)
@@ -258,10 +258,10 @@ class Structure:
         # d_i     = x_i - x_0
         # mean(x) = x_0 + sum(d_i)/N =
         # var(x)  = sum((d_i - mean(d))**2)/(N-1)
-        xy        = ssd(x,y)
+        xy        = ssd(x, y)
         if xy != 0:
-            xx     = ssd(x,x)
-            yy     = ssd(y,y)
+            xx     = ssd(x, x)
+            yy     = ssd(y, y)
 
             # The eigenvalues are the roots of the 2nd order
             # characteristic polynomial, with the coefficients
@@ -269,7 +269,7 @@ class Structure:
             # matrix.
             t,  d  = xx+yy, xx*yy - xy*xy
             # The two eigenvectors form a 2D rotation matrix
-            # R = ((cos,sin),(-sin,cos)), which means that
+            # R = ((cos, sin), (-sin, cos)), which means that
             # the second eigenvector follows directly from
             # the first. We thus only need to determine one.
             l1     = t/2 + math.sqrt(0.25*t*t-d)
@@ -283,23 +283,23 @@ class Structure:
             # Finally we rotate the system in the plane by
             # matrix multiplication with the transpose of
             # the matrix of eigenvectors
-            self.coord = [(ux*i+uy*j,ux*j-uy*i,k) for i,j,k in zip(x,y,z)]
+            self.coord = [(ux*i+uy*j, ux*j-uy*i, k) for i, j, k in zip(x, y, z)]
 
     def rotate_random(self):
         ux   = math.cos(R()*2*math.pi)
         uy   = math.sqrt(1-ux*ux)
-        self.coord = [(ux*i+uy*j,ux*j-uy*i,k) for i,j,k in self.coord]
+        self.coord = [(ux*i+uy*j, ux*j-uy*i, k) for i, j, k in self.coord]
 
     def rotate_degrees(self, angle):
         ux   = math.cos(angle*math.pi/180.)
         uy   = math.sin(angle*math.pi/180.)
-        self.coord = [(ux*i+uy*j,ux*j-uy*i,k) for i,j,k in self.coord]
+        self.coord = [(ux*i+uy*j, ux*j-uy*i, k) for i, j, k in self.coord]
 
 
 class Lipid:
     """Lipid structure"""
 
-    def __init__(self,**kwargs):
+    def __init__(self, **kwargs):
         self.name      = kwargs.get("name")
         self.head      = kwargs.get("head")
         self.link      = kwargs.get("link")
@@ -310,19 +310,19 @@ class Lipid:
         self.charge    = kwargs.get("charge")
         self.template  = kwargs.get("template")
         self.area      = kwargs.get("area")
-        self.diam      = kwargs.get("diam",math.sqrt(kwargs.get("area",0)))
+        self.diam      = kwargs.get("diam", math.sqrt(kwargs.get("area", 0)))
         self.coords    = None
         if kwargs.get("string"):
             self.parse(kwargs["string"])
 
-    def parse(self,string):
+    def parse(self, string):
         """
         Parse lipid definition from string:
 
             alhead=C P, allink=A A, altail=TCC CCCC, alname=DPSM, charge=0.0
         """
-        fields = [i.split("=") for i in string.split(',')]
-        for what,val in fields:
+        fields = [i.split("=") for i in string.split(', ')]
+        for what, val in fields:
             what = what.strip()
             val  = val.split()
             if what.endswith("head"):
@@ -339,13 +339,13 @@ class Lipid:
             # Infer charge from head groups
             self.charge = sum([headgroup_charges[bead] for bead in self.head])
 
-    def build(self,**kwargs):
-        """Build/return a list of [(bead,x,y,z),...]"""
+    def build(self, **kwargs):
+        """Build/return a list of [(bead, x, y, z), ...]"""
 
         if not self.coords:
             if self.beads and self.template:
-                stuff = zip(self.beads,self.template)
-                self.coords = [[i,x,y,z] for i,(x,y,z) in stuff if i != "-"]
+                stuff = zip(self.beads, self.template)
+                self.coords = [[i, x, y, z] for i, (x, y, z) in stuff if i != "-"]
             else:
                 # Set beads/structure from head/link/tail
                 # Set bead names
@@ -353,34 +353,34 @@ class Lipid:
                     beads = list(self.beads)
                 else:
                     beads = [ headbeads[i] for i in self.head ]
-                    beads.extend([ linkbeads[n]+str(i+1) for i,n in enumerate(self.link)])
-                    for i,t in enumerate(self.tail):
-                        beads.extend([n+chr(65+i)+str(j+1) for j,n in enumerate(t)])
+                    beads.extend([ linkbeads[n]+str(i+1) for i, n in enumerate(self.link)])
+                    for i, t in enumerate(self.tail):
+                        beads.extend([n+chr(65+i)+str(j+1) for j, n in enumerate(t)])
 
                 taillength = max([0]+[len(i) for i in self.tail])
                 length = len(self.head)+taillength
 
                 # Add the pseudocoordinates for the head
                 rl     = range(len(self.head))
-                struc  = [(0,0,length-i) for i in rl]
+                struc  = [(0, 0, length-i) for i in rl]
 
                 # Add the linkers
                 rl     = range(len(self.link))
-                struc.extend([(i%2,i/2,taillength) for i in rl ])
+                struc.extend([(i%2, i/2, taillength) for i in rl ])
 
                 # Add the tails
-                for j,tail in enumerate(self.tail):
+                for j, tail in enumerate(self.tail):
                     rl = range(len(tail))
-                    struc.extend([(j%2,j/2,taillength-1-i) for i in rl])
+                    struc.extend([(j%2, j/2, taillength-1-i) for i in rl])
 
-                mx,my,mz = [ (max(i)+min(i))/2 for i in zip(*struc) ]
-                self.coords = [[i,0.25*(x-mx),0.25*(y-my),z] for i,(x,y,z) in zip(beads,struc)]
+                mx, my, mz = [ (max(i)+min(i))/2 for i in zip(*struc) ]
+                self.coords = [[i, 0.25*(x-mx), 0.25*(y-my), z] for i, (x, y, z) in zip(beads, struc)]
 
         # Scale the x/y based on the lipid's APL - diameter is less than sqrt(APL)
-        diam   = kwargs.get("diam",self.diam)
+        diam   = kwargs.get("diam", self.diam)
         radius = diam*0.45
-        minmax = [ (min(i),max(i)) for i in zip(*self.coords)[1:] ]
-        mx,my,mz = [ sum(i)/2. for i in minmax ]
+        minmax = [ (min(i), max(i)) for i in zip(*self.coords)[1:] ]
+        mx, my, mz = [ sum(i)/2. for i in minmax ]
         scale  = radius/math.sqrt((minmax[0][0]-mx)**2 + (minmax[1][0]-my)**2)
 
         for i in self.coords:
@@ -391,16 +391,16 @@ class Lipid:
         return self.coords
 
 
-    def h(self,head):
-        self.head = head.replace("."," ").split()
+    def h(self, head):
+        self.head = head.replace(".", " ").split()
 
-    def l(self,link):
-        self.link = link.replace("."," ").split()
+    def l(self, link):
+        self.link = link.replace(".", " ").split()
 
-    def t(self,tail):
-        self.tail = tail.replace("."," ").split()
+    def t(self, tail):
+        self.tail = tail.replace(".", " ").split()
 
-    def c(self,charge):
+    def c(self, charge):
         self.charge = float(charge)
 
 
@@ -411,7 +411,7 @@ class Lipid_List(collections.MutableMapping):
         self.store = dict()
         self.last  = None
 
-    def __getitem__(self,key):
+    def __getitem__(self, key):
         if key == -1:
             return self.last
         return self.store[key]
@@ -428,8 +428,8 @@ class Lipid_List(collections.MutableMapping):
     def __len__(self):
         return len(self.store)
 
-    def add(self,name=None,string=None):
-        lip = Lipid(name=name,string=string)
+    def add(self, name=None, string=None):
+        lip = Lipid(name=name, string=string)
         self.store[lip.name] = lip
         self.last = lip.name
 
@@ -439,8 +439,8 @@ def meand(v):
     return sum([i-v[0] for i in v])/len(v)
 
 # Sum of squares/crossproducts of deviations
-def ssd(u,v):
-    return sum([(i-u[0])*(j-v[0]) for i,j in zip(u,v)])/(len(u)-1)
+def ssd(u, v):
+    return sum([(i-u[0])*(j-v[0]) for i, j in zip(u, v)])/(len(u)-1)
 
 # Parse a string for a lipid as given on the command line (LIPID[:NUMBER])
 def parse_mol(x):
@@ -450,7 +450,7 @@ def parse_mol(x):
 
 # Very simple option class
 class Option:
-    def __init__(self,func=str,num=1,default=None,description=""):
+    def __init__(self, func=str, num=1, default=None, description=""):
         self.func        = func
         self.num         = num
         self.value       = default
@@ -459,7 +459,7 @@ class Option:
         return self.value != None
     def __str__(self):
         return self.value and str(self.value) or ""
-    def setvalue(self,v):
+    def setvalue(self, v):
         if len(v) == 1:
             self.value = self.func(v[0])
         else:
@@ -564,10 +564,10 @@ def old_main(argv, OPTS):
     args = argv[1:]
 
     if '-h' in args or '--help' in args:
-        print "\n",__file__
+        print "\n", __file__
         print desc or "\nSomeone ought to write a description for this script...\n"
         for thing in options:
-            print type(thing) != str and "%10s  %s"%(thing[0],thing[1].description) or thing
+            print type(thing) != str and "%10s  %s"%(thing[0], thing[1].description) or thing
         print
         sys.exit()
 
@@ -600,14 +600,14 @@ def old_main(argv, OPTS):
     # import lipids
     # lipid_list = lipids.get_list()
     # lipid_list.add_from_file(*OPTS.mollist)
-    # lipid_list.add_from_def(*zip(OPTS.lipnames,OPTS.lipheads,OPTS.liplinks,OPTS.liptails,OPTS.lipcharge))
+    # lipid_list.add_from_def(*zip(OPTS.lipnames, OPTS.lipheads, OPTS.liplinks, OPTS.liptails, OPTS.lipcharge))
 
 
     # First add internal lipids
-    for name,lip in lipidsa.items():
+    for name, lip in lipidsa.items():
         moltype  = lip[0]
-        template = zip(lipidsx[moltype],lipidsy[moltype],lipidsz[moltype])
-        liplist[name] = Lipid(name=name,beads=lip[1],template=template)
+        template = zip(lipidsx[moltype], lipidsy[moltype], lipidsz[moltype])
+        liplist[name] = Lipid(name=name, beads=lip[1], template=template)
 
     # Then add lipids from file
     for filename in OPTS.molfile:
@@ -621,15 +621,15 @@ def old_main(argv, OPTS):
                     break
                 if "@BEADS" in line:
                     beads = line.split("@BEADS")[1].split()
-            lip = Lipid(string=lipdef,beads=beads)
+            lip = Lipid(string=lipdef, beads=beads)
             liplist[lip.name] = lip
 
     # Last, add lipids from command line
-    for name, head, link, tail in zip(usrnames,usrheads,usrlinks,usrtails):
-        heads   = head.replace("."," ").split()
-        linkers = link.replace("."," ").split()
-        tails   = tail.replace("."," ").split()
-        liplist[name] = Lipid(name=name,head=heads,link=linkers,tail=tails)
+    for name, head, link, tail in zip(usrnames, usrheads, usrlinks, usrtails):
+        heads   = head.replace(".", " ").split()
+        linkers = link.replace(".", " ").split()
+        tails   = tail.replace(".", " ").split()
+        liplist[name] = Lipid(name=name, head=heads, link=linkers, tail=tails)
 
     # <=== END OF LIPID BOOKKEEPING
 
@@ -650,22 +650,22 @@ def old_main(argv, OPTS):
 
     # options -x, -y, -z take precedence over automatic determination
     pbcSetX = 0
-    if type(options["-x"].value) in (list,tuple):
+    if type(options["-x"].value) in (list, tuple):
         pbcSetX = options["-x"].value
     elif options["-x"].value:
-        pbcSetX = [options["-x"].value,0,0]
+        pbcSetX = [options["-x"].value, 0, 0]
 
     pbcSetY = 0
-    if type(options["-y"].value) in (list,tuple):
+    if type(options["-y"].value) in (list, tuple):
         pbcSetY = options["-y"].value
     elif options["-y"].value:
-        pbcSetY = [0,options["-y"].value,0]
+        pbcSetY = [0, options["-y"].value, 0]
 
     pbcSetZ = 0
-    if type(options["-z"].value) in (list,tuple):
+    if type(options["-z"].value) in (list, tuple):
         pbcSetZ = options["-z"].value
     elif options["-z"].value:
-        pbcSetZ = [0,0,options["-z"].value]
+        pbcSetZ = [0, 0, options["-z"].value]
 
 
     lo_lipd  = math.sqrt(options["-a"].value)
@@ -730,7 +730,7 @@ def old_main(argv, OPTS):
                 if "cubic".startswith(options["-pbc"].value):
                     pbcx = pbcy = pbcz = prot.diam()+options["-d"].value
                 elif "rectangular".startswith(options["-pbc"].value):
-                    pbcx, pbcy, pbcz = linalg.vvadd(linalg.vvsub(prot.fun(max),prot.fun(min)),options["-d"].value)
+                    pbcx, pbcy, pbcz = linalg.vvadd(linalg.vvsub(prot.fun(max), prot.fun(min)), options["-d"].value)
                 else:
                     # Rhombic dodecahedron
                     pbcx = pbcy = prot.diam()+options["-d"].value
@@ -756,7 +756,7 @@ def old_main(argv, OPTS):
                 # So first put the protein in properly.
 
                 # Center the protein and store the shift
-                shift = prot.center((0,0,0))
+                shift = prot.center((0, 0, 0))
 
                 ## 1. Orient with respect to membrane
                 # Orient the protein according to the TM region, if requested
@@ -782,8 +782,8 @@ def old_main(argv, OPTS):
 
                 ## 5. Determine the minimum and maximum x and y of the protein
                 pmin, pmax = prot.fun(min), prot.fun(max)
-                prng       = (pmax[0]-pmin[0],pmax[1]-pmin[1],pmax[2]-pmin[2])
-                center     = (0.5*(pmin[0]+pmax[0]),0.5*(pmin[1]+pmax[1]))
+                prng       = (pmax[0]-pmin[0], pmax[1]-pmin[1], pmax[2]-pmin[2])
+                center     = (0.5*(pmin[0]+pmax[0]), 0.5*(pmin[1]+pmax[1]))
 
 
                 # Set the z-dimension
@@ -829,7 +829,7 @@ def old_main(argv, OPTS):
                 if options["-hole"]:
                     if ("square".startswith(options["-pbc"].value) or
                         "rectangular".startswith(options["-pbc"].value)):
-                        scale = 1+options["-hole"].value/min(pbcx,pbcy)
+                        scale = 1+options["-hole"].value/min(pbcx, pbcy)
                     else:
                         area  = options["-hole"].value**2/math.cos(math.pi/6)
                         scale = 1+area/(pbcx*pbcy)
@@ -861,12 +861,12 @@ def old_main(argv, OPTS):
 
 
         # Extract the parts of the protein that are in either leaflet
-        prot_up,prot_lo = [],[]
-        for ix,iy,iz in protein.coord:
+        prot_up, prot_lo = [], []
+        for ix, iy, iz in protein.coord:
             if   iz > 0 and iz <  2.4:
-                prot_up.append((ix,iy))
+                prot_up.append((ix, iy))
             elif iz < 0 and iz > -2.4:
-                prot_lo.append((ix,iy))
+                prot_lo.append((ix, iy))
 
 
         # Current residue ID is set to that of the last atom
@@ -883,23 +883,23 @@ def old_main(argv, OPTS):
     if ("rectangular".startswith(options["-pbc"].value) or
         "square".startswith(options["-pbc"].value) or
         "cubic".startswith(options["-pbc"].value)):
-        box    = [[pbcx,0,0],[0,pbcy,0],[0,0,pbcz]]
+        box    = [[pbcx, 0, 0], [0, pbcy, 0], [0, 0, pbcz]]
     elif not lipL:
         # Rhombic dodecahedron with square XY plane
-        box    = [[pbcx,0,0],[0,pbcy,0],[0.5*pbcx,0.5*pbcx,pbcz]]
+        box    = [[pbcx, 0, 0], [0, pbcy, 0], [0.5*pbcx, 0.5*pbcx, pbcz]]
     elif "hexagonal".startswith(options["-pbc"].value):
-        box    = [[pbcx,0,0],[math.sin(math.pi/6)*pbcx,pbcy,0],[0,0,pbcz]]
+        box    = [[pbcx, 0, 0], [math.sin(math.pi/6)*pbcx, pbcy, 0], [0, 0, pbcz]]
     else: # optimal packing; rhombic dodecahedron with hexagonal XY plane
-        box    = [[pbcx,0,0],[math.sin(math.pi/6)*pbcx,pbcy,0],[pbcx/2,pbcy/3,pbcz]]
+        box    = [[pbcx, 0, 0], [math.sin(math.pi/6)*pbcx, pbcy, 0], [pbcx/2, pbcy/3, pbcz]]
 
     # Override lattice vectors if they were set explicitly
     box[0] = pbcSetX or box[0]
     box[1] = pbcSetY or box[1]
     box[2] = pbcSetZ or box[2]
 
-    grobox = (box[0][0],box[1][1],box[2][2],
-              box[0][1],box[0][2],box[1][0],
-              box[1][2],box[2][0],box[2][1])
+    grobox = (box[0][0], box[1][1], box[2][2],
+              box[0][1], box[0][2], box[1][0],
+              box[1][2], box[2][0], box[2][1])
 
     pbcx, pbcy, pbcz = box[0][0], box[1][1], box[2][2]
 
@@ -971,11 +971,11 @@ def old_main(argv, OPTS):
         if not options["-ring"]:
 
             # Upper leaflet
-            marked = [(i,j) for i in up_rlipx for j in up_rlipy if not grid_up[i][j]]
+            marked = [(i, j) for i in up_rlipx for j in up_rlipy if not grid_up[i][j]]
             if marked:
                 # Find the center
-                cx,cy  = [float(sum(i))/len(marked) for i in zip(*marked)]
-                for i,j in marked:
+                cx, cy  = [float(sum(i))/len(marked) for i in zip(*marked)]
+                for i, j in marked:
                     md = int(abs(i-cx)+abs(j-cy)) # Manhattan length/distance
                     for f in range(md):
                         ii = int(cx+f*(i-cx)/md)
@@ -983,11 +983,11 @@ def old_main(argv, OPTS):
                         grid_up[ii][jj] = False
 
             # Lower leaflet
-            marked = [(i,j) for i in lo_rlipx for j in lo_rlipy if not grid_lo[i][j]]
+            marked = [(i, j) for i in lo_rlipx for j in lo_rlipy if not grid_lo[i][j]]
             if marked:
                 # Find the center
-                cx,cy  = [float(sum(i))/len(marked) for i in zip(*marked)]
-                for i,j in marked:
+                cx, cy  = [float(sum(i))/len(marked) for i in zip(*marked)]
+                for i, j in marked:
                     md = int(abs(i-cx)+abs(j-cy)) # Manhattan length
                     for f in range(md):
                         ii = int(cx+f*(i-cx)/md)
@@ -999,9 +999,9 @@ def old_main(argv, OPTS):
         # protein or box center than the given radius as occupied.
         if options["-disc"]:
             if protein:
-                cx,cy = protein.center()[:2]
+                cx, cy = protein.center()[:2]
             else:
-                cx,cy = 0.5*pbcx, 0.5*pbcy
+                cx, cy = 0.5*pbcx, 0.5*pbcy
             for i in range(len(grid_lo)):
                 for j in range(len(grid_lo[i])):
                     if (i*pbcx/lo_lipids_x - cx)**2 + (j*pbcy/lo_lipids_y - cy)**2 > options["-disc"].value**2:
@@ -1021,17 +1021,17 @@ def old_main(argv, OPTS):
             if protein:
                 if ("square".startswith(options["-pbc"].value) or
                     "rectangular".startswith(options["-pbc"].value)):
-                    hx,hy = (0,0)
+                    hx, hy = (0, 0)
                 else:
-                    hx,hy = (0,int(lo_lipids_y*math.cos(math.pi/6)/9+0.5))
+                    hx, hy = (0, int(lo_lipids_y*math.cos(math.pi/6)/9+0.5))
             else:
-                hx,hy = (int(0.5*lo_lipids_x), int(0.5*lo_lipids_y))
-            hr = int(options["-hole"].value/min(lo_lipdx,lo_lipdy)+0.5)
+                hx, hy = (int(0.5*lo_lipids_x), int(0.5*lo_lipids_y))
+            hr = int(options["-hole"].value/min(lo_lipdx, lo_lipdy)+0.5)
             ys = int(lo_lipids_x*box[1][0]/box[0][0]+0.5)
-            print >>sys.stderr, "; Making a hole with radius %f nm centered at grid cell (%d,%d)"%(options["-hole"].value,hx, hy), hr
+            print >>sys.stderr, "; Making a hole with radius %f nm centered at grid cell (%d, %d)"%(options["-hole"].value, hx, hy), hr
             hr -= 1
-            for ii in range(hx-hr-1,hx+hr+1):
-                for jj in range(hx-hr-1,hx+hr+1):
+            for ii in range(hx-hr-1, hx+hr+1):
+                for jj in range(hx-hr-1, hx+hr+1):
                     xi, yj = ii, jj
                     if (ii-hx)**2+(jj-hy)**2 < hr**2:
                         if jj < 0:
@@ -1050,17 +1050,17 @@ def old_main(argv, OPTS):
             if protein:
                 if ("square".startswith(options["-pbc"].value) or
                     "rectangular".startswith(options["-pbc"].value)):
-                    hx,hy = (0,0)
+                    hx, hy = (0, 0)
                 else:
-                    hx,hy = (0,int(up_lipids_y*math.cos(math.pi/6)/9+0.5))
+                    hx, hy = (0, int(up_lipids_y*math.cos(math.pi/6)/9+0.5))
             else:
-                hx,hy = (int(0.5*up_lipids_x), int(0.5*up_lipids_y))
-            hr = int(options["-hole"].value/min(up_lipdx,up_lipdy)+0.5)
+                hx, hy = (int(0.5*up_lipids_x), int(0.5*up_lipids_y))
+            hr = int(options["-hole"].value/min(up_lipdx, up_lipdy)+0.5)
             ys = int(up_lipids_x*box[1][0]/box[0][0]+0.5)
-            print >>sys.stderr, "; Making a hole with radius %f nm centered at grid cell (%d,%d)"%(options["-hole"].value,hx, hy), hr
+            print >>sys.stderr, "; Making a hole with radius %f nm centered at grid cell (%d, %d)"%(options["-hole"].value, hx, hy), hr
             hr -= 1
-            for ii in range(hx-hr-1,hx+hr+1):
-                for jj in range(hx-hr-1,hx+hr+1):
+            for ii in range(hx-hr-1, hx+hr+1):
+                for jj in range(hx-hr-1, hx+hr+1):
                     xi, yj = ii, jj
                     if (ii-hx)**2+(jj-hy)**2 < hr**2:
                         if jj < 0:
@@ -1082,11 +1082,11 @@ def old_main(argv, OPTS):
         for i in xrange(up_lipids_x):
             for j in xrange(up_lipids_y):
                 if grid_up[i][j]:
-                    upper.append((random.random(),i*pbcx/up_lipids_x,j*pbcy/up_lipids_y))
+                    upper.append((random.random(), i*pbcx/up_lipids_x, j*pbcy/up_lipids_y))
         for i in xrange(lo_lipids_x):
             for j in xrange(lo_lipids_y):
                 if grid_lo[i][j]:
-                    lower.append((random.random(),i*pbcx/lo_lipids_x,j*pbcy/lo_lipids_y))
+                    lower.append((random.random(), i*pbcx/lo_lipids_x, j*pbcy/lo_lipids_y))
 
 
         # Sort on the random number
@@ -1097,11 +1097,11 @@ def old_main(argv, OPTS):
         # Extract coordinates, taking asymmetry in account
         asym  = options["-asym"].value or 0
         upper = [i[1:] for i in upper[max(0, asym):]]
-        lower = [i[1:] for i in lower[max(0,-asym):]]
+        lower = [i[1:] for i in lower[max(0, -asym):]]
 
-        print >>sys.stderr, "; X: %.3f (%d bins) Y: %.3f (%d bins) in upper leaflet"%(pbcx,up_lipids_x,pbcy,up_lipids_y)
-        print >>sys.stderr, "; X: %.3f (%d bins) Y: %.3f (%d bins) in lower leaflet"%(pbcx,lo_lipids_x,pbcy,lo_lipids_y)
-        print >>sys.stderr, "; %d lipids in upper leaflet, %d lipids in lower leaflet"%(len(upper),len(lower))
+        print >>sys.stderr, "; X: %.3f (%d bins) Y: %.3f (%d bins) in upper leaflet"%(pbcx, up_lipids_x, pbcy, up_lipids_y)
+        print >>sys.stderr, "; X: %.3f (%d bins) Y: %.3f (%d bins) in lower leaflet"%(pbcx, lo_lipids_x, pbcy, lo_lipids_y)
+        print >>sys.stderr, "; %d lipids in upper leaflet, %d lipids in lower leaflet"%(len(upper), len(lower))
 
         # Types of lipids, relative numbers, fractions and numbers
 
@@ -1111,22 +1111,22 @@ def old_main(argv, OPTS):
         lipU, numU = zip(*[ parse_mol(i) for i in lipU ])
         totU       = float(sum(numU))
         num_up     = [int(len(upper)*i/totU) for i in numU]
-        lip_up     = [l for i,l in zip(num_up,lipU) for j in range(i)]
-        leaf_up    = ( 1,zip(lip_up,upper),up_lipd,up_lipdx,up_lipdy)
+        lip_up     = [l for i, l in zip(num_up, lipU) for j in range(i)]
+        leaf_up    = ( 1, zip(lip_up, upper), up_lipd, up_lipdx, up_lipdy)
 
         # Lower leaflet (-1)
         lipL, numL = zip(*[ parse_mol(i) for i in lipL ])
         totL       = float(sum(numL))
         num_lo     = [int(len(lower)*i/totL) for i in numL]
-        lip_lo     = [l for i,l in zip(num_lo,lipL) for j in range(i)]
-        leaf_lo    = (-1,zip(lip_lo,lower),lo_lipd,lo_lipdx,lo_lipdy)
+        lip_lo     = [l for i, l in zip(num_lo, lipL) for j in range(i)]
+        leaf_lo    = (-1, zip(lip_lo, lower), lo_lipd, lo_lipdx, lo_lipdy)
 
-        molecules  = zip(lipU,num_up) + zip(lipL,num_lo)
+        molecules  = zip(lipU, num_up) + zip(lipL, num_lo)
 
         kick       = options["-rand"].value
 
         # Build the membrane
-        for leaflet,leaf_lip,lipd,lipdx,lipdy in [leaf_up,leaf_lo]:
+        for leaflet, leaf_lip, lipd, lipdx, lipdy in [leaf_up, leaf_lo]:
             for lipid, pos in leaf_lip:
                 # Increase the residue number by one
                 resi += 1
@@ -1138,30 +1138,30 @@ def old_main(argv, OPTS):
                 rcosy    = rcos*lipdy*2/3
                 rsinx    = rsin*lipdx*2/3
                 rsiny    = rsin*lipdy*2/3
-                # Fetch the atom list with x,y,z coordinates
-                #atoms    = zip(lipidsa[lipid][1].split(),lipidsx[lipidsa[lipid][0]],lipidsy[lipidsa[lipid][0]],lipidsz[lipidsa[lipid][0]])
+                # Fetch the atom list with x, y, z coordinates
+                #atoms    = zip(lipidsa[lipid][1].split(), lipidsx[lipidsa[lipid][0]], lipidsy[lipidsa[lipid][0]], lipidsz[lipidsa[lipid][0]])
                 # Only keep atoms appropriate for the lipid
-                #at,ax,ay,az = zip(*[i for i in atoms if i[0] != "-"])
-                at,ax,ay,az = zip(*liplist[lipid].build(diam=lipd))
+                #at, ax, ay, az = zip(*[i for i in atoms if i[0] != "-"])
+                at, ax, ay, az = zip(*liplist[lipid].build(diam=lipd))
                 # The z-coordinates are spaced at 0.3 nm,
                 # starting with the first bead at 0.15 nm
                 az       = [ leaflet*(0.5+(i-min(az)))*options["-bd"].value for i in az ]
-                xx       = zip( ax,ay )
-                nx       = [rcosx*i-rsiny*j+pos[0]+lipdx/2+random.random()*kick for i,j in xx]
-                ny       = [rsinx*i+rcosy*j+pos[1]+lipdy/2+random.random()*kick for i,j in xx]
+                xx       = zip( ax, ay )
+                nx       = [rcosx*i-rsiny*j+pos[0]+lipdx/2+random.random()*kick for i, j in xx]
+                ny       = [rsinx*i+rcosy*j+pos[1]+lipdy/2+random.random()*kick for i, j in xx]
                 # Add the atoms to the list
                 for i in range(len(at)):
-                    atom  = "%5d%-5s%5s%5d"%(resi,lipid,at[i],atid)
-                    membrane.coord.append((nx[i],ny[i],az[i]))
-                    membrane.atoms.append((at[i],lipid,resi,0,0,0))
+                    atom  = "%5d%-5s%5s%5d"%(resi, lipid, at[i], atid)
+                    membrane.coord.append((nx[i], ny[i], az[i]))
+                    membrane.atoms.append((at[i], lipid, resi, 0, 0, 0))
                     atid += 1
 
         # Now move everything to the center of the box before adding solvent
         mz  = pbcz/2
         z   = [ i[2] for i in protein.coord+membrane.coord ]
         mz -= (max(z)+min(z))/2
-        protein += (0,0,mz)
-        membrane += (0,0,mz)
+        protein += (0, 0, mz)
+        membrane += (0, 0, mz)
 
 
     ################
@@ -1174,18 +1174,18 @@ def old_main(argv, OPTS):
     mcharge = 0
     for j in membrane.atoms:
         if not j[0].strip().startswith('v') and j[1:3] != last:
-            mcharge += charges.get(j[1].strip(),0)
+            mcharge += charges.get(j[1].strip(), 0)
         last = j[1:3]
 
     last = None
     pcharge = 0
     for j in protein.atoms:
         if not j[0].strip().startswith('v') and j[1:3] != last:
-            pcharge += charges.get(j[1].strip(),0)
+            pcharge += charges.get(j[1].strip(), 0)
         last = j[1:3]
 
-    #mcharge = sum([charges.get(i[0].strip(),0) for i in set([j[1:3] for j in membrane.atoms])])
-    #pcharge = sum([charges.get(i[0].strip(),0) for i in set([j[1:3] for j in protein.atoms if not j[0].strip().startswith('v')])])
+    #mcharge = sum([charges.get(i[0].strip(), 0) for i in set([j[1:3] for j in membrane.atoms])])
+    #pcharge = sum([charges.get(i[0].strip(), 0) for i in set([j[1:3] for j in protein.atoms if not j[0].strip().startswith('v')])])
 
     charge  = mcharge + pcharge
     plen, mlen, slen = 0, 0, 0
@@ -1199,13 +1199,13 @@ def old_main(argv, OPTS):
     print >>sys.stderr, "; Total charge: %f" % charge
 
 
-    def _point(y,phi):
+    def _point(y, phi):
         r = math.sqrt(1-y*y)
         return math.cos(phi)*r, y, math.sin(phi)*r
 
 
     def pointsOnSphere(n):
-        return [_point((2.*k+1)/n-1,k*2.3999632297286531) for k in range(n)]
+        return [_point((2.*k+1)/n-1, k*2.3999632297286531) for k in range(n)]
 
 
     if solv:
@@ -1213,9 +1213,9 @@ def old_main(argv, OPTS):
         # Set up a grid
         d        = 1/options["-sold"].value
 
-        nx,ny,nz = int(1+d*pbcx),int(1+d*pbcy),int(1+d*pbcz)
-        dx,dy,dz = pbcx/nx,pbcy/ny,pbcz/nz
-        excl,hz  = int(nz*options["-excl"].value/pbcz), int(0.5*nz)
+        nx, ny, nz = int(1+d*pbcx), int(1+d*pbcy), int(1+d*pbcz)
+        dx, dy, dz = pbcx/nx, pbcy/ny, pbcz/nz
+        excl, hz  = int(nz*options["-excl"].value/pbcz), int(0.5*nz)
 
         zshift   = 0
         if membrane:
@@ -1229,9 +1229,9 @@ def old_main(argv, OPTS):
         grid   = [[[i < hz-excl or i > hz+excl for i in xrange(nz)] for j in xrange(ny)] for i in xrange(nx)]
 
         # Flag all cells occupied by protein or membrane
-        for p,q,r in protein.coord+membrane.coord:
-            for s,t,u in pointsOnSphere(20):
-                x,y,z = p+0.33*s,q+0.33*t,r+0.33*u
+        for p, q, r in protein.coord+membrane.coord:
+            for s, t, u in pointsOnSphere(20):
+                x, y, z = p+0.33*s, q+0.33*t, r+0.33*u
                 if z >= pbcz:
                     x -= box[2][0]
                     y -= box[2][1]
@@ -1254,7 +1254,7 @@ def old_main(argv, OPTS):
 
         # Set the center for each solvent molecule
         kick = options["-solr"].value
-        grid = [ (R(),(i+0.5+R()*kick)*dx,(j+0.5+R()*kick)*dy,(k+0.5+R()*kick)*dz)
+        grid = [ (R(), (i+0.5+R()*kick)*dx, (j+0.5+R()*kick)*dy, (k+0.5+R()*kick)*dz)
                  for i in xrange(nx) for j in xrange(ny) for k in xrange(nz) if grid[i][j][k] ]
 
         # Sort on the random number
@@ -1290,7 +1290,7 @@ def old_main(argv, OPTS):
             # Determine number of sodium and chloride to add
             concentration = options["-salt"].value
             nsol = ("SPC" in solnames and 1 or 4)*len(grid)
-            ncl  = max(max(0,charge),int(.5+.5*(concentration*nsol/(27.7+concentration)+charge)))
+            ncl  = max(max(0, charge), int(.5+.5*(concentration*nsol/(27.7+concentration)+charge)))
             nna  = ncl - charge
 
         # Correct number of grid cells for placement of solvent
@@ -1310,16 +1310,16 @@ def old_main(argv, OPTS):
 
 
         # Names and grid positions for solvent molecules
-        solvent    = zip([s for i,s in zip(num_sol,solnames) for j in range(i)],grid)
+        solvent    = zip([s for i, s in zip(num_sol, solnames) for j in range(i)], grid)
 
 
         # Extend the list of molecules (for the topology)
-        molecules.extend(zip(solnames,num_sol))
+        molecules.extend(zip(solnames, num_sol))
 
 
         # Build the solvent
         sol = []
-        for resn,(rndm,x,y,z) in solvent:
+        for resn, (rndm, x, y, z) in solvent:
             resi += 1
             solmol = solventParticles.get(resn)
             if solmol and len(solmol) > 1:
@@ -1328,15 +1328,15 @@ def old_main(argv, OPTS):
                 s,  t           = math.sqrt(1-u), math.sqrt(u)
                 qw, qx, qy, qz  = s*math.sin(v), s*math.cos(v), t*math.sin(w), t*math.cos(w)
                 qq              = qw*qw-qx*qx-qy*qy-qz*qz
-                for atnm,(px,py,pz) in solmol:
+                for atnm, (px, py, pz) in solmol:
                     qp = 2*(qx*px + qy*py + qz*pz)
                     rx = x + qp*qx + qq*px + qw*(qy*pz-qz*py)
                     ry = y + qp*qy + qq*py + qw*(qz*px-qx*pz)
                     rz = z + qp*qz + qq*pz + qw*(qx*py-qy*px)
-                    sol.append(("%5d%-5s%5s%5d"%(resi%1e5,resn,atnm,atid%1e5),(rx,ry,rz)))
+                    sol.append(("%5d%-5s%5s%5d"%(resi%1e5, resn, atnm, atid%1e5), (rx, ry, rz)))
                     atid += 1
             else:
-                sol.append(("%5d%-5s%5s%5d"%(resi%1e5,resn,solmol and solmol[0][0] or resn,atid%1e5),(x,y,z)))
+                sol.append(("%5d%-5s%5s%5d"%(resi%1e5, resn, solmol and solmol[0][0] or resn, atid%1e5), (x, y, z)))
                 atid += 1
     else:
         solvent, sol = None, []
@@ -1350,7 +1350,7 @@ def old_main(argv, OPTS):
     print >>sys.stderr, "; \"I mean, the good stuff is just INSANE\" --Julia Ormond"
 
     # Open the output stream
-    oStream = options["-o"] and open(options["-o"].value,"w") or sys.stdout
+    oStream = options["-o"] and open(options["-o"].value, "w") or sys.stdout
 
     if options["-o"].value.endswith(".gro"):
         # Print the title
@@ -1372,19 +1372,19 @@ def old_main(argv, OPTS):
         id = 1
         if protein:
             for i in range(len(protein)):
-                at,rn,ri = protein.atoms[i][:3]
-                x,y,z    = protein.coord[i]
+                at, rn, ri = protein.atoms[i][:3]
+                x, y, z    = protein.coord[i]
                 if rn.endswith('.o'):
                     rn = rn[:-2]
-                oStream.write("%5d%-5s%5s%5d%8.3f%8.3f%8.3f\n"%(ri%1e5,rn,at,id%1e5,x,y,z))
+                oStream.write("%5d%-5s%5s%5d%8.3f%8.3f%8.3f\n"%(ri%1e5, rn, at, id%1e5, x, y, z))
                 id += 1
         if membrane:
             for i in range(len(membrane)):
-                at,rn,ri = membrane.atoms[i][:3]
-                x,y,z    = membrane.coord[i]
+                at, rn, ri = membrane.atoms[i][:3]
+                x, y, z    = membrane.coord[i]
                 if rn.endswith('.o'):
                     rn = rn[:-2]
-                oStream.write("%5d%-5s%5s%5d%8.3f%8.3f%8.3f\n"%(ri%1e5,rn,at,id%1e5,x,y,z))
+                oStream.write("%5d%-5s%5s%5d%8.3f%8.3f%8.3f\n"%(ri%1e5, rn, at, id%1e5, x, y, z))
                 id += 1
         if sol:
             # Print the solvent
@@ -1408,28 +1408,28 @@ def old_main(argv, OPTS):
         id = 1
         if protein:
             for i in range(len(protein)):
-                at,rn,ri = protein.atoms[i][:3]
-                x,y,z    = protein.coord[i]
+                at, rn, ri = protein.atoms[i][:3]
+                x, y, z    = protein.coord[i]
                 if rn.endswith('.o'):
                     rn = rn[:-2]
-                oStream.write(pdbline%(id%1e5,at,rn,"",ri%1e5,'',10*x,10*y,10*z,0,0,''))
+                oStream.write(pdbline%(id%1e5, at, rn, "", ri%1e5, '', 10*x, 10*y, 10*z, 0, 0, ''))
                 id += 1
         if membrane:
             for i in range(len(membrane)):
-                at,rn,ri = membrane.atoms[i][:3]
-                x,y,z    = membrane.coord[i]
+                at, rn, ri = membrane.atoms[i][:3]
+                x, y, z    = membrane.coord[i]
                 if rn.endswith('.o'):
                     rn = rn[:-2]
-                oStream.write(pdbline%(id%1e5,at,rn,"",ri%1e5,'',10*x,10*y,10*z,0,0,''))
+                oStream.write(pdbline%(id%1e5, at, rn, "", ri%1e5, '', 10*x, 10*y, 10*z, 0, 0, ''))
                 id += 1
         if sol:
             # Print the solvent
             for i in range(len(sol)):
-                ri,rn,at,ai = sol[i][0][:5],sol[i][0][5:10],sol[i][0][10:15],sol[i][0][15:20]
-                x,y,z    = sol[i][1]
+                ri, rn, at, ai = sol[i][0][:5], sol[i][0][5:10], sol[i][0][10:15], sol[i][0][15:20]
+                x, y, z    = sol[i][1]
                 if rn.endswith('.o'):
                     rn = rn[:-2]
-                oStream.write(pdbline%(id%1e5,at.strip(),rn.strip(),"",int(ri)%1e5,'',10*x,10*y,10*z,0,0,''))
+                oStream.write(pdbline%(id%1e5, at.strip(), rn.strip(), "", int(ri)%1e5, '', 10*x, 10*y, 10*z, 0, 0, ''))
                 id += 1
 
     topmolecules = []
@@ -1441,11 +1441,11 @@ def old_main(argv, OPTS):
 
     if options["-p"]:
         # Write a rudimentary topology file
-        top = open(options["-p"].value,"w")
+        top = open(options["-p"].value, "w")
         print >>top, '#include "martini.itp"\n'
         print >>top, '[ system ]\n; name\n%s\n\n[ molecules ]\n; name  number'%title
         if protein:
-            print >>top, "%-10s %5d"%("Protein",1)
+            print >>top, "%-10s %5d"%("Protein", 1)
         print >>top, "\n".join("%-10s %7d"%i for i in topmolecules)
         top.close()
     else:
