@@ -24,6 +24,7 @@ INSANE: A versatile tool for building membranes and/or solvent with proteins.
 ... Someone ought to write a more extensive docstring here...
 """
 
+from __future__ import print_function
 
 __authors__ = ["Tsjerk A. Wassenaar", "Jonathan Barnoud"]
 __version__ = "1.0-dev"
@@ -851,8 +852,8 @@ def old_main(argv, options):
         maxd    = float(max([max(i) for i in grid_up+grid_lo]))
         if  maxd == 0:
             if protein:
-                print >>sys.stderr, "; The protein seems not to be inside the membrane."
-                print >>sys.stderr, "; Run with -orient to put it in."
+                print("; The protein seems not to be inside the membrane.", file=sys.stderr)
+                print("; Run with -orient to put it in.", file=sys.stderr)
             maxd = 1
 
 
@@ -923,7 +924,7 @@ def old_main(argv, options):
                 hx, hy = (int(0.5*lo_lipids_x), int(0.5*lo_lipids_y))
             hr = int(options["hole"]/min(lo_lipdx,  lo_lipdy)+0.5)
             ys = int(lo_lipids_x*box[1][0]/box[0][0]+0.5)
-            print >>sys.stderr, "; Making a hole with radius %f nm centered at grid cell (%d,%d)"%(options["hole"], hx, hy), hr
+            print("; Making a hole with radius %f nm centered at grid cell (%d,%d)"%(options["hole"], hx, hy), hr, file=sys.stderr)
             hr -= 1
             for ii in range(hx-hr-1, hx+hr+1):
                 for jj in range(hx-hr-1, hx+hr+1):
@@ -952,7 +953,7 @@ def old_main(argv, options):
                 hx, hy = (int(0.5*up_lipids_x), int(0.5*up_lipids_y))
             hr = int(options["hole"]/min(up_lipdx, up_lipdy)+0.5)
             ys = int(up_lipids_x*box[1][0]/box[0][0]+0.5)
-            print >>sys.stderr, "; Making a hole with radius %f nm centered at grid cell (%d,%d)"%(options["hole"], hx, hy), hr
+            print("; Making a hole with radius %f nm centered at grid cell (%d,%d)"%(options["hole"], hx, hy), hr, file=sys.stderr)
             hr -= 1
             for ii in range(hx-hr-1, hx+hr+1):
                 for jj in range(hx-hr-1, hx+hr+1):
@@ -994,9 +995,9 @@ def old_main(argv, options):
         upper = [i[1:] for i in upper[max(0, asym):]]
         lower = [i[1:] for i in lower[max(0, -asym):]]
 
-        print >>sys.stderr, "; X: %.3f (%d bins) Y: %.3f (%d bins) in upper leaflet"%(pbcx, up_lipids_x, pbcy, up_lipids_y)
-        print >>sys.stderr, "; X: %.3f (%d bins) Y: %.3f (%d bins) in lower leaflet"%(pbcx, lo_lipids_x, pbcy, lo_lipids_y)
-        print >>sys.stderr, "; %d lipids in upper leaflet, %d lipids in lower leaflet"%(len(upper), len(lower))
+        print("; X: %.3f (%d bins) Y: %.3f (%d bins) in upper leaflet"%(pbcx, up_lipids_x, pbcy, up_lipids_y), file=sys.stderr)
+        print("; X: %.3f (%d bins) Y: %.3f (%d bins) in lower leaflet"%(pbcx, lo_lipids_x, pbcy, lo_lipids_y), file=sys.stderr)
+        print("; %d lipids in upper leaflet, %d lipids in lower leaflet"%(len(upper), len(lower)), file=sys.stderr)
 
         # Types of lipids, relative numbers, fractions and numbers
 
@@ -1227,11 +1228,13 @@ def old_main(argv, options):
     else:
         solvent, sol = None, []
 
-    return molecules, protein, membrane, solvent, sol, mcharge, pcharge, lipU, lipL, numU, numL, box
+    return (molecules, protein, membrane, solvent, sol,
+            mcharge, pcharge, lipU, lipL, numU, numL, box)
 
 
 
-def write_all(output, topology, molecules, protein, membrane, solvent, sol, mcharge, pcharge, lipU, lipL, numU, numL, box):
+def write_all(output, topology, molecules, protein, membrane,
+              solvent, sol, mcharge, pcharge, lipU, lipL, numU, numL, box):
     ## Write the output ##
 
     grobox = (box[0][0], box[1][1], box[2][2],
@@ -1241,18 +1244,18 @@ def write_all(output, topology, molecules, protein, membrane, solvent, sol, mcha
     charge  = mcharge + pcharge
     plen, mlen, slen = 0, 0, 0
     plen = protein and len(protein) or 0
-    print >>sys.stderr, "; NDX Solute %d %d" % (1, protein and plen or 0)
-    print >>sys.stderr, "; Charge of protein: %f" % pcharge
+    print("; NDX Solute %d %d" % (1, protein and plen or 0), file=sys.stderr)
+    print("; Charge of protein: %f" % pcharge, file=sys.stderr)
 
     mlen = membrane and len(membrane) or 0
-    print >>sys.stderr, "; NDX Membrane %d %d" % (1+plen, membrane and plen+mlen or 0)
-    print >>sys.stderr, "; Charge of membrane: %f" % mcharge
-    print >>sys.stderr, "; Total charge: %f" % charge
+    print("; NDX Membrane %d %d" % (1+plen, membrane and plen+mlen or 0), file=sys.stderr)
+    print("; Charge of membrane: %f" % mcharge, file=sys.stderr)
+    print("; Total charge: %f" % charge, file=sys.stderr)
 
     slen = solvent and len(sol) or 0
-    print >>sys.stderr, "; NDX Solvent %d %d" % (1+plen+mlen, solvent and plen+mlen+slen or 0)
-    print >>sys.stderr, "; NDX System %d %d" % (1, plen+mlen+slen)
-    print >>sys.stderr, "; \"I mean, the good stuff is just INSANE\" --Julia Ormond"
+    print("; NDX Solvent %d %d" % (1+plen+mlen, solvent and plen+mlen+slen or 0), file=sys.stderr)
+    print("; NDX System %d %d" % (1, plen+mlen+slen), file=sys.stderr)
+    print("; \"I mean, the good stuff is just INSANE\" --Julia Ormond", file=sys.stderr)
 
     # Open the output stream
     oStream = output and open(output, "w") or sys.stdout
@@ -1268,10 +1271,10 @@ def write_all(output, topology, molecules, protein, membrane, solvent, sol, mcha
         else:
             title = "Insanely solvated protein."
 
-        print >>oStream, title
+        print(title, file=oStream)
 
         # Print the number of atoms
-        print >>oStream, "%5d"%(len(protein)+len(membrane)+len(sol))
+        print("%5d"%(len(protein)+len(membrane)+len(sol)), file=oStream)
 
         # Print the atoms
         id = 1
@@ -1293,10 +1296,10 @@ def write_all(output, topology, molecules, protein, membrane, solvent, sol, mcha
                 id += 1
         if sol:
             # Print the solvent
-            print >>oStream, "\n".join([i[0]+"%8.3f%8.3f%8.3f"%i[1] for i in sol])
+            print("\n".join([i[0]+"%8.3f%8.3f%8.3f"%i[1] for i in sol]), file=oStream)
 
         # Print the box
-        print >>oStream, "%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f"%grobox
+        print("%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f"%grobox, file=oStream)
     else:
         # Print the title
         if membrane.atoms:
@@ -1304,10 +1307,10 @@ def write_all(output, topology, molecules, protein, membrane, solvent, sol, mcha
             title += " LowerLeaflet>"+":".join(lipL)+"="+":".join([str(i) for i in numL])
         else:
             title = "TITLE Insanely solvated protein."
-        print >>oStream, title
+        print(title, oStream)
 
         # Print the box
-        print >>oStream, pdbBoxString(box)
+        print(pdbBoxString(box), file=oStream)
 
         # Print the atoms
         id = 1
@@ -1347,13 +1350,13 @@ def write_all(output, topology, molecules, protein, membrane, solvent, sol, mcha
     if topology:
         # Write a rudimentary topology file
         with open(topology, "w") as top:
-            print >>top, '#include "martini.itp"\n'
-            print >>top, '[ system ]\n; name\n%s\n\n[ molecules ]\n; name  number'%title
+            print('#include "martini.itp"\n', file=top)
+            print('[ system ]\n; name\n%s\n\n[ molecules ]\n; name  number'%title, file=top)
             if protein:
-                print >>top, "%-10s %5d"%("Protein", 1)
-            print >>top, "\n".join("%-10s %7d"%i for i in topmolecules)
+                print("%-10s %5d"%("Protein", 1), file=top)
+            print("\n".join("%-10s %7d"%i for i in topmolecules), file=top)
     else:
-        print >>sys.stderr, "\n".join("%-10s %7d"%i for i in topmolecules)
+        print("\n".join("%-10s %7d"%i for i in topmolecules), file=sys.stderr)
 
 
 def insane(**options):
