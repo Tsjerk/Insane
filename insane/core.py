@@ -474,6 +474,8 @@ def old_main(argv, options):
     usrtails  = options["liptails"]
     usrcharg  = options["lipcharge"]
 
+    numU = []
+    numL = []
 
     # Description
     desc = ""
@@ -794,10 +796,6 @@ def old_main(argv, options):
     box[1] = pbcSetY or box[1]
     box[2] = pbcSetZ or box[2]
 
-    grobox = (box[0][0], box[1][1], box[2][2],
-              box[0][1], box[0][2], box[1][0],
-              box[1][2], box[2][0], box[2][1])
-
     pbcx, pbcy, pbcz = box[0][0], box[1][1], box[2][2]
 
     rx, ry, rz = pbcx+1e-8, pbcy+1e-8, pbcz+1e-8
@@ -1084,16 +1082,6 @@ def old_main(argv, options):
     #mcharge = sum([charges.get(i[0].strip(), 0) for i in set([j[1:3] for j in membrane.atoms])])
     #pcharge = sum([charges.get(i[0].strip(), 0) for i in set([j[1:3] for j in protein.atoms if not j[0].strip().startswith('v')])])
 
-    charge  = mcharge + pcharge
-    plen, mlen, slen = 0, 0, 0
-    plen = protein and len(protein) or 0
-    print >>sys.stderr, "; NDX Solute %d %d" % (1, protein and plen or 0)
-    print >>sys.stderr, "; Charge of protein: %f" % pcharge
-
-    mlen = membrane and len(membrane) or 0
-    print >>sys.stderr, "; NDX Membrane %d %d" % (1+plen, membrane and plen+mlen or 0)
-    print >>sys.stderr, "; Charge of membrane: %f" % mcharge
-    print >>sys.stderr, "; Total charge: %f" % charge
 
 
     def _point(y, phi):
@@ -1239,8 +1227,27 @@ def old_main(argv, options):
     else:
         solvent, sol = None, []
 
+    return molecules, protein, membrane, solvent, sol, mcharge, pcharge, lipU, lipL, numU, numL, box
 
+
+
+def write_all(output, topology, molecules, protein, membrane, solvent, sol, mcharge, pcharge, lipU, lipL, numU, numL, box):
     ## Write the output ##
+
+    grobox = (box[0][0], box[1][1], box[2][2],
+              box[0][1], box[0][2], box[1][0],
+              box[1][2], box[2][0], box[2][1])
+
+    charge  = mcharge + pcharge
+    plen, mlen, slen = 0, 0, 0
+    plen = protein and len(protein) or 0
+    print >>sys.stderr, "; NDX Solute %d %d" % (1, protein and plen or 0)
+    print >>sys.stderr, "; Charge of protein: %f" % pcharge
+
+    mlen = membrane and len(membrane) or 0
+    print >>sys.stderr, "; NDX Membrane %d %d" % (1+plen, membrane and plen+mlen or 0)
+    print >>sys.stderr, "; Charge of membrane: %f" % mcharge
+    print >>sys.stderr, "; Total charge: %f" % charge
 
     slen = solvent and len(sol) or 0
     print >>sys.stderr, "; NDX Solvent %d %d" % (1+plen+mlen, solvent and plen+mlen+slen or 0)
@@ -1248,9 +1255,9 @@ def old_main(argv, options):
     print >>sys.stderr, "; \"I mean, the good stuff is just INSANE\" --Julia Ormond"
 
     # Open the output stream
-    oStream = options["output"] and open(options["output"], "w") or sys.stdout
+    oStream = output and open(output, "w") or sys.stdout
 
-    if options["output"].endswith(".gro"):
+    if output.endswith(".gro"):
         # Print the title
         if membrane.atoms:
             title  = "INSANE! Membrane UpperLeaflet>"+":".join(lipU)+"="+":".join([str(i) for i in numU])
@@ -1337,15 +1344,14 @@ def old_main(argv, options):
         else:
             topmolecules.append(i)
 
-    if options["topology"]:
+    if topology:
         # Write a rudimentary topology file
-        top = open(options["topology"], "w")
-        print >>top, '#include "martini.itp"\n'
-        print >>top, '[ system ]\n; name\n%s\n\n[ molecules ]\n; name  number'%title
-        if protein:
-            print >>top, "%-10s %5d"%("Protein", 1)
-        print >>top, "\n".join("%-10s %7d"%i for i in topmolecules)
-        top.close()
+        with open(topology, "w") as top:
+            print >>top, '#include "martini.itp"\n'
+            print >>top, '[ system ]\n; name\n%s\n\n[ molecules ]\n; name  number'%title
+            if protein:
+                print >>top, "%-10s %5d"%("Protein", 1)
+            print >>top, "\n".join("%-10s %7d"%i for i in topmolecules)
     else:
         print >>sys.stderr, "\n".join("%-10s %7d"%i for i in topmolecules)
 
