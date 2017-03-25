@@ -60,9 +60,9 @@ lipidsa.update({      # 1   2   3   4   5   6   7   8   9  10  11  12  13  14  1
     "DPSM": (moltype, " -   -   -  NC3  -  PO4 AM1 AM2 T1A C2A C3A  -   -   -  C1B C2B C3B C4B  -   - "),
     "DBSM": (moltype, " -   -   -  NC3  -  PO4 AM1 AM2 T1A C2A C3A C4A  -   -  C1B C2B C3B C4B C5B  - "),
     "BNSM": (moltype, " -   -   -  NC3  -  PO4 AM1 AM2 T1A C2A C3A C4A  -   -  C1B C2B C3B C4B C5B C6B"),
-# PG for thylakoid membrane   
+# PG for thylakoid membrane
     "OPPG": (moltype, " -   -   -  GL0  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  C1B D2B C3B C4B  -   - "),
-# PG for thylakoid membrane of spinach (PPT with a trans-unsaturated bond at sn1 and a triple-unsaturated bond at sn2, 
+# PG for thylakoid membrane of spinach (PPT with a trans-unsaturated bond at sn1 and a triple-unsaturated bond at sn2,
 # and PPG  with a transunsaturated bond at sn1 and a palmitoyl tail at sn2)
     "JPPG": (moltype, " -   -   -  GL0  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  D1B C2B C3B C4B  -   - "),
     "JFPG": (moltype, " -   -   -  GL0  -  PO4 GL1 GL2 C1A D2A D3A D4A  -   -  D1B C2B C3B C4B  -   - "),
@@ -96,19 +96,19 @@ lipidsa.update({      # 1   2   3   4   5   6   7   8   9  10  11  12  13  14  1
 })
 
 
-# HII fix for PI templates and new templates PI(s) with diffrent tails, PO-PIP1(3) and POPIP2(4,5)  
+# HII fix for PI templates and new templates PI(s) with diffrent tails, PO-PIP1(3) and POPIP2(4,5)
 #Prototopology for phosphatidylinositol type lipids 5,6,7 are potentail phosphates (PIP1,PIP2 and PIP3)
 # 1,2,3 - is the inositol and 4 is the phosphate that links to the tail part.
 #  5
 #   \
 #  6-2-1-4-8--10-11-12-13-14-15
 #    |/    |
-#  7-3     9--16-17-18-19-20-21 
+#  7-3     9--16-17-18-19-20-21
 moltype = "INOSITOLLIPIDS"
 lipidsx[moltype] = (   .5,  .5,   0,   0,   1, .5,  0,  0,   .5,   0,   0,   0,   0,   0,   0,   1,   1,   1,   1,   1,   1)
 lipidsy[moltype] = (    0,   0,   0,   0,   0,  0,  0,  0,    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0)
 lipidsz[moltype] = (    8,   9,   9,   7,  10, 10, 10,  6,    6,   5,   4,   3,   2,   1,   0,   5,   4,   3,   2,   1,   0)
-lipidsa.update({      # 1     2    3    4    5   6   7   8    9    10    11    12    13    14   15    16    17    18    19   20 
+lipidsa.update({      # 1     2    3    4    5   6   7   8    9    10    11    12    13    14   15    16    17    18    19   20
      "OPI": (moltype, " C1   C2   C3   PO4   -   -   -  GL1  GL2   -    -    -    -    -    -   C1B  D2B  C3B  C4B   -    - "),
      "PPI": (moltype, " C1   C2   C3   PO4   -   -   -  GL1  GL2   -    -    -    -    -    -   C1B  C2B  C3B  C4B   -    - "),
     "DLPI": (moltype, " C1   C2   C3   PO4   -   -   -  GL1  GL2  C1A  C2A  C3A   -    -    -   C1B  C2B  C3B   -    -    - "),
@@ -132,19 +132,19 @@ lipidsa.update({      # 1     2    3    4    5   6   7   8    9    10    11    1
 
 
 #Prototopology for IPC yeast lipid: MIP2C2OH, MIPC2OH, IPC2OH - Added by HII 2016.01.13
-# 
+#
 # 3-1-4-7-6
 # |/     \|
 # 2      5
 #        |
-#        9-8-11-12--14-15-16-17-18-19 
+#        9-8-11-12--14-15-16-17-18-19
 #        \ |     |
 #         10    13--20-21-22-23-24-25
 moltype = "IPC"
 lipidsx[moltype] = (    1,  .5,   1,   1,  .5,   1,   1,  0,   0,  .5,    0,   0,   .5,   0,   0,   0,   0,   0,   0,   1,   1,   1,   1,   1,   1)
 lipidsy[moltype] = (    0,   0,   0,   0,   0,   0,   0,  0,   0,   0,    0,   0,    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0)
 lipidsz[moltype] = (   12,  13,  13,  11,   9,   9,  10,  8,   9,   8,    7,   6,    6,   5,   4,   3,   2,   1,   0,   5,   4,   3,   2,   1,   0)
-lipidsa.update({      # 1    2    3    4    5    6    7   8    9   10    11   12    13   14   15   16   17   18   19   20   21   22   23   24   25  
+lipidsa.update({      # 1    2    3    4    5    6    7   8    9   10    11   12    13   14   15   16   17   18   19   20   21   22   23   24   25
     "PXI2": (moltype, "H31  H32  H33  H3P  H21  H22  H23 H11  H12  H13  PO4   AM1   AM2  O1A  C2A  C3A   -    -    -   C1B  C2B  C3B  C4B  C5B  C6B"),
     "BXI2": (moltype, "H31  H32  H33  H3P  H21  H22  H23 H11  H12  H13  PO4   AM1   AM2  O1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B  C5B  C6B"),
     "PXI1": (moltype, " -    -    -    -   H21  H22  H23 H11  H12  H13  PO4   AM1   AM2  O1A  C2A  C3A   -    -    -   C1B  C2B  C3B  C4B  C5B  C6B"),
@@ -160,7 +160,7 @@ lipidsa.update({      # 1    2    3    4    5    6    7   8    9   10    11   12
 #         |
 # 12-10-9-7-6-4-3-1--18--20-21-22-23-24-25
 #  |/   |/  |/  |/    |
-#  11   8   5   2    19--26-27-28-29-30-31 
+#  11   8   5   2    19--26-27-28-29-30-31
 moltype = "GLYCOLIPIDS"
 lipidsx[moltype] = (    0,  .5,   0,   0,  .5,  0,  0, .5,  0,    0,   .5,    0,    0,    0,   0,    0,    0,    0,   .5,   0,   0,   0,   0,   0,   0,   1,   1,   1,   1,   1,   1)
 lipidsy[moltype] = (    0,   0,   0,   0,   0,  0,  0,  0,  0,    0,    0,    0,   .5,    1,   1,    1,    1,    0,    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0)
@@ -183,14 +183,14 @@ lipidsa.update({      # 1     2    3    4    5   6   7   8   9    10    11    12
     "OPMG": (moltype, " C1   C2   C3    -    -   -   -   -   -     -     -     -     -     -    -     -     -   GL1   GL2  C1A  C2A  C3A  C4A   -    -   C1B  D2B  C3B  C4B   -    - "),
     "OPSG": (moltype, " S1   C1   C2   C3    -   -   -   -   -     -     -     -     -     -    -     -     -   GL1   GL2  C1A  C2A  C3A  C4A   -    -   C1B  D2B  C3B  C4B   -    - "),
     "OPGG": (moltype, "GB2  GB3  GB1  GA1  GA2 GA3   -   -   -     -     -     -     -     -    -     -     -   GL1   GL2  C1A  C2A  C3A  C4A   -    -   C1B  D2B  C3B  C4B   -    - "),
-#lipids for thylakoid membrane of spinach: for the *T both chains are triple unsaturated and the *G have a triple unsaturated chain at sn1 and a palmitoyl chain at sn2. 
+#lipids for thylakoid membrane of spinach: for the *T both chains are triple unsaturated and the *G have a triple unsaturated chain at sn1 and a palmitoyl chain at sn2.
     "FPMG": (moltype, " C1   C2   C3    -    -   -   -   -   -     -     -     -     -     -    -     -     -   GL1   GL2  C1A  C2A  C3A  C4A   -    -   C1B  D2B  D3B  D4B   -    - "),
     "DFMG": (moltype, " C1   C2   C3    -    -   -   -   -   -     -     -     -     -     -    -     -     -   GL1   GL2  C1A  D2A  D3A  D4A   -    -   C1B  D2B  D3B  D4B   -    - "),
     "FPSG": (moltype, " S1   C1   C2   C3    -   -   -   -   -     -     -     -     -     -    -     -     -   GL1   GL2  C1A  C2A  C3A  C4A   -    -   C1B  D2B  D3B  D4B   -    - "),
     "FPGG": (moltype, "GB2  GB3  GB1  GA1  GA2 GA3   -   -   -     -     -     -     -     -    -     -     -   GL1   GL2  C1A  C2A  C3A  C4A   -    -   C1B  D2B  D3B  D4B   -    - "),
     "DFGG": (moltype, "GB2  GB3  GB1  GA1  GA2 GA3   -   -   -     -     -     -     -     -    -     -     -   GL1   GL2  C1A  D2A  D3A  D4A   -    -   C1B  D2B  D3B  D4B   -    - "),
 ## Templates using the old lipid names and definitions
-  "GM1.o" : (moltype, "GM1  GM2  GM3  GM4  GM5 GM6 GM7 GM8 GM9  GM10  GM11  GM12  GM13  GM14 GM15  GM16  GM17   AM1   AM2  C1A  C2A  C3A  C4A  C5A   -   C1B  C2B  C3B  C4B   -    - "), 
+  "GM1.o" : (moltype, "GM1  GM2  GM3  GM4  GM5 GM6 GM7 GM8 GM9  GM10  GM11  GM12  GM13  GM14 GM15  GM16  GM17   AM1   AM2  C1A  C2A  C3A  C4A  C5A   -   C1B  C2B  C3B  C4B   -    - "),
   "DGDG.o": (moltype, "GB2  GB3  GB1  GA1  GA2 GA3   -   -   -     -     -     -     -     -    -     -     -   GL1   GL2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - "),
   "MGDG.o": (moltype, " C1   C2   C3    -    -   -   -   -   -     -     -     -     -     -    -     -     -   GL1   GL2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - "),
   "SQDG.o": (moltype, " S1   C1   C2   C3    -   -   -   -   -     -     -     -     -     -    -     -     -   GL1   GL2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - "),
@@ -210,11 +210,11 @@ lipidsa.update({      # 1     2    3    4    5    6    7    8    9    10    11  
 
 
 # Prototopology for cardiolipins
-#  
+#
 #       4-11-12-13-14-15-16
 #       |
 #   2---3--5--6--7--8--9-10
-#  / 
+#  /
 # 1
 #  \
 #   17-18-20-21-22-23-24-25
@@ -228,11 +228,11 @@ lipidsz[moltype] = (     8,   7,  6,  6,  5,  4,  3,  2,  1,  0,  5,  4,  3,  2,
 lipidsa.update({      #  1    2   3   4   5   6   7   8   9  10  11  12  13  14  15  16   17  18  19  20  21  22  23  24  25  26  27  28  29  30  31
     "CDL0": (moltype, "GL5 PO41 GL1 GL2 C1A C2A D3A C4A C5A   - C1B C2B D3B C4B C5B   - PO42 GL3 GL4 C1C C2C D3C C4C C5C   - C1D C2D D3D C4D C5D   -"), # Warning not the same names is in .itp
     "CDL1": (moltype, "GL5 PO41 GL1 GL2 C1A C2A D3A C4A C5A   - C1B C2B D3B C4B C5B   - PO42 GL3 GL4 C1C C2C D3C C4C C5C   - C1D C2D D3D C4D C5D   -"), # Warning not the same names is in .itp
-    "CDL2": (moltype, "GL5 PO41 GL1 GL2 C1A C2A D3A C4A C5A   - C1B C2B D3B C4B C5B   - PO42 GL3 GL4 C1C C2C D3C C4C C5C   - C1D C2D D3D C4D C5D   -"), # Warning not the same names is in .itp 
-    "CL4P": (moltype, "GL5 PO41 GL1 GL2 C1A C2A C3A C4A C5A   - C1B C2B C3B C4B C5B   - PO42 GL3 GL4 C1C C2C C3C C4C C5C   - C1D C2D C3D C4D C5D   -"), 
-    "CL4M": (moltype, "GL5 PO41 GL1 GL2 C1A C2A C3A   -   -   - C1B C2B C3B   -   -   - PO42 GL3 GL4 C1C C2C C3C   -   -   - C1D C2D C3D   -   -   -"), 
+    "CDL2": (moltype, "GL5 PO41 GL1 GL2 C1A C2A D3A C4A C5A   - C1B C2B D3B C4B C5B   - PO42 GL3 GL4 C1C C2C D3C C4C C5C   - C1D C2D D3D C4D C5D   -"), # Warning not the same names is in .itp
+    "CL4P": (moltype, "GL5 PO41 GL1 GL2 C1A C2A C3A C4A C5A   - C1B C2B C3B C4B C5B   - PO42 GL3 GL4 C1C C2C C3C C4C C5C   - C1D C2D C3D C4D C5D   -"),
+    "CL4M": (moltype, "GL5 PO41 GL1 GL2 C1A C2A C3A   -   -   - C1B C2B C3B   -   -   - PO42 GL3 GL4 C1C C2C C3C   -   -   - C1D C2D C3D   -   -   -"),
 ## Templates using the old lipid names and definitions
-  "CL4.o" : (moltype, "GL5 PO41 GL1 GL2 C1A C2A D3A C4A C5A   - C1B C2B D3B C4B C5B   - PO42 GL3 GL4 C1C C2C D3C C4C C5C   - C1D C2D D3D C4D C5D   -"), 
+  "CL4.o" : (moltype, "GL5 PO41 GL1 GL2 C1A C2A D3A C4A C5A   - C1B C2B D3B C4B C5B   - PO42 GL3 GL4 C1C C2C D3C C4C C5C   - C1D C2D D3D C4D C5D   -"),
   "CL4O.o": (moltype, "GL5 PO41 GL1 GL2 C1A C2A D3A C4A C5A   - C1B C2B D3B C4B C5B   - PO42 GL3 GL4 C1C C2C D3C C4C C5C   - C1D C2D D3D C4D C5D   -"),
 })
 
@@ -275,7 +275,7 @@ lipidsa.update({
 moltype = "Hopanoids"
 lipidsx[moltype] = (     0,  0,  0,  0, 0.5,-0.5,   0,   0, 0.5, 0.5,   0,   0,   0,   0,  0,  0,  0,  0)
 lipidsy[moltype] = (     0,  0,  0,  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,  0,  0,  0,  0)
-lipidsz[moltype] = (     0,  0,  0,  0, 0.5, 1.4, 2.6,   3, 3.3, 3.9, 4.5, 5.0, 5.5, 6.0,  0,  0,  0,  0) 
+lipidsz[moltype] = (     0,  0,  0,  0, 0.5, 1.4, 2.6,   3, 3.3, 3.9, 4.5, 5.0, 5.5, 6.0,  0,  0,  0,  0)
 lipidsa.update({
     "HOPR": (moltype, " -   -   -   R1   R2   R3   R4   R5   R6   R7   R8   -    -    -    -   -   -   - "),
     "HHOP": (moltype, " -   -   -   R1   R2   R3   R4   R5   R6   R7   R8   C1   -    -    -   -   -   - "),
@@ -302,7 +302,7 @@ solventParticles = {
     "SPC":      (("OW",(0,0,0)),                             # SPC
                  ("HW1",(0.01,0,0)),
                  ("HW2",(0.01*ct,0.01*st,0))),
-    "SPCM":     (("OW",(0,0,0)),                             # Multiscale/Martini SPC 
+    "SPCM":     (("OW",(0,0,0)),                             # Multiscale/Martini SPC
                  ("HW1",(0.01,0,0)),
                  ("HW2",(0.01*ct,0.01*st,0)),
                  ("vW",(0,0,0))),
@@ -389,7 +389,7 @@ solventParticles = {
     "GLY":      (("BB", ( 0,    0,   0)),),
     "ALA":      (("BB", ( 0,    0,   0)),),
     "ASN":      (("BB", ( 0.25, 0,   0)),
-                 ("SC1",(-0.25, 0,   0))), 
+                 ("SC1",(-0.25, 0,   0))),
     "ASP":      (("BB", ( 0.25, 0,   0)),
                  ("SC1",(-0.25, 0,   0))),
     "GLU":      (("BB", ( 0.25, 0,   0)),
@@ -438,12 +438,12 @@ solventParticles = {
 for s in ["W","NA","CL","Mg","K","BUT"]:
     solventParticles[s] = ((s,(0,0,0)),)
 
-# Apolar amino acids nd stuff for orienting proteins in membrane 
+# Apolar amino acids nd stuff for orienting proteins in membrane
 apolar = "ALA CYS PHE ILE LEU MET VAL TRP PLM CLR".split()
 
 headbeads = { # Define supported lipid head beads. One letter name mapped to atom name
 "C":  "NC3", # NC3 = Choline
-    "E":  "NH3", # NH3 = Ethanolamine 
+    "E":  "NH3", # NH3 = Ethanolamine
     "G":  "GL0", # GL0 = Glycerol
     "S":  "CNO", # CNO = Serine
     "P":  "PO4", # PO4 = Phosphate

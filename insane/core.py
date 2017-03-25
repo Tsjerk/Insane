@@ -21,7 +21,7 @@
 """
 INSANE: A versatile tool for building membranes and/or solvent with proteins.
 
-... Someone ought to write a more extensive docstring here... 
+... Someone ought to write a more extensive docstring here...
 """
 
 
@@ -69,12 +69,12 @@ def isPDBAtom(l):
 def pdbAtom(a):
     ##01234567890123456789012345678901234567890123456789012345678901234567890123456789
     ##ATOM   2155 HH11 ARG C 203     116.140  48.800   6.280  1.00  0.00
-    ## ===>   atom name,   res name,     res id, chain,       x,            y,             z       
+    ## ===>   atom name,   res name,     res id, chain,       x,            y,             z
     return (S(a[12:16]),S(a[17:20]),I(a[22:26]),a[21],F(a[30:38])/10,F(a[38:46])/10,F(a[46:54])/10)
 
 
-# Reformatting of lines in structure file                                     
-pdbBoxLine  = "CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f P 1           1\n"        
+# Reformatting of lines in structure file
+pdbBoxLine  = "CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f P 1           1\n"
 pdbline = "ATOM  %5i  %-3s %4s%1s%4i%1s   %8.3f%8.3f%8.3f%6.2f%6.2f           %1s  \n"
 
 
@@ -99,10 +99,10 @@ def pdbBoxString(box):
 def groAtom(a):
     #012345678901234567890123456789012345678901234567890
     #    1PRN      N    1   4.168  11.132   5.291
-    ## ===>   atom name,   res name,     res id, chain,       x,          y,          z       
+    ## ===>   atom name,   res name,     res id, chain,       x,          y,          z
     return (S(a[10:15]), S(a[5:10]),   I(a[:5]), " ", F(a[20:28]),F(a[28:36]),F(a[36:44]))
 
-def groBoxRead(a):    
+def groBoxRead(a):
     b = [F(i) for i in a.split()] + 6*[0] # Padding for rectangular boxes
     return b[0],b[3],b[4],b[5],b[1],b[6],b[7],b[8],b[2]
 
@@ -113,7 +113,7 @@ class Structure:
         self.atoms   = []
         self.coord   = []
         self.rest    = []
-        self.box     = []        
+        self.box     = []
         self._center = None
 
         if filename:
@@ -121,7 +121,7 @@ class Structure:
             # Try extracting PDB atom/hetatm definitions
             self.rest   = []
             self.atoms  = [pdbAtom(i) for i in lines if isPDBAtom(i) or self.rest.append(i)]
-            if self.atoms:             
+            if self.atoms:
                 # This must be a PDB file
                 self.title = "THIS IS INSANE!\n"
                 for i in self.rest:
@@ -130,7 +130,7 @@ class Structure:
                 self.box   = [0,0,0,0,0,0,0,0,0]
                 for i in self.rest:
                     if i.startswith("CRYST1"):
-                        self.box = pdbBoxRead(i)                
+                        self.box = pdbBoxRead(i)
             else:
                 # This should be a GRO file
                 self.atoms = [groAtom(i) for i in lines[2:-1]]
@@ -224,7 +224,7 @@ class Structure:
         sx, sy, sz, w = zip(*surface)
         W             = 1.0/sum(w)
 
-        # Weighted center of apolar region; has to go to (0,0,0) 
+        # Weighted center of apolar region; has to go to (0,0,0)
         sxm,sym,szm   = [sum(p)*W
                          for p in zip(*[(m*i,m*j,m*k)
                                         for m,i,j,k in zip(w,sx,sy,sz)])]
@@ -233,8 +233,8 @@ class Structure:
         self.center((-sxm,-sym,-szm))
         sx, sy, sz    = zip(*[(i-sxm,j-sym,k-szm) for i,j,k in zip(sx,sy,sz)])
 
-        # Determine weighted deviations from centers 
-        dx,dy,dz      = zip(*[(m*i,m*j,m*k) for m,i,j,k in zip(w,sx,sy,sz)]) 
+        # Determine weighted deviations from centers
+        dx,dy,dz      = zip(*[(m*i,m*j,m*k) for m,i,j,k in zip(w,sx,sy,sz)])
 
         # Covariance matrix for surface
         xx,yy,zz,xy,yz,zx = [sum(p)*W
@@ -265,7 +265,7 @@ class Structure:
 
             # The eigenvalues are the roots of the 2nd order
             # characteristic polynomial, with the coefficients
-            # equal to the trace and the determinant of the 
+            # equal to the trace and the determinant of the
             # matrix.
             t,  d  = xx+yy, xx*yy - xy*xy
             # The two eigenvectors form a 2D rotation matrix
@@ -280,8 +280,8 @@ class Structure:
             ux    /=  lu
             uy    /=  lu
 
-            # Finally we rotate the system in the plane by 
-            # matrix multiplication with the transpose of 
+            # Finally we rotate the system in the plane by
+            # matrix multiplication with the transpose of
             # the matrix of eigenvectors
             self.coord = [(ux*i+uy*j,ux*j-uy*i,k) for i,j,k in zip(x,y,z)]
 
@@ -318,9 +318,9 @@ class Lipid:
     def parse(self,string):
         """
         Parse lipid definition from string:
-        
+
             alhead=C P, allink=A A, altail=TCC CCCC, alname=DPSM, charge=0.0
-        """        
+        """
         fields = [i.split("=") for i in string.split(',')]
         for what,val in fields:
             what = what.strip()
@@ -345,7 +345,7 @@ class Lipid:
         if not self.coords:
             if self.beads and self.template:
                 stuff = zip(self.beads,self.template)
-                self.coords = [[i,x,y,z] for i,(x,y,z) in stuff if i != "-"]                
+                self.coords = [[i,x,y,z] for i,(x,y,z) in stuff if i != "-"]
             else:
                 # Set beads/structure from head/link/tail
                 # Set bead names
@@ -361,7 +361,7 @@ class Lipid:
                 length = len(self.head)+taillength
 
                 # Add the pseudocoordinates for the head
-                rl     = range(len(self.head))        
+                rl     = range(len(self.head))
                 struc  = [(0,0,length-i) for i in rl]
 
                 # Add the linkers
@@ -442,7 +442,7 @@ def meand(v):
 def ssd(u,v):
     return sum([(i-u[0])*(j-v[0]) for i,j in zip(u,v)])/(len(u)-1)
 
-# Parse a string for a lipid as given on the command line (LIPID[:NUMBER]) 
+# Parse a string for a lipid as given on the command line (LIPID[:NUMBER])
 def parse_mol(x):
     l = x.split(":")
     return l[0], len(l) == 1 and 1 or float(l[1])
@@ -455,7 +455,7 @@ class Option:
         self.num         = num
         self.value       = default
         self.description = description
-    def __nonzero__(self): 
+    def __nonzero__(self):
         return self.value != None
     def __str__(self):
         return self.value and str(self.value) or ""
@@ -494,7 +494,7 @@ def old_main(argv, OPTS):
         ("-o",      Option(str,         1,        None, "Output GRO file: Membrane with Protein")),
         ("-p",      Option(str,         1,        None, "Optional rudimentary topology file")),
         """
-    Periodic boundary conditions 
+    Periodic boundary conditions
     If -d is given, set up PBC according to -pbc such that no periodic
     images are closer than the value given.  This will make the numbers
     provided for lipids be interpreted as relative numbers. If -d is
@@ -510,7 +510,7 @@ def old_main(argv, OPTS):
         ("-box",    Option(box3d,       1,        None, "Box in GRO (3 or 9 floats) or PDB (6 floats) format, comma separated")),
         ("-n",      Option(str,         1,        None, "Index file --- TO BE IMPLEMENTED")),
         """
-    Membrane/lipid related options.  
+    Membrane/lipid related options.
     The options -l and -u can be given multiple times. Option -u can be
     used to set the lipid type and abundance for the upper leaflet. Option
     -l sets the type and abundance for the lower leaflet if option -u is
@@ -581,13 +581,13 @@ def old_main(argv, OPTS):
         ar = args.pop(0)
         options[ar].setvalue([args.pop(0) for i in range(options[ar].num)])
 
-    
+
     ## end of options
 
 
-    # Read in the structures (if any)    
+    # Read in the structures (if any)
     tm    = [ Structure(i) for i in OPTS.solute ]
-    
+
 
     ## I. STRUCTURES
 
@@ -601,7 +601,7 @@ def old_main(argv, OPTS):
     # lipid_list = lipids.get_list()
     # lipid_list.add_from_file(*OPTS.mollist)
     # lipid_list.add_from_def(*zip(OPTS.lipnames,OPTS.lipheads,OPTS.liplinks,OPTS.liptails,OPTS.lipcharge))
-    
+
 
     # First add internal lipids
     for name,lip in lipidsa.items():
@@ -646,7 +646,7 @@ def old_main(argv, OPTS):
     if options["-pbc"].value == "keep" and tm:
         options["-x"].value = tm[0].box[:3]
         options["-y"].value = tm[0].box[3:6]
-        options["-z"].value = tm[0].box[6:]    
+        options["-z"].value = tm[0].box[6:]
 
     # options -x, -y, -z take precedence over automatic determination
     pbcSetX = 0
@@ -672,7 +672,7 @@ def old_main(argv, OPTS):
     if options["-au"].value:
         up_lipd = math.sqrt(options["-au"].value)
     else:
-        up_lipd = lo_lipd 
+        up_lipd = lo_lipd
 
 
     ################
@@ -701,11 +701,11 @@ def old_main(argv, OPTS):
             # Hexagonal prism -- y derived from x directly
             pbcy = math.sqrt(3)*pbcx/2
             pbcz = options["-dz"].value or options["-z"].value or options["-d"].value
-        elif "optimal".startswith(options["-pbc"].value): 
+        elif "optimal".startswith(options["-pbc"].value):
             # Rhombic dodecahedron with hexagonal XY plane
             pbcy = math.sqrt(3)*pbcx/2
             pbcz = math.sqrt(6)*options["-d"].value/3
-        if "rectangular".startswith(options["-pbc"].value): 
+        if "rectangular".startswith(options["-pbc"].value):
             pbcz = options["-dz"].value or options["-z"].value or options["-d"].value
 
         # Possibly override
@@ -729,7 +729,7 @@ def old_main(argv, OPTS):
                 # Set PBC starting from diameter and adding distance
                 if "cubic".startswith(options["-pbc"].value):
                     pbcx = pbcy = pbcz = prot.diam()+options["-d"].value
-                elif "rectangular".startswith(options["-pbc"].value):                
+                elif "rectangular".startswith(options["-pbc"].value):
                     pbcx, pbcy, pbcz = linalg.vvadd(linalg.vvsub(prot.fun(max),prot.fun(min)),options["-d"].value)
                 else:
                     # Rhombic dodecahedron
@@ -752,7 +752,7 @@ def old_main(argv, OPTS):
             ## b. PROTEIN AND MEMBRANE --
             else:
 
-                # Have to build a membrane around the protein. 
+                # Have to build a membrane around the protein.
                 # So first put the protein in properly.
 
                 # Center the protein and store the shift
@@ -767,7 +767,7 @@ def old_main(argv, OPTS):
                     pw = options["-op"].value
 
                     prot.orient(d, pw)
-                    
+
                 ## 4. Orient the protein in the xy-plane
                 ## i. According to principal axes and unit cell
                 if options["-rotate"].value == "princ":
@@ -780,7 +780,7 @@ def old_main(argv, OPTS):
                 elif options["-rotate"]:
                     prot.rotate_degrees(float(options["-rotate"].value))
 
-                ## 5. Determine the minimum and maximum x and y of the protein 
+                ## 5. Determine the minimum and maximum x and y of the protein
                 pmin, pmax = prot.fun(min), prot.fun(max)
                 prng       = (pmax[0]-pmin[0],pmax[1]-pmin[1],pmax[2]-pmin[2])
                 center     = (0.5*(pmin[0]+pmax[0]),0.5*(pmin[1]+pmax[1]))
@@ -806,7 +806,7 @@ def old_main(argv, OPTS):
                 ## 6. Set box (brick) dimensions
                 if options["-disc"]:
                     pbcx = options["-d"].value + 2*options["-disc"].value
-                    if ("square".startswith(options["-pbc"].value) or 
+                    if ("square".startswith(options["-pbc"].value) or
                         "rectangular".startswith(options["-pbc"].value)):
                         pbcy = pbcx
                     else:
@@ -827,7 +827,7 @@ def old_main(argv, OPTS):
                 # If we need to add a hole, we have to scale the system
                 # The scaling depends on the type of PBC
                 if options["-hole"]:
-                    if ("square".startswith(options["-pbc"].value) or 
+                    if ("square".startswith(options["-pbc"].value) or
                         "rectangular".startswith(options["-pbc"].value)):
                         scale = 1+options["-hole"].value/min(pbcx,pbcy)
                     else:
@@ -846,10 +846,10 @@ def old_main(argv, OPTS):
                 if options["-dm"]:
                     if options["-dm"].value < 0:
                         zshift += options["-dm"].value # - max(zip(*prot.coord)[2])
-                    else:                        
+                    else:
                         zshift += options["-dm"].value # - min(zip(*prot.coord)[2])
 
-                # Now we center the system in the rectangular 
+                # Now we center the system in the rectangular
                 # brick corresponding to the unit cell
                 # If -center is given, also center z in plane
                 prot += (0.5*pbcx, 0.5*pbcy, zshift)
@@ -918,7 +918,7 @@ def old_main(argv, OPTS):
 
         lipd = lo_lipd
 
-        # Number of lipids in x and y in lower leaflet if there were no solute 
+        # Number of lipids in x and y in lower leaflet if there were no solute
         lo_lipids_x = int(pbcx/lipd+0.5)
         lo_lipdx    = pbcx/lo_lipids_x
         lo_rlipx    = range(lo_lipids_x)
@@ -929,7 +929,7 @@ def old_main(argv, OPTS):
         if options["-au"]:
             lipd = up_lipd
 
-        # Number of lipids in x and y in upper leaflet if there were no solute 
+        # Number of lipids in x and y in upper leaflet if there were no solute
         up_lipids_x = int(pbcx/lipd+0.5)
         up_lipdx    = pbcx/up_lipids_x
         up_rlipx    = range(up_lipids_x)
@@ -945,9 +945,9 @@ def old_main(argv, OPTS):
         # If there is a protein, mark the corresponding cells as occupied
         if protein:
             # Calculate number density per cell
-            for i in prot_lo: 
+            for i in prot_lo:
                 grid_lo[ int(lo_lipids_x*i[0]/rx)%lo_lipids_x ][ int(lo_lipids_y*i[1]/ry)%lo_lipids_y ] += 1
-            for i in prot_up: 
+            for i in prot_up:
                 grid_up[ int(up_lipids_x*i[0]/rx)%up_lipids_x ][ int(up_lipids_y*i[1]/ry)%up_lipids_y ] += 1
 
 
@@ -995,11 +995,11 @@ def old_main(argv, OPTS):
                         grid_lo[ii][jj] = False
 
 
-        # If we make a circular patch, we flag the cells further from the 
+        # If we make a circular patch, we flag the cells further from the
         # protein or box center than the given radius as occupied.
         if options["-disc"]:
             if protein:
-                cx,cy = protein.center()[:2]            
+                cx,cy = protein.center()[:2]
             else:
                 cx,cy = 0.5*pbcx, 0.5*pbcy
             for i in range(len(grid_lo)):
@@ -1014,12 +1014,12 @@ def old_main(argv, OPTS):
 
         # If we need to add a hole, we simply flag the corresponding cells
         # as occupied. The position of the hole depends on the type of PBC,
-        # to ensure an optimal arrangement of holes around the protein. If 
+        # to ensure an optimal arrangement of holes around the protein. If
         # there is no protein, the hole is just put in the center.
         if options["-hole"]:
             # Lower leaflet
             if protein:
-                if ("square".startswith(options["-pbc"].value) or 
+                if ("square".startswith(options["-pbc"].value) or
                     "rectangular".startswith(options["-pbc"].value)):
                     hx,hy = (0,0)
                 else:
@@ -1048,7 +1048,7 @@ def old_main(argv, OPTS):
                         grid_up[xi][yj] = False
             # Upper leaflet
             if protein:
-                if ("square".startswith(options["-pbc"].value) or 
+                if ("square".startswith(options["-pbc"].value) or
                     "rectangular".startswith(options["-pbc"].value)):
                     hx,hy = (0,0)
                 else:
@@ -1142,7 +1142,7 @@ def old_main(argv, OPTS):
                 #atoms    = zip(lipidsa[lipid][1].split(),lipidsx[lipidsa[lipid][0]],lipidsy[lipidsa[lipid][0]],lipidsz[lipidsa[lipid][0]])
                 # Only keep atoms appropriate for the lipid
                 #at,ax,ay,az = zip(*[i for i in atoms if i[0] != "-"])
-                at,ax,ay,az = zip(*liplist[lipid].build(diam=lipd)) 
+                at,ax,ay,az = zip(*liplist[lipid].build(diam=lipd))
                 # The z-coordinates are spaced at 0.3 nm,
                 # starting with the first bead at 0.15 nm
                 az       = [ leaflet*(0.5+(i-min(az)))*options["-bd"].value for i in az ]
@@ -1174,17 +1174,17 @@ def old_main(argv, OPTS):
     mcharge = 0
     for j in membrane.atoms:
         if not j[0].strip().startswith('v') and j[1:3] != last:
-            mcharge += charges.get(j[1].strip(),0)  
+            mcharge += charges.get(j[1].strip(),0)
         last = j[1:3]
 
     last = None
     pcharge = 0
     for j in protein.atoms:
         if not j[0].strip().startswith('v') and j[1:3] != last:
-            pcharge += charges.get(j[1].strip(),0)  
+            pcharge += charges.get(j[1].strip(),0)
         last = j[1:3]
 
-    #mcharge = sum([charges.get(i[0].strip(),0) for i in set([j[1:3] for j in membrane.atoms])]) 
+    #mcharge = sum([charges.get(i[0].strip(),0) for i in set([j[1:3] for j in membrane.atoms])])
     #pcharge = sum([charges.get(i[0].strip(),0) for i in set([j[1:3] for j in protein.atoms if not j[0].strip().startswith('v')])])
 
     charge  = mcharge + pcharge
@@ -1240,21 +1240,21 @@ def old_main(argv, OPTS):
                     x += box[2][0]
                     y += box[2][1]
                     z += box[2][2]
-                if y >= pbcy: 
+                if y >= pbcy:
                     x -= box[1][0]
                     y -= box[1][1]
-                if y < 0: 
+                if y < 0:
                     x += box[1][0]
                     y += box[1][1]
-                if x >= pbcx: 
+                if x >= pbcx:
                     x -= box[0][0]
-                if x < 0: 
+                if x < 0:
                     x += box[0][0]
                 grid[int(nx*x/rx)][int(ny*y/ry)][int(nz*z/rz)] = False
 
         # Set the center for each solvent molecule
         kick = options["-solr"].value
-        grid = [ (R(),(i+0.5+R()*kick)*dx,(j+0.5+R()*kick)*dy,(k+0.5+R()*kick)*dz) 
+        grid = [ (R(),(i+0.5+R()*kick)*dx,(j+0.5+R()*kick)*dy,(k+0.5+R()*kick)*dz)
                  for i in xrange(nx) for j in xrange(ny) for k in xrange(nz) if grid[i][j][k] ]
 
         # Sort on the random number
@@ -1322,20 +1322,20 @@ def old_main(argv, OPTS):
         for resn,(rndm,x,y,z) in solvent:
             resi += 1
             solmol = solventParticles.get(resn)
-            if solmol and len(solmol) > 1:       
+            if solmol and len(solmol) > 1:
                 # Random rotation (quaternion)
                 u,  v,  w       = random.random(), 2*math.pi*random.random(), 2*math.pi*random.random()
                 s,  t           = math.sqrt(1-u), math.sqrt(u)
                 qw, qx, qy, qz  = s*math.sin(v), s*math.cos(v), t*math.sin(w), t*math.cos(w)
-                qq              = qw*qw-qx*qx-qy*qy-qz*qz         
-                for atnm,(px,py,pz) in solmol:                
+                qq              = qw*qw-qx*qx-qy*qy-qz*qz
+                for atnm,(px,py,pz) in solmol:
                     qp = 2*(qx*px + qy*py + qz*pz)
                     rx = x + qp*qx + qq*px + qw*(qy*pz-qz*py)
                     ry = y + qp*qy + qq*py + qw*(qz*px-qx*pz)
                     rz = z + qp*qz + qq*pz + qw*(qx*py-qy*px)
                     sol.append(("%5d%-5s%5s%5d"%(resi%1e5,resn,atnm,atid%1e5),(rx,ry,rz)))
                     atid += 1
-            else:          
+            else:
                 sol.append(("%5d%-5s%5s%5d"%(resi%1e5,resn,solmol and solmol[0][0] or resn,atid%1e5),(x,y,z)))
                 atid += 1
     else:

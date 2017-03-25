@@ -19,7 +19,7 @@
 import math
 
 
-def vvadd(a,b):    
+def vvadd(a,b):
     if type(b) in (int,float):
         return [i+b for i in a]
     return [i+j for i,j in zip(a,b)]

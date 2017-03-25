@@ -35,7 +35,7 @@ OPTIONS = simopt.Options([
         ("-o", "output",      str,         1,        None, False, "Output GRO file: Membrane with Protein"),
         ("-p", "topology",    str,         1,        None, False, "Optional rudimentary topology file"),
         """
-    Periodic boundary conditions 
+    Periodic boundary conditions
     If -d is given, set up PBC according to -pbc such that no periodic
     images are closer than the value given.  This will make the numbers
     provided for lipids be interpreted as relative numbers. If -d is
@@ -51,7 +51,7 @@ OPTIONS = simopt.Options([
         ("-box", "box",       box3d,       1,        None, False, "Box in GRO (3 or 9 floats) or PDB (6 floats) format, comma separated"),
         ("-n",   "index",     str,         1,        None, False, "Index file --- TO BE IMPLEMENTED"),
         """
-    Membrane/lipid related options.  
+    Membrane/lipid related options.
     The options -l and -u can be given multiple times. Option -u can be
     used to set the lipid type and abundance for the upper leaflet. Option
     -l sets the type and abundance for the lower leaflet if option -u is
@@ -116,7 +116,7 @@ def main(argv):
     ## <---
 
     ## OPTIONS
-    # Parse options    
+    # Parse options
     try:
         options = {}
     except OptionParseException as e:
