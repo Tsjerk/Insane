@@ -31,8 +31,31 @@ import tempfile
 
 from StringIO import StringIO
 
+def which(program):
+    """Determine full path of executable *program* on :envvar:`PATH`.
+
+    (Jay at http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python)
+    """
+
+    def is_exe(fpath):
+        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+
+    fpath, fname = os.path.split(program)
+    if fpath:
+        real_program = realpath(program)
+        if is_exe(real_program):
+            return real_program
+    else:
+        for path in os.environ["PATH"].split(os.pathsep):
+            exe_file = os.path.join(path, program)
+            if is_exe(exe_file):
+                return exe_file
+    return None
+
 HERE = os.path.abspath(os.path.dirname(__file__))
-INSANE = os.path.abspath(os.path.join(HERE, '../insane.py'))
+#INSANE = os.path.abspath(os.path.join(HERE, '../insane.py'))
+#INSANE = '/home/jon/Envs/tsjerk/bin/insane'
+INSANE = which('insane')
 DATA_DIR = os.path.join(HERE, 'data')
 INPUT_DIR = os.path.join(HERE, 'data', 'inputs')
 INSANE_SEED = '42'
