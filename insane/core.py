@@ -1232,14 +1232,74 @@ def old_main(argv, options):
             mcharge, pcharge, lipU, lipL, numU, numL, box)
 
 
+def iter_atoms(atoms):
+    for atom, (x, y, z) in zip(atoms.atoms, atoms.coord):
+        at, rn, ri = atom[:3]
+        if rn.endswith('.o'):
+            rn = rn[:-2]
+        yield at, rn, ri, x, y, z
+
+
+def write_gro(oStream, title, protein, membrane, sol, box):
+    # Print the title
+    print(title, file=oStream)
+
+    # Print the number of atoms
+    print("%5d"%(len(protein)+len(membrane)+len(sol)), file=oStream)
+
+    # Print the atoms
+    atom_template = "%5d%-5s%5s%5d%8.3f%8.3f%8.3f"
+    id = 1
+    if protein:
+        for at, rn, ri, x, y, z in iter_atoms(protein):
+            print(atom_template%(ri%1e5, rn, at, id%1e5, x, y, z), file=oStream)
+            id += 1
+    if membrane:
+        for at, rn, ri, x, y, z in iter_atoms(membrane):
+            print(atom_template%(ri%1e5, rn, at, id%1e5, x, y, z), file=oStream)
+            id += 1
+    if sol:
+        # Print the solvent
+        print("\n".join([i[0]+"%8.3f%8.3f%8.3f"%i[1] for i in sol]), file=oStream)
+
+    # Print the box
+    grobox = (box[0][0], box[1][1], box[2][2],
+              box[0][1], box[0][2], box[1][0],
+              box[1][2], box[2][0], box[2][1])
+    print("%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f"%grobox, file=oStream)
+
+
+def write_pdb(oStream, title, protein, membrane, sol, box):
+    # Print the title
+    print(title, oStream)
+
+    # Print the box
+    print(pdbBoxString(box), file=oStream)
+
+    # Print the atoms
+    id = 1
+    if protein:
+        for at, rn, ri, x, y, z in iter_atoms(protein):
+            oStream.write(pdbline%(id%1e5, at, rn, "", ri%1e5, '', 10*x, 10*y, 10*z, 0, 0, ''))
+            id += 1
+    if membrane:
+        for at, rn, ri, x, y, z in iter_atoms(membrane):
+            oStream.write(pdbline%(id%1e5, at, rn, "", ri%1e5, '', 10*x, 10*y, 10*z, 0, 0, ''))
+            id += 1
+    if sol:
+        # Print the solvent
+        for i in range(len(sol)):
+            ri, rn, at, ai = sol[i][0][:5], sol[i][0][5:10], sol[i][0][10:15], sol[i][0][15:20]
+            x, y, z    = sol[i][1]
+            if rn.endswith('.o'):
+                rn = rn[:-2]
+            oStream.write(pdbline%(id%1e5, at.strip(), rn.strip(), "", int(ri)%1e5, '', 10*x, 10*y, 10*z, 0, 0, ''))
+            id += 1
+
 
 def write_all(output, topology, molecules, protein, membrane,
               solvent, sol, mcharge, pcharge, lipU, lipL, numU, numL, box):
     ## Write the output ##
-
-    grobox = (box[0][0], box[1][1], box[2][2],
-              box[0][1], box[0][2], box[1][0],
-              box[1][2], box[2][0], box[2][1])
 
     charge  = mcharge + pcharge
     plen, mlen, slen = 0, 0, 0
@@ -1260,85 +1320,19 @@ def write_all(output, topology, molecules, protein, membrane,
     # Open the output stream
     oStream = output and open(output, "w") or sys.stdout
 
-    if output.endswith(".gro"):
-        # Print the title
-        if membrane.atoms:
-            title  = "INSANE! Membrane UpperLeaflet>"+":".join(lipU)+"="+":".join([str(i) for i in numU])
-            title += " LowerLeaflet>"+":".join(lipL)+"="+":".join([str(i) for i in numL])
+    if membrane.atoms:
+        title  = "INSANE! Membrane UpperLeaflet>"+":".join(lipU)+"="+":".join([str(i) for i in numU])
+        title += " LowerLeaflet>"+":".join(lipL)+"="+":".join([str(i) for i in numL])
 
-            if protein:
-                title = "Protein in " + title
-        else:
-            title = "Insanely solvated protein."
-
-        print(title, file=oStream)
-
-        # Print the number of atoms
-        print("%5d"%(len(protein)+len(membrane)+len(sol)), file=oStream)
-
-        # Print the atoms
-        id = 1
         if protein:
-            for i in range(len(protein)):
-                at, rn, ri = protein.atoms[i][:3]
-                x, y, z    = protein.coord[i]
-                if rn.endswith('.o'):
-                    rn = rn[:-2]
-                oStream.write("%5d%-5s%5s%5d%8.3f%8.3f%8.3f\n"%(ri%1e5, rn, at, id%1e5, x, y, z))
-                id += 1
-        if membrane:
-            for i in range(len(membrane)):
-                at, rn, ri = membrane.atoms[i][:3]
-                x, y, z    = membrane.coord[i]
-                if rn.endswith('.o'):
-                    rn = rn[:-2]
-                oStream.write("%5d%-5s%5s%5d%8.3f%8.3f%8.3f\n"%(ri%1e5, rn, at, id%1e5, x, y, z))
-                id += 1
-        if sol:
-            # Print the solvent
-            print("\n".join([i[0]+"%8.3f%8.3f%8.3f"%i[1] for i in sol]), file=oStream)
-
-        # Print the box
-        print("%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f"%grobox, file=oStream)
+            title = "Protein in " + title
     else:
-        # Print the title
-        if membrane.atoms:
-            title  = "TITLE INSANE! Membrane UpperLeaflet>"+":".join(lipU)+"="+":".join([str(i) for i in numU])
-            title += " LowerLeaflet>"+":".join(lipL)+"="+":".join([str(i) for i in numL])
-        else:
-            title = "TITLE Insanely solvated protein."
-        print(title, oStream)
+        title = "Insanely solvated protein."
 
-        # Print the box
-        print(pdbBoxString(box), file=oStream)
-
-        # Print the atoms
-        id = 1
-        if protein:
-            for i in range(len(protein)):
-                at, rn, ri = protein.atoms[i][:3]
-                x, y, z    = protein.coord[i]
-                if rn.endswith('.o'):
-                    rn = rn[:-2]
-                oStream.write(pdbline%(id%1e5, at, rn, "", ri%1e5, '', 10*x, 10*y, 10*z, 0, 0, ''))
-                id += 1
-        if membrane:
-            for i in range(len(membrane)):
-                at, rn, ri = membrane.atoms[i][:3]
-                x, y, z    = membrane.coord[i]
-                if rn.endswith('.o'):
-                    rn = rn[:-2]
-                oStream.write(pdbline%(id%1e5, at, rn, "", ri%1e5, '', 10*x, 10*y, 10*z, 0, 0, ''))
-                id += 1
-        if sol:
-            # Print the solvent
-            for i in range(len(sol)):
-                ri, rn, at, ai = sol[i][0][:5], sol[i][0][5:10], sol[i][0][10:15], sol[i][0][15:20]
-                x, y, z    = sol[i][1]
-                if rn.endswith('.o'):
-                    rn = rn[:-2]
-                oStream.write(pdbline%(id%1e5, at.strip(), rn.strip(), "", int(ri)%1e5, '', 10*x, 10*y, 10*z, 0, 0, ''))
-                id += 1
+    if output.endswith(".gro"):
+        write_gro(oStream, title, protein, membrane, sol, box)
+    else:
+        write_pdb(oStream, title, protein, membrane, sol, box)
 
     topmolecules = []
     for i in molecules:
