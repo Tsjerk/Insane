@@ -103,7 +103,7 @@ def groBoxRead(a):
     return b[0], b[3], b[4], b[5], b[1], b[6], b[7], b[8], b[2]
 
 
-class Structure:
+class Structure(object):
     def __init__(self, filename=None):
         self.title   = ""
         self.atoms   = []
@@ -157,6 +157,24 @@ class Structure:
             return result
         raise TypeError('Cannot add {} to {}'
                         .format(self.__class__, other.__class__))
+
+    def __iter__(self):
+        atom_enumeration = enumerate(zip(self.atoms, self.coord), start=1)
+        for idx, (atom, (x, y, z)) in atom_enumeration:
+            atname, resname, resid = atom[:3]
+            if resname.endswith('.o'):
+                resname = rn[:-2]
+            yield idx, atname, resname, resid, x, y, z
+
+    @property
+    def charge(self):
+        last = None
+        charge = 0
+        for j in self.atoms:
+            if not j[0].strip().startswith('v') and j[1:3] != last:
+                charge += charges.get(j[1].strip(), 0)
+            last = j[1:3]
+        return charge
 
     def center(self, other=None):
         if not self._center:
@@ -1077,19 +1095,8 @@ def old_main(argv, options):
 
     # Charge of the system so far
 
-    last = None
-    mcharge = 0
-    for j in membrane.atoms:
-        if not j[0].strip().startswith('v') and j[1:3] != last:
-            mcharge += charges.get(j[1].strip(), 0)
-        last = j[1:3]
-
-    last = None
-    pcharge = 0
-    for j in protein.atoms:
-        if not j[0].strip().startswith('v') and j[1:3] != last:
-            pcharge += charges.get(j[1].strip(), 0)
-        last = j[1:3]
+    mcharge = membrane.charge
+    pcharge = protein.charge
 
     #mcharge = sum([charges.get(i[0].strip(), 0) for i in set([j[1:3] for j in membrane.atoms])])
     #pcharge = sum([charges.get(i[0].strip(), 0) for i in set([j[1:3] for j in protein.atoms if not j[0].strip().startswith('v')])])
@@ -1233,88 +1240,108 @@ def old_main(argv, options):
                     rz = z + qp*qz + qq*pz + qw*(qx*py-qy*px)
                     sol.atoms.append((atnm, resn, resi, 0, 0, 0))
                     sol.coord.append((rx, ry, rz))
-                    #sol.append(("%5d%-5s%5s%5d"%(resi%1e5, resn, atnm, atid%1e5), (rx, ry, rz)))
                     atid += 1
             else:
                 sol.atoms.append((solmol and solmol[0][0] or resn,
                                   resn, resi,
                                   0, 0, 0))
                 sol.coord.append((x, y, z))
-                #sol.append(("%5d%-5s%5s%5d"%(resi%1e5, resn, solmol and solmol[0][0] or resn, atid%1e5), (x, y, z)))
                 atid += 1
     else:
         solvent, sol = None, Structure()
 
-    return (molecules, protein, membrane, solvent, sol,
-            mcharge, pcharge, lipU, lipL, numU, numL, box)
+    return (molecules, protein, membrane, sol,
+            lipU, lipL, numU, numL, box)
 
 
-def iter_atoms(atoms):
-    for atom, (x, y, z) in zip(atoms.atoms, atoms.coord):
-        at, rn, ri = atom[:3]
-        if rn.endswith('.o'):
-            rn = rn[:-2]
-        yield at, rn, ri, x, y, z
 
+def write_gro(outfile, title, atoms, box):
+    """
+    Write a GRO file.
 
-def write_gro(oStream, title, atoms, box):
+    Parameters
+    ----------
+    outfile
+        The stream to write in.
+    title
+        The title of the GRO file. Must be a single line.
+    atoms
+        An instance of Structure containing the atoms to write.
+    box
+        The periodic box as a 3x3 matrix.
+    """
     # Print the title
-    print(title, file=oStream)
+    print(title, file=outfile)
 
     # Print the number of atoms
-    print("{:5d}".format(len(atoms)), file=oStream)
+    print("{:5d}".format(len(atoms)), file=outfile)
 
     # Print the atoms
     atom_template = "{:5d}{:<5s}{:>5s}{:5d}{:8.3f}{:8.3f}{:8.3f}"
-    for idx, (at, rn, ri, x, y, z) in enumerate(iter_atoms(atoms), start=1):
+    for idx, atname, resname, resid, x, y, z in atoms:
         print(atom_template
-              .format(int(ri % 1e5), rn, at, int(idx % 1e5), x, y, z),
-              file=oStream)
- 
+              .format(int(resid % 1e5), resname, atname, int(idx % 1e5),
+                      x, y, z),
+              file=outfile)
+
     # Print the box
     grobox = (box[0][0], box[1][1], box[2][2],
               box[0][1], box[0][2], box[1][0],
               box[1][2], box[2][0], box[2][1])
     box_template = '{:10.5f}' * 9
-    print(box_template.format(*grobox), file=oStream)
+    print(box_template.format(*grobox), file=outfile)
 
 
-def write_pdb(oStream, title, atoms, box):
+def write_pdb(outfile, title, atoms, box):
+    """
+    Write a PDB file.
+
+    Parameters
+    ----------
+    outfile
+        The stream to write in.
+    title
+        The title of the GRO file. Must be a single line.
+    atoms
+        An instance of Structure containing the atoms to write.
+    box
+        The periodic box as a 3x3 matrix.
+    """
     # Print the title
-    print(title, oStream)
+    print(title, outfile)
 
     # Print the box
-    print(pdbBoxString(box), file=oStream)
+    print(pdbBoxString(box), file=outfile)
 
     # Print the atoms
-    for idx, (at, rn, ri, x, y, z) in enumerate(iter_atoms(atoms), start=1):
-        print(pdbline % (idx % 1e5, at, rn, "", ri % 1e5, '',
+    for idx, atname, resname, resid, x, y, z in atoms:
+        print(pdbline % (idx % 1e5, atname, resname, "", resid % 1e5, '',
                          10*x, 10*y, 10*z, 0, 0, ''),
-              file=oStream)
+              file=outfile)
+
+
+def write_summary(protein, membrane, solvent):
+    charge  = protein.charge + membrane.charge
+    plen = len(protein)
+    print("; NDX Solute %d %d" % (1, protein and plen or 0), file=sys.stderr)
+    print("; Charge of protein: %f" % protein.charge, file=sys.stderr)
+
+    mlen = len(membrane)
+    print("; NDX Membrane %d %d" % (1 + plen, membrane and plen + mlen or 0),
+          file=sys.stderr)
+    print("; Charge of membrane: %f" % membrane.charge, file=sys.stderr)
+    print("; Total charge: %f" % charge, file=sys.stderr)
+
+    slen = len(solvent)
+    print("; NDX Solvent %d %d" % (1+plen+mlen, solvent and plen+mlen+slen or 0), file=sys.stderr)
+    print("; NDX System %d %d" % (1, plen+mlen+slen), file=sys.stderr)
+    print("; \"I mean, the good stuff is just INSANE\" --Julia Ormond",
+          file=sys.stderr)
 
 
 def write_all(output, topology, molecules, protein, membrane,
-              solvent, sol, mcharge, pcharge, lipU, lipL, numU, numL, box):
-    ## Write the output ##
-
-    charge  = mcharge + pcharge
-    plen, mlen, slen = 0, 0, 0
-    plen = protein and len(protein) or 0
-    print("; NDX Solute %d %d" % (1, protein and plen or 0), file=sys.stderr)
-    print("; Charge of protein: %f" % pcharge, file=sys.stderr)
-
-    mlen = membrane and len(membrane) or 0
-    print("; NDX Membrane %d %d" % (1+plen, membrane and plen+mlen or 0), file=sys.stderr)
-    print("; Charge of membrane: %f" % mcharge, file=sys.stderr)
-    print("; Total charge: %f" % charge, file=sys.stderr)
-
-    slen = solvent and len(sol) or 0
-    print("; NDX Solvent %d %d" % (1+plen+mlen, solvent and plen+mlen+slen or 0), file=sys.stderr)
-    print("; NDX System %d %d" % (1, plen+mlen+slen), file=sys.stderr)
-    print("; \"I mean, the good stuff is just INSANE\" --Julia Ormond", file=sys.stderr)
-
-    # Open the output stream
-    oStream = output and open(output, "w") or sys.stdout
+              solvent, lipU, lipL, numU, numL, box):
+    write_summary(protein, membrane, solvent)
 
     if membrane.atoms:
         title  = "INSANE! Membrane UpperLeaflet>"+":".join(lipU)+"="+":".join([str(i) for i in numU])
@@ -1325,12 +1352,14 @@ def write_all(output, topology, molecules, protein, membrane,
     else:
         title = "Insanely solvated protein."
 
-    atoms = protein + membrane + sol
+    atoms = protein + membrane + solvent
 
-    if output.endswith(".gro"):
-        write_gro(oStream, title, atoms, box)
-    else:
-        write_pdb(oStream, title, atoms, box)
+    oStream = output and open(output, "w") or sys.stdout
+    with oStream:
+        if output.endswith(".gro"):
+            write_gro(oStream, title, atoms, box)
+        else:
+            write_pdb(oStream, title, atoms, box)
 
     topmolecules = []
     for i in molecules:
