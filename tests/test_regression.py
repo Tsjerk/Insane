@@ -85,6 +85,12 @@ SIMPLE_TEST_CASES = [
     ('-o test.gro -f CG1a0s.pdb -p CG1a0s.top -l POPC -box 20,30,40', '1a0s'),
     ('-o test.gro -f CG1a0s.pdb -p CG1a0s.top -l POPC -box 20,30,40 -d 3', '1a0s'),
     ('-o test.gro -f CG1a0s.pdb -p CG1a0s.top -l POPC -box 2,3,4 -d 10', '1a0s'),
+    '-o test.gro -box 10,15,20 -alname LOLO -alhead C.P -allink G.G -altail CC.CDC',
+    ('-o test.gro -box 10,15,20 '
+     '-alname LOLO -alhead C.P -allink G.G -altail CC.CDC '
+     '-alname LOL2 -alhead E.P -allink A.A -altail TCC.CDDC'),
+    '-o test.pdb -box 10,15,20',
+    ('-o test.pdb -f CG1a0s.pdb -p CG1a0s.top -l POPC -ring', '1a0s'),
 ]
 
 # Add test cases for all PBC options.
@@ -199,8 +205,10 @@ def _reference_path(arguments):
     """
     Get the path to the reference files for the simple test cases.
     """
+    out_struct = _gro_output_from_arguments(_arguments_as_list(arguments))
+    out_format = os.path.splitext(out_struct)[-1]
     simple_case_ref_data = os.path.join(DATA_DIR, 'simple_case')
-    ref_gro = os.path.join(simple_case_ref_data, arguments + '.gro')
+    ref_gro = os.path.join(simple_case_ref_data, arguments + out_format)
     ref_stdout = os.path.join(simple_case_ref_data, arguments + '.out')
     ref_stderr = os.path.join(simple_case_ref_data, arguments + '.err')
     return ref_gro, ref_stdout, ref_stderr
