@@ -1134,7 +1134,7 @@ def write_pdb(outfile, title, atoms, box):
         The periodic box as a 3x3 matrix.
     """
     # Print the title
-    print(title, outfile)
+    print(title, file=outfile)
 
     # Print the box
     print(pdbBoxString(box), file=outfile)
