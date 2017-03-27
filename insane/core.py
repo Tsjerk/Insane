@@ -26,14 +26,6 @@ INSANE: A versatile tool for building membranes and/or solvent with proteins.
 
 from __future__ import print_function
 
-__authors__ = ["Tsjerk A. Wassenaar", "Jonathan Barnoud"]
-__version__ = "1.0-dev"
-__year__    = "2017"
-
-version   = "20160625.15.TAW"
-previous  = "20160104.18.TAW"
-
-
 import os
 import sys
 import math
