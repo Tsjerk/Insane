@@ -506,6 +506,7 @@ def old_main(argv, options):
 
     numU = []
     numL = []
+    molecules = []
 
     # Description
     desc = ""
@@ -645,6 +646,7 @@ def old_main(argv, options):
 
     ## B. PROTEIN ---
     else:
+        molecules.append(('Protein', len(tm)))
 
         for prot in tm:
 
@@ -802,7 +804,6 @@ def old_main(argv, options):
         resi = protein.atoms[-1][2]
 
     atid      = len(protein)+1
-    molecules = []
 
     # The box dimensions are now (likely) set.
     # If a protein was given, it is positioned in the center of the
@@ -1046,7 +1047,8 @@ def old_main(argv, options):
         lip_lo     = [l for i, l in zip(num_lo, lipL) for j in range(i)]
         leaf_lo    = (-1, zip(lip_lo, lower), lo_lipd, lo_lipdx, lo_lipdy)
 
-        molecules  = zip(lipU, num_up) + zip(lipL, num_lo)
+        molecules.extend(zip(lipU, num_up))
+        molecules.extend(zip(lipL, num_lo))
 
         kick       = options["randkick"]
 
@@ -1339,8 +1341,55 @@ def write_summary(protein, membrane, solvent):
           file=sys.stderr)
 
 
-def write_all(output, topology, molecules, protein, membrane,
-              solvent, lipU, lipL, numU, numL, box):
+def write_top(outpath, molecules, title):
+    """
+    Write a basic TOP file.
+
+    The topology is written in *outpath*. If *outpath* is en empty string, or
+    anything for which ``bool(outpath) == False``, the topology is written on
+    the standard error, and the header is omitted, and only what has been buit
+    by Insane id displayed (e.g. Proteins are excluded).
+
+    Parameters
+    ----------
+    outpath
+        The path to the file to write. If empty, a simplify topology is
+        written on stderr.
+    molecules
+        List of molecules with the number of them.
+    title
+        Title of the system.
+    """
+    topmolecules = []
+    for i in molecules:
+        if i[0].endswith('.o'):
+            topmolecules.append(tuple([i[0][:-2]]+list(i[1:])))
+        else:
+            topmolecules.append(i)
+
+    if outpath:
+        # Write a rudimentary topology file
+        with open(outpath, "w") as top:
+            print('#include "martini.itp"\n', file=top)
+            print('[ system ]', file=top)
+            print('; name', file=top)
+            print(title, file=top)
+            print('\n', file=top)
+            print('[ molecules ]', file=top)
+            print('; name  number', file=top)
+            print("\n".join("%-10s %7d"%i for i in topmolecules), file=top)
+    else:
+        # Here we only include molecules that have beed added by insane.
+        # This is usually concatenated at the end of an existint top file.
+        # As the existing file usually contain the proteins already, we do not
+        # include them here.
+        added_molecules = (molecule for molecule in topmolecules
+                           if molecule[0] != 'Protein')
+        print("\n".join("%-10s %7d"%i for i in added_molecules), file=sys.stderr)
+
+
+def write_all(output, topology, molecules, protein, membrane, solvent,
+              lipU, lipL, numU, numL, box):
     write_summary(protein, membrane, solvent)
 
     if membrane.atoms:
@@ -1361,23 +1410,7 @@ def write_all(output, topology, molecules, protein, membrane,
         else:
             write_pdb(oStream, title, atoms, box)
 
-    topmolecules = []
-    for i in molecules:
-        if i[0].endswith('.o'):
-            topmolecules.append(tuple([i[0][:-2]]+list(i[1:])))
-        else:
-            topmolecules.append(i)
-
-    if topology:
-        # Write a rudimentary topology file
-        with open(topology, "w") as top:
-            print('#include "martini.itp"\n', file=top)
-            print('[ system ]\n; name\n%s\n\n[ molecules ]\n; name  number'%title, file=top)
-            if protein:
-                print("%-10s %5d"%("Protein", 1), file=top)
-            print("\n".join("%-10s %7d"%i for i in topmolecules), file=top)
-    else:
-        print("\n".join("%-10s %7d"%i for i in topmolecules), file=sys.stderr)
+    write_top(topology, molecules, title)
 
 
 def insane(**options):
