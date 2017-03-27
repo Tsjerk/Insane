@@ -1,6 +1,5 @@
 TITLE Protein in INSANE! Membrane UpperLeaflet>POPC=1 LowerLeaflet>POPC=1
 CRYST1   60.660   60.660   83.379  90.00  90.00  60.00 P 1           1
-
 ATOM      1    BB  SER   71       7.116  17.933  45.473  0.00  0.00              
 ATOM      2   SC1  SER   71       7.396  19.980  47.222  0.00  0.00              
 ATOM      3    BB  GLY   72      10.054  19.774  44.370  0.00  0.00              
