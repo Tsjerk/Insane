@@ -133,7 +133,26 @@ def main(argv):
     # Build index
 
 
-    core.old_main(argv, options)
+    (molecules,
+     protein,
+     membrane,
+     solvent,
+     lipU, lipL,
+     numU, numL,
+     box) = core.old_main(argv, options)
+    core.write_all(
+        output=options['output'],
+        topology=options['topology'],
+        molecules=molecules,
+        protein=protein,
+        membrane=membrane,
+        solvent=solvent,
+        lipU=lipU,
+        lipL=lipL,
+        numU=numU,
+        numL=numL,
+        box=box,
+    )
 
     return 0
 

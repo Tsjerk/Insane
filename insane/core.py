@@ -24,6 +24,7 @@ INSANE: A versatile tool for building membranes and/or solvent with proteins.
 ... Someone ought to write a more extensive docstring here...
 """
 
+from __future__ import print_function
 
 __authors__ = ["Tsjerk A. Wassenaar", "Jonathan Barnoud"]
 __version__ = "1.0-dev"
@@ -102,7 +103,7 @@ def groBoxRead(a):
     return b[0], b[3], b[4], b[5], b[1], b[6], b[7], b[8], b[2]
 
 
-class Structure:
+class Structure(object):
     def __init__(self, filename=None):
         self.title   = ""
         self.atoms   = []
@@ -145,6 +146,35 @@ class Structure:
         for i in range(len(self)):
             self.coord[i] = linalg.vvadd(self.coord[i], s)
         return self
+
+    def __add__(self, other):
+        if hasattr(other, 'atoms') and hasattr(other, 'coord'):
+            result = self.__class__()
+            result.atoms.extend(self.atoms)
+            result.atoms.extend(other.atoms)
+            result.coord.extend(self.coord)
+            result.coord.extend(other.coord)
+            return result
+        raise TypeError('Cannot add {} to {}'
+                        .format(self.__class__, other.__class__))
+
+    def __iter__(self):
+        atom_enumeration = enumerate(zip(self.atoms, self.coord), start=1)
+        for idx, (atom, (x, y, z)) in atom_enumeration:
+            atname, resname, resid = atom[:3]
+            if resname.endswith('.o'):
+                resname = rn[:-2]
+            yield idx, atname, resname, resid, x, y, z
+
+    @property
+    def charge(self):
+        last = None
+        charge = 0
+        for j in self.atoms:
+            if not j[0].strip().startswith('v') and j[1:3] != last:
+                charge += charges.get(j[1].strip(), 0)
+            last = j[1:3]
+        return charge
 
     def center(self, other=None):
         if not self._center:
@@ -474,6 +504,8 @@ def old_main(argv, options):
     usrtails  = options["liptails"]
     usrcharg  = options["lipcharge"]
 
+    numU = []
+    numL = []
 
     # Description
     desc = ""
@@ -794,10 +826,6 @@ def old_main(argv, options):
     box[1] = pbcSetY or box[1]
     box[2] = pbcSetZ or box[2]
 
-    grobox = (box[0][0], box[1][1], box[2][2],
-              box[0][1], box[0][2], box[1][0],
-              box[1][2], box[2][0], box[2][1])
-
     pbcx, pbcy, pbcz = box[0][0], box[1][1], box[2][2]
 
     rx, ry, rz = pbcx+1e-8, pbcy+1e-8, pbcz+1e-8
@@ -853,8 +881,8 @@ def old_main(argv, options):
         maxd    = float(max([max(i) for i in grid_up+grid_lo]))
         if  maxd == 0:
             if protein:
-                print >>sys.stderr, "; The protein seems not to be inside the membrane."
-                print >>sys.stderr, "; Run with -orient to put it in."
+                print("; The protein seems not to be inside the membrane.", file=sys.stderr)
+                print("; Run with -orient to put it in.", file=sys.stderr)
             maxd = 1
 
 
@@ -925,7 +953,7 @@ def old_main(argv, options):
                 hx, hy = (int(0.5*lo_lipids_x), int(0.5*lo_lipids_y))
             hr = int(options["hole"]/min(lo_lipdx,  lo_lipdy)+0.5)
             ys = int(lo_lipids_x*box[1][0]/box[0][0]+0.5)
-            print >>sys.stderr, "; Making a hole with radius %f nm centered at grid cell (%d,%d)"%(options["hole"], hx, hy), hr
+            print("; Making a hole with radius %f nm centered at grid cell (%d,%d)"%(options["hole"], hx, hy), hr, file=sys.stderr)
             hr -= 1
             for ii in range(hx-hr-1, hx+hr+1):
                 for jj in range(hx-hr-1, hx+hr+1):
@@ -954,7 +982,7 @@ def old_main(argv, options):
                 hx, hy = (int(0.5*up_lipids_x), int(0.5*up_lipids_y))
             hr = int(options["hole"]/min(up_lipdx, up_lipdy)+0.5)
             ys = int(up_lipids_x*box[1][0]/box[0][0]+0.5)
-            print >>sys.stderr, "; Making a hole with radius %f nm centered at grid cell (%d,%d)"%(options["hole"], hx, hy), hr
+            print("; Making a hole with radius %f nm centered at grid cell (%d,%d)"%(options["hole"], hx, hy), hr, file=sys.stderr)
             hr -= 1
             for ii in range(hx-hr-1, hx+hr+1):
                 for jj in range(hx-hr-1, hx+hr+1):
@@ -996,9 +1024,9 @@ def old_main(argv, options):
         upper = [i[1:] for i in upper[max(0, asym):]]
         lower = [i[1:] for i in lower[max(0, -asym):]]
 
-        print >>sys.stderr, "; X: %.3f (%d bins) Y: %.3f (%d bins) in upper leaflet"%(pbcx, up_lipids_x, pbcy, up_lipids_y)
-        print >>sys.stderr, "; X: %.3f (%d bins) Y: %.3f (%d bins) in lower leaflet"%(pbcx, lo_lipids_x, pbcy, lo_lipids_y)
-        print >>sys.stderr, "; %d lipids in upper leaflet, %d lipids in lower leaflet"%(len(upper), len(lower))
+        print("; X: %.3f (%d bins) Y: %.3f (%d bins) in upper leaflet"%(pbcx, up_lipids_x, pbcy, up_lipids_y), file=sys.stderr)
+        print("; X: %.3f (%d bins) Y: %.3f (%d bins) in lower leaflet"%(pbcx, lo_lipids_x, pbcy, lo_lipids_y), file=sys.stderr)
+        print("; %d lipids in upper leaflet, %d lipids in lower leaflet"%(len(upper), len(lower)), file=sys.stderr)
 
         # Types of lipids, relative numbers, fractions and numbers
 
@@ -1067,33 +1095,12 @@ def old_main(argv, options):
 
     # Charge of the system so far
 
-    last = None
-    mcharge = 0
-    for j in membrane.atoms:
-        if not j[0].strip().startswith('v') and j[1:3] != last:
-            mcharge += charges.get(j[1].strip(), 0)
-        last = j[1:3]
-
-    last = None
-    pcharge = 0
-    for j in protein.atoms:
-        if not j[0].strip().startswith('v') and j[1:3] != last:
-            pcharge += charges.get(j[1].strip(), 0)
-        last = j[1:3]
+    mcharge = membrane.charge
+    pcharge = protein.charge
 
     #mcharge = sum([charges.get(i[0].strip(), 0) for i in set([j[1:3] for j in membrane.atoms])])
     #pcharge = sum([charges.get(i[0].strip(), 0) for i in set([j[1:3] for j in protein.atoms if not j[0].strip().startswith('v')])])
 
-    charge  = mcharge + pcharge
-    plen, mlen, slen = 0, 0, 0
-    plen = protein and len(protein) or 0
-    print >>sys.stderr, "; NDX Solute %d %d" % (1, protein and plen or 0)
-    print >>sys.stderr, "; Charge of protein: %f" % pcharge
-
-    mlen = membrane and len(membrane) or 0
-    print >>sys.stderr, "; NDX Membrane %d %d" % (1+plen, membrane and plen+mlen or 0)
-    print >>sys.stderr, "; Charge of membrane: %f" % mcharge
-    print >>sys.stderr, "; Total charge: %f" % charge
 
 
     def _point(y, phi):
@@ -1216,7 +1223,7 @@ def old_main(argv, options):
 
 
         # Build the solvent
-        sol = []
+        sol = Structure()
         for resn, (rndm, x, y, z) in solvent:
             resi += 1
             solmol = solventParticles.get(resn)
@@ -1231,104 +1238,128 @@ def old_main(argv, options):
                     rx = x + qp*qx + qq*px + qw*(qy*pz-qz*py)
                     ry = y + qp*qy + qq*py + qw*(qz*px-qx*pz)
                     rz = z + qp*qz + qq*pz + qw*(qx*py-qy*px)
-                    sol.append(("%5d%-5s%5s%5d"%(resi%1e5, resn, atnm, atid%1e5), (rx, ry, rz)))
+                    sol.atoms.append((atnm, resn, resi, 0, 0, 0))
+                    sol.coord.append((rx, ry, rz))
                     atid += 1
             else:
-                sol.append(("%5d%-5s%5s%5d"%(resi%1e5, resn, solmol and solmol[0][0] or resn, atid%1e5), (x, y, z)))
+                sol.atoms.append((solmol and solmol[0][0] or resn,
+                                  resn, resi,
+                                  0, 0, 0))
+                sol.coord.append((x, y, z))
                 atid += 1
     else:
-        solvent, sol = None, []
+        solvent, sol = None, Structure()
+
+    return (molecules, protein, membrane, sol,
+            lipU, lipL, numU, numL, box)
 
 
-    ## Write the output ##
 
-    slen = solvent and len(sol) or 0
-    print >>sys.stderr, "; NDX Solvent %d %d" % (1+plen+mlen, solvent and plen+mlen+slen or 0)
-    print >>sys.stderr, "; NDX System %d %d" % (1, plen+mlen+slen)
-    print >>sys.stderr, "; \"I mean, the good stuff is just INSANE\" --Julia Ormond"
+def write_gro(outfile, title, atoms, box):
+    """
+    Write a GRO file.
 
-    # Open the output stream
-    oStream = options["output"] and open(options["output"], "w") or sys.stdout
+    Parameters
+    ----------
+    outfile
+        The stream to write in.
+    title
+        The title of the GRO file. Must be a single line.
+    atoms
+        An instance of Structure containing the atoms to write.
+    box
+        The periodic box as a 3x3 matrix.
+    """
+    # Print the title
+    print(title, file=outfile)
 
-    if options["output"].endswith(".gro"):
-        # Print the title
-        if membrane.atoms:
-            title  = "INSANE! Membrane UpperLeaflet>"+":".join(lipU)+"="+":".join([str(i) for i in numU])
-            title += " LowerLeaflet>"+":".join(lipL)+"="+":".join([str(i) for i in numL])
+    # Print the number of atoms
+    print("{:5d}".format(len(atoms)), file=outfile)
 
-            if protein:
-                title = "Protein in " + title
-        else:
-            title = "Insanely solvated protein."
+    # Print the atoms
+    atom_template = "{:5d}{:<5s}{:>5s}{:5d}{:8.3f}{:8.3f}{:8.3f}"
+    for idx, atname, resname, resid, x, y, z in atoms:
+        print(atom_template
+              .format(int(resid % 1e5), resname, atname, int(idx % 1e5),
+                      x, y, z),
+              file=outfile)
 
-        print >>oStream, title
+    # Print the box
+    grobox = (box[0][0], box[1][1], box[2][2],
+              box[0][1], box[0][2], box[1][0],
+              box[1][2], box[2][0], box[2][1])
+    box_template = '{:10.5f}' * 9
+    print(box_template.format(*grobox), file=outfile)
 
-        # Print the number of atoms
-        print >>oStream, "%5d"%(len(protein)+len(membrane)+len(sol))
 
-        # Print the atoms
-        id = 1
+def write_pdb(outfile, title, atoms, box):
+    """
+    Write a PDB file.
+
+    Parameters
+    ----------
+    outfile
+        The stream to write in.
+    title
+        The title of the GRO file. Must be a single line.
+    atoms
+        An instance of Structure containing the atoms to write.
+    box
+        The periodic box as a 3x3 matrix.
+    """
+    # Print the title
+    print(title, outfile)
+
+    # Print the box
+    print(pdbBoxString(box), file=outfile)
+
+    # Print the atoms
+    for idx, atname, resname, resid, x, y, z in atoms:
+        print(pdbline % (idx % 1e5, atname, resname, "", resid % 1e5, '',
+                         10*x, 10*y, 10*z, 0, 0, ''),
+              file=outfile)
+
+
+def write_summary(protein, membrane, solvent):
+    charge  = protein.charge + membrane.charge
+    plen = len(protein)
+    print("; NDX Solute %d %d" % (1, protein and plen or 0), file=sys.stderr)
+    print("; Charge of protein: %f" % protein.charge, file=sys.stderr)
+
+    mlen = len(membrane)
+    print("; NDX Membrane %d %d" % (1 + plen, membrane and plen + mlen or 0),
+          file=sys.stderr)
+    print("; Charge of membrane: %f" % membrane.charge, file=sys.stderr)
+    print("; Total charge: %f" % charge, file=sys.stderr)
+
+    slen = len(solvent)
+    print("; NDX Solvent %d %d" % (1+plen+mlen, solvent and plen+mlen+slen or 0), file=sys.stderr)
+    print("; NDX System %d %d" % (1, plen+mlen+slen), file=sys.stderr)
+    print("; \"I mean, the good stuff is just INSANE\" --Julia Ormond",
+          file=sys.stderr)
+
+
+def write_all(output, topology, molecules, protein, membrane,
+              solvent, lipU, lipL, numU, numL, box):
+    write_summary(protein, membrane, solvent)
+
+    if membrane.atoms:
+        title  = "INSANE! Membrane UpperLeaflet>"+":".join(lipU)+"="+":".join([str(i) for i in numU])
+        title += " LowerLeaflet>"+":".join(lipL)+"="+":".join([str(i) for i in numL])
+
         if protein:
-            for i in range(len(protein)):
-                at, rn, ri = protein.atoms[i][:3]
-                x, y, z    = protein.coord[i]
-                if rn.endswith('.o'):
-                    rn = rn[:-2]
-                oStream.write("%5d%-5s%5s%5d%8.3f%8.3f%8.3f\n"%(ri%1e5, rn, at, id%1e5, x, y, z))
-                id += 1
-        if membrane:
-            for i in range(len(membrane)):
-                at, rn, ri = membrane.atoms[i][:3]
-                x, y, z    = membrane.coord[i]
-                if rn.endswith('.o'):
-                    rn = rn[:-2]
-                oStream.write("%5d%-5s%5s%5d%8.3f%8.3f%8.3f\n"%(ri%1e5, rn, at, id%1e5, x, y, z))
-                id += 1
-        if sol:
-            # Print the solvent
-            print >>oStream, "\n".join([i[0]+"%8.3f%8.3f%8.3f"%i[1] for i in sol])
-
-        # Print the box
-        print >>oStream, "%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f"%grobox
+            title = "Protein in " + title
     else:
-        # Print the title
-        if membrane.atoms:
-            title  = "TITLE INSANE! Membrane UpperLeaflet>"+":".join(lipU)+"="+":".join([str(i) for i in numU])
-            title += " LowerLeaflet>"+":".join(lipL)+"="+":".join([str(i) for i in numL])
+        title = "Insanely solvated protein."
+
+    atoms = protein + membrane + solvent
+
+    oStream = output and open(output, "w") or sys.stdout
+    with oStream:
+        if output.endswith(".gro"):
+            write_gro(oStream, title, atoms, box)
         else:
-            title = "TITLE Insanely solvated protein."
-        print >>oStream, title
-
-        # Print the box
-        print >>oStream, pdbBoxString(box)
-
-        # Print the atoms
-        id = 1
-        if protein:
-            for i in range(len(protein)):
-                at, rn, ri = protein.atoms[i][:3]
-                x, y, z    = protein.coord[i]
-                if rn.endswith('.o'):
-                    rn = rn[:-2]
-                oStream.write(pdbline%(id%1e5, at, rn, "", ri%1e5, '', 10*x, 10*y, 10*z, 0, 0, ''))
-                id += 1
-        if membrane:
-            for i in range(len(membrane)):
-                at, rn, ri = membrane.atoms[i][:3]
-                x, y, z    = membrane.coord[i]
-                if rn.endswith('.o'):
-                    rn = rn[:-2]
-                oStream.write(pdbline%(id%1e5, at, rn, "", ri%1e5, '', 10*x, 10*y, 10*z, 0, 0, ''))
-                id += 1
-        if sol:
-            # Print the solvent
-            for i in range(len(sol)):
-                ri, rn, at, ai = sol[i][0][:5], sol[i][0][5:10], sol[i][0][10:15], sol[i][0][15:20]
-                x, y, z    = sol[i][1]
-                if rn.endswith('.o'):
-                    rn = rn[:-2]
-                oStream.write(pdbline%(id%1e5, at.strip(), rn.strip(), "", int(ri)%1e5, '', 10*x, 10*y, 10*z, 0, 0, ''))
-                id += 1
+            write_pdb(oStream, title, atoms, box)
 
     topmolecules = []
     for i in molecules:
@@ -1337,17 +1368,16 @@ def old_main(argv, options):
         else:
             topmolecules.append(i)
 
-    if options["topology"]:
+    if topology:
         # Write a rudimentary topology file
-        top = open(options["topology"], "w")
-        print >>top, '#include "martini.itp"\n'
-        print >>top, '[ system ]\n; name\n%s\n\n[ molecules ]\n; name  number'%title
-        if protein:
-            print >>top, "%-10s %5d"%("Protein", 1)
-        print >>top, "\n".join("%-10s %7d"%i for i in topmolecules)
-        top.close()
+        with open(topology, "w") as top:
+            print('#include "martini.itp"\n', file=top)
+            print('[ system ]\n; name\n%s\n\n[ molecules ]\n; name  number'%title, file=top)
+            if protein:
+                print("%-10s %5d"%("Protein", 1), file=top)
+            print("\n".join("%-10s %7d"%i for i in topmolecules), file=top)
     else:
-        print >>sys.stderr, "\n".join("%-10s %7d"%i for i in topmolecules)
+        print("\n".join("%-10s %7d"%i for i in topmolecules), file=sys.stderr)
 
 
 def insane(**options):
