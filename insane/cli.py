@@ -104,13 +104,7 @@ OPTIONS = simopt.Options([
 
 
 def main(argv):
-
-    exit_code =0
-
     ## TEMPORARY ---
-    # Exception is defined in option parser (simopt)
-    class OptionParseException(BaseException): pass
-
     # Exception to be defined in insane
     class InsaneBuildException(BaseException): pass
     ## <---
@@ -118,28 +112,49 @@ def main(argv):
     ## OPTIONS
     # Parse options
     try:
-        options = {}
-    except OptionParseException as e:
+        options = OPTIONS.parse(argv[1:])
+    except simopt.SimoptHelp:
+        print(OPTIONS.help(argv[1:]))
+        return 0
+    except simopt.Usage as e:
         print(e)
-        exit_code = 1
+        return 1
 
     ## WORK
     try:
         system = core.insane(**options)
     except InsaneBuildException as e:
         print(e)
-        exit_code = 2
+        return 2
 
     ## OUTPUT
     # Build atom list
     # Build topology
     # Build index
 
-    OPTIONS.parse(argv[1:])
 
-    core.old_main(argv, OPTIONS)
+    (molecules,
+     protein,
+     membrane,
+     solvent,
+     lipU, lipL,
+     numU, numL,
+     box) = core.old_main(argv, options)
+    core.write_all(
+        output=options['output'],
+        topology=options['topology'],
+        molecules=molecules,
+        protein=protein,
+        membrane=membrane,
+        solvent=solvent,
+        lipU=lipU,
+        lipL=lipL,
+        numU=numU,
+        numL=numL,
+        box=box,
+    )
 
-    return exit_code
+    return 0
 
 
 def cli():
