@@ -85,10 +85,10 @@ SIMPLE_TEST_CASES = [
     ('-o test.gro -f CG1a0s.pdb -p CG1a0s.top -l POPC -box 20,30,40', '1a0s'),
     ('-o test.gro -f CG1a0s.pdb -p CG1a0s.top -l POPC -box 20,30,40 -d 3', '1a0s'),
     ('-o test.gro -f CG1a0s.pdb -p CG1a0s.top -l POPC -box 2,3,4 -d 10', '1a0s'),
-    '-o test.gro -box 10,15,20 -alname LOLO -alhead C.P -allink G.G -altail CC.CDC',
-    ('-o test.gro -box 10,15,20 '
+    '-o test.gro -box 10,15,20 -l LOLO -alname LOLO -alhead C.P -allink G.G -altail CC.CDC',
+    ('-o test.gro -box 10,15,20 -l LOLO -l LOL2 '
      '-alname LOLO -alhead C.P -allink G.G -altail CC.CDC '
-     '-alname LOL2 -alhead E.P -allink A.A -altail TCC.CDDC'),
+     '-alname LOL2 -alhead E.P -allink A.A -altail TCC.CDDC', None, 'multi-custom-lipids'),
     '-o test.pdb -box 10,15,20',
     ('-o test.pdb -f CG1a0s.pdb -p CG1a0s.top -l POPC -ring', '1a0s'),
 ]
@@ -192,25 +192,32 @@ def _split_case(case):
     """
     Get the arguments and the input directory from a test case.
     """
-    if len(case) == 2:
+    if len(case) == 3:
+        case_args, input_dir, alias = case
+        if input_dir is not None:
+            input_dir = os.path.join(INPUT_DIR, input_dir)
+    elif len(case) == 2:
         case_args, input_dir = case
         input_dir = os.path.join(INPUT_DIR, input_dir)
+        alias = case_args
     else:
         case_args = case
         input_dir = None
-    return case_args, input_dir
+        alias = case_args
+    return case_args, input_dir, alias
 
 
-def _reference_path(arguments):
+def _reference_path(arguments, alias=None):
     """
     Get the path to the reference files for the simple test cases.
     """
     out_struct = _gro_output_from_arguments(_arguments_as_list(arguments))
     out_format = os.path.splitext(out_struct)[-1]
     simple_case_ref_data = os.path.join(DATA_DIR, 'simple_case')
-    ref_gro = os.path.join(simple_case_ref_data, arguments + out_format)
-    ref_stdout = os.path.join(simple_case_ref_data, arguments + '.out')
-    ref_stderr = os.path.join(simple_case_ref_data, arguments + '.err')
+    base_name = arguments if alias is None else alias
+    ref_gro = os.path.join(simple_case_ref_data, base_name + out_format)
+    ref_stdout = os.path.join(simple_case_ref_data, base_name + '.out')
+    ref_stderr = os.path.join(simple_case_ref_data, base_name + '.err')
     return ref_gro, ref_stdout, ref_stderr
 
 
@@ -278,8 +285,8 @@ def run_and_compare(arguments, input_dir, ref_gro, ref_stdout, ref_stderr):
 # tests that are generated.
 def test_simple_cases():
     for case in SIMPLE_TEST_CASES:
-        case_args, input_dir = _split_case(case)
-        ref_gro, ref_stdout, ref_stderr = _reference_path(case_args)
+        case_args, input_dir, alias = _split_case(case)
+        ref_gro, ref_stdout, ref_stderr = _reference_path(case_args, alias)
         # The test generator could yield run and compare directly. Bt, then,
         # the verbose display of nosetests gets crowded with the very long
         # names of the reference file, that are very redundant. Using a partial
@@ -301,10 +308,10 @@ def generate_simple_case_references():
     DATA_DIR/simple_case directory.
     """
     for case in SIMPLE_TEST_CASES:
-        case_args, input_dir = _split_case(case)
+        case_args, input_dir, alias = _split_case(case)
         arguments = _arguments_as_list(case_args)
         out_gro = _gro_output_from_arguments(arguments)
-        ref_gro, ref_stdout, ref_stderr = _reference_path(case_args)
+        ref_gro, ref_stdout, ref_stderr = _reference_path(case_args, alias)
         with tempdir():
             print(INSANE + ' ' + ' '.join(arguments))
             out, err = run_insane(arguments, input_dir)
@@ -321,7 +328,7 @@ def clean_simple_case_references():
     """
     Delete reference files for the simple tests if they are not in use anymore.
     """
-    simple_test_cases = [_split_case(case)[0] for case in SIMPLE_TEST_CASES]
+    simple_test_cases = [_split_case(case)[2] for case in SIMPLE_TEST_CASES]
     simple_case_ref_data = os.path.join(DATA_DIR, 'simple_case')
     for path in glob.glob(os.path.join(simple_case_ref_data, '*')):
         base_name = os.path.basename(os.path.splitext(path)[0])
