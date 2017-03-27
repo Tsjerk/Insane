@@ -387,28 +387,10 @@ def old_main(argv, options):
     # lipid_list.add_from_def(*zip(options["lipnames"], options["lipheads"], options["liplinks"], options["liptails"], options["lipcharge']))
 
     liplist = lipids.get_lipids()
-
     # Then add lipids from file
-    for filename in options["molfile"]:
-        stuff = open(filename).read().split("@INSANE")
-        for group in stuff[1:]:
-            lines  = group.split("\n")
-            lipdef = lines.pop(0)
-            beads  = None
-            for line in lines:
-                if line.startswith('[') or not line.strip():
-                    break
-                if "@BEADS" in line:
-                    beads = line.split("@BEADS")[1].split()
-            lip = Lipid(string=lipdef, beads=beads)
-            liplist[lip.name] = lip
-
+    liplist.add_from_files(options["molfile"])
     # Last, add lipids from command line
-    for name, head, link, tail in zip(usrnames, usrheads, usrlinks, usrtails):
-        heads   = head.replace(".", " ").split()
-        linkers = link.replace(".", " ").split()
-        tails   = tail.replace(".", " ").split()
-        liplist[name] = Lipid(name=name, head=heads, link=linkers, tail=tails)
+    liplist.add_from_def(usrnames, usrheads, usrlinks, usrtails, usrcharg)
 
     # <=== END OF LIPID BOOKKEEPING
 
