@@ -44,7 +44,7 @@ from . import linalg
 from . import lipids
 from .converters import *
 from .constants import d2r
-from .data import solventParticles, charges, apolar
+from .data import SOLVENTS, CHARGES, APOLARS
 
 
 # Set the random seed.
@@ -172,7 +172,7 @@ class Structure(object):
         charge = 0
         for j in self.atoms:
             if not j[0].strip().startswith('v') and j[1:3] != last:
-                charge += charges.get(j[1].strip(), 0)
+                charge += CHARGES.get(j[1].strip(), 0)
             last = j[1:3]
         return charge
 
@@ -220,7 +220,7 @@ class Structure(object):
                               int(ny*(iy-my)/ry),
                               int(nz*(iz-mz)/rz))
                 atom[jx][jy][jz]   += 1
-                phobic[jx][jy][jz] += (i[1].strip() in apolar)
+                phobic[jx][jy][jz] += (i[1].strip() in APOLARS)
 
         # Determine average density
         occupd = sum([bool(k) for i in atom for j in i for k in j])
@@ -934,10 +934,6 @@ def old_main(argv, options):
     mcharge = membrane.charge
     pcharge = protein.charge
 
-    #mcharge = sum([charges.get(i[0].strip(), 0) for i in set([j[1:3] for j in membrane.atoms])])
-    #pcharge = sum([charges.get(i[0].strip(), 0) for i in set([j[1:3] for j in protein.atoms if not j[0].strip().startswith('v')])])
-
-
 
     def _point(y, phi):
         r = math.sqrt(1-y*y)
@@ -1062,7 +1058,7 @@ def old_main(argv, options):
         sol = Structure()
         for resn, (rndm, x, y, z) in solvent:
             resi += 1
-            solmol = solventParticles.get(resn)
+            solmol = SOLVENTS.get(resn)
             if solmol and len(solmol) > 1:
                 # Random rotation (quaternion)
                 u,  v,  w       = random.random(), 2*math.pi*random.random(), 2*math.pi*random.random()
