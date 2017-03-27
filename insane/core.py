@@ -41,10 +41,10 @@ import random
 import collections
 
 from . import linalg
+from . import lipids
 from .converters import *
 from .constants import d2r
-from .data import (lipidsa, lipidsx, lipidsy, lipidsz, headbeads, linkbeads,
-                   solventParticles, charges, apolar)
+from .data import solventParticles, charges, apolar
 
 
 # Set the random seed.
@@ -321,143 +321,6 @@ class Structure(object):
         self.coord = [(ux*i+uy*j, ux*j-uy*i, k) for i, j, k in self.coord]
 
 
-class Lipid:
-    """Lipid structure"""
-
-    def __init__(self, **kwargs):
-        self.name      = kwargs.get("name")
-        self.head      = kwargs.get("head")
-        self.link      = kwargs.get("link")
-        self.tail      = kwargs.get("tail")
-        self.beads     = kwargs.get("beads")
-        if type(self.beads) == str:
-            self.beads = self.beads.split()
-        self.charge    = kwargs.get("charge")
-        self.template  = kwargs.get("template")
-        self.area      = kwargs.get("area")
-        self.diam      = kwargs.get("diam", math.sqrt(kwargs.get("area", 0)))
-        self.coords    = None
-        if kwargs.get("string"):
-            self.parse(kwargs["string"])
-
-    def parse(self, string):
-        """
-        Parse lipid definition from string:
-
-            alhead=C P, allink=A A, altail=TCC CCCC, alname=DPSM, charge=0.0
-        """
-        fields = [i.split("=") for i in string.split(', ')]
-        for what, val in fields:
-            what = what.strip()
-            val  = val.split()
-            if what.endswith("head"):
-                self.head = val
-            elif what.endswith("link"):
-                self.link = val
-            elif what.endswith("tail"):
-                self.tail = val
-            elif what == "charge":
-                self.charge = float(val[0])
-            elif what.endswith("name") and not self.name:
-                self.name = val[0]
-        if self.charge is None:
-            # Infer charge from head groups
-            self.charge = sum([headgroup_charges[bead] for bead in self.head])
-
-    def build(self, **kwargs):
-        """Build/return a list of [(bead, x, y, z), ...]"""
-
-        if not self.coords:
-            if self.beads and self.template:
-                stuff = zip(self.beads, self.template)
-                self.coords = [[i, x, y, z] for i, (x, y, z) in stuff if i != "-"]
-            else:
-                # Set beads/structure from head/link/tail
-                # Set bead names
-                if self.beads:
-                    beads = list(self.beads)
-                else:
-                    beads = [ headbeads[i] for i in self.head ]
-                    beads.extend([ linkbeads[n]+str(i+1) for i, n in enumerate(self.link)])
-                    for i, t in enumerate(self.tail):
-                        beads.extend([n+chr(65+i)+str(j+1) for j, n in enumerate(t)])
-
-                taillength = max([0]+[len(i) for i in self.tail])
-                length = len(self.head)+taillength
-
-                # Add the pseudocoordinates for the head
-                rl     = range(len(self.head))
-                struc  = [(0, 0, length-i) for i in rl]
-
-                # Add the linkers
-                rl     = range(len(self.link))
-                struc.extend([(i%2, i/2, taillength) for i in rl ])
-
-                # Add the tails
-                for j, tail in enumerate(self.tail):
-                    rl = range(len(tail))
-                    struc.extend([(j%2, j/2, taillength-1-i) for i in rl])
-
-                mx, my, mz = [ (max(i)+min(i))/2 for i in zip(*struc) ]
-                self.coords = [[i, 0.25*(x-mx), 0.25*(y-my), z] for i, (x, y, z) in zip(beads, struc)]
-
-        # Scale the x/y based on the lipid's APL - diameter is less than sqrt(APL)
-        diam   = kwargs.get("diam", self.diam)
-        radius = diam*0.45
-        minmax = [ (min(i), max(i)) for i in zip(*self.coords)[1:] ]
-        mx, my, mz = [ sum(i)/2. for i in minmax ]
-        scale  = radius/math.sqrt((minmax[0][0]-mx)**2 + (minmax[1][0]-my)**2)
-
-        for i in self.coords:
-            i[1] = scale*(i[1]-mx)
-            i[2] = scale*(i[2]-my)
-            i[3] -= minmax[2][0]
-
-        return self.coords
-
-
-    def h(self, head):
-        self.head = head.replace(".", " ").split()
-
-    def l(self, link):
-        self.link = link.replace(".", " ").split()
-
-    def t(self, tail):
-        self.tail = tail.replace(".", " ").split()
-
-    def c(self, charge):
-        self.charge = float(charge)
-
-
-class Lipid_List(collections.MutableMapping):
-    """Container class for lipid definitions"""
-
-    def __init__(self):
-        self.store = dict()
-        self.last  = None
-
-    def __getitem__(self, key):
-        if key == -1:
-            return self.last
-        return self.store[key]
-
-    def __setitem__(self, key, value):
-        self.store[key] = value
-
-    def __delitem__(self, key):
-        del self.store[key]
-
-    def __iter__(self):
-        return iter(self.store)
-
-    def __len__(self):
-        return len(self.store)
-
-    def add(self, name=None, string=None):
-        lip = Lipid(name=name, string=string)
-        self.store[lip.name] = lip
-        self.last = lip.name
-
 
 # Mean of deviations from initial value
 def meand(v):
@@ -496,7 +359,6 @@ def old_main(argv, options):
     lipL      = options["lower"]
     lipU      = options["upper"]
     solv      = options["solvent"]
-    usrlip    = Lipid_List()
     mollist   = options["molfile"]
     usrnames  = options["lipnames"]
     usrheads  = options["lipheads"]
@@ -518,21 +380,13 @@ def old_main(argv, options):
 
     ## a. LIPIDS
 
-    liplist = Lipid_List()
-
-
     ## ==> LIPID  BOOKKEEPING:
     # import lipids
     # lipid_list = lipids.get_list()
     # lipid_list.add_from_file(*options["mollist"])
     # lipid_list.add_from_def(*zip(options["lipnames"], options["lipheads"], options["liplinks"], options["liptails"], options["lipcharge']))
 
-
-    # First add internal lipids
-    for name, lip in lipidsa.items():
-        moltype  = lip[0]
-        template = zip(lipidsx[moltype], lipidsy[moltype], lipidsz[moltype])
-        liplist[name] = Lipid(name=name, beads=lip[1], template=template)
+    liplist = lipids.get_lipids()
 
     # Then add lipids from file
     for filename in options["molfile"]:
