@@ -1,11 +1,16 @@
 #!/usr/bin/env python
 
 from __future__ import print_function, absolute_import
-from setuptools import setup, find_packages
+from setuptools import setup
+
+# Read the version from a file to be sure it is consistent with the version
+# in the package.
+with open('insane/VERSION.txt') as infile:
+    version = infile.readline().strip()
 
 setup(
     name='insane',
-    version='1.0-dev',
+    version=version,
 
     description="A versatile tool for building membranes and/or solvent with proteins.",
 
@@ -36,6 +41,7 @@ setup(
     tests_require=['nose'],
 
     packages=['insane'],
+    package_data={'insane': ['VERSION.txt']},
 
     entry_points={
         'console_scripts': [
