@@ -72,7 +72,6 @@ SIMPLE_TEST_CASES = [
     '-o test.gro -box 10,15,20 -sol W -l POPC',
     '-o test.gro -l POPC -l DPPC -d 10',
     '-o test.gro -l POPC:2 -l DPPC:1 -d 10',
-    '-o test.gro -pbc hexagonal -x 10 -y 15 -z 20',
     ('-o test.gro -f CG1a0s.pdb', '1a0s'),
     ('-o test.gro -f CG1a0s.pdb -p CG1a0s.top -l POPC -ring', '1a0s'),
     ('-o test.gro -f CG1a0s.pdb -p CG1a0s.top -l POPC -orient', '1a0s'),
@@ -91,13 +90,26 @@ SIMPLE_TEST_CASES = [
      '-alname LOL2 -alhead E.P -allink A.A -altail TCC.CDDC', None, 'multi-custom-lipids'),
     '-o test.pdb -box 10,15,20',
     ('-o test.pdb -f CG1a0s.pdb -p CG1a0s.top -l POPC -ring', '1a0s'),
+    ('-o test.gro -pbc keep -f CG1a0s-box.pdb', '1a0s'),
+    '-o test.gro -box 25',
+    '-o test.gro -box 25,15,10',
+    '-o test.gro -box 25,15,10,0,0,5,0,5,5',
+    '-o test.gro -box 25,20,15,90,60,60',
 ]
 
 # Add test cases for all PBC options.
 for pbc in ('hexagonal', 'rectangular', 'square', 'cubic', 'optimal'):
-    SIMPLE_TEST_CASES.append(
-        ('-o test.gro -pbc {} -f CG1a0s.pdb -p CG1a0s.top'.format(pbc), '1a0s')
-    )
+    SIMPLE_TEST_CASES.extend([
+        ('-o test.gro -pbc {} -f CG1a0s.pdb -p CG1a0s.top'.format(pbc), '1a0s'),
+        '-o test.gro -pbc {} -d 10'.format(pbc),
+        '-o test.gro -pbc {} -d 10 -dz 5'.format(pbc),
+        '-o test.gro -hole 4 -pbc {} -d 10 -dz 5'.format(pbc),
+        '-o test.gro -disc 8 -pbc {} -d 10 -dz 5'.format(pbc),
+        '-o test.gro -disc 8 -hole 4 -pbc {} -d 10 -dz 5'.format(pbc),
+        '-o test.gro -hole 4 -pbc {} -d 10'.format(pbc),
+        '-o test.gro -disc 8 -pbc {} -d 10'.format(pbc),
+        '-o test.gro -disc 8 -hole 4 -pbc {} -d 10'.format(pbc),
+    ])
 
 
 class ContextStringIO(StringIO):
