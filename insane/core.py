@@ -39,6 +39,7 @@ import sys
 import math
 import random
 import collections
+import numpy as np
 
 from . import linalg
 from .converters import *
@@ -98,9 +99,122 @@ def groAtom(a):
     ## ===>   atom name,   res name,     res id, chain,       x,          y,          z
     return (a[10:15], a[5:10],   int(a[:5]), " ", float(a[20:28]), float(a[28:36]), float(a[36:44]))
 
+
 def groBoxRead(a):
     b = [float(i) for i in a.split()] + 6*[0] # Padding for rectangular boxes
     return b[0], b[3], b[4], b[5], b[1], b[6], b[7], b[8], b[2]
+
+
+class PBC(object):
+    def __init__(self, shape=None, box=None, xyz=None, distance=None, membrane=None, protein=None, disc=None, hole=None):
+        
+        self.box = None
+
+        if box:
+            print("Setting box from given box definition. Neglecting all other PBC options!")
+            self.box = np.array(box)
+            return
+
+        x, y, z = None, None, None
+        if xyz:
+            x, y, z = xyz 
+            if type(x) in (float, int):
+                x = (x, 0, 0)
+            if type(y) in (float, int):
+                y = (0, y, 0)
+            if type(z) in (float, int):
+                z = (0, 0, z)
+            if all(xyz):
+                print("Setting box from x/y/z vectors provided. Neglecting all other PBC options!")
+                self.box = np.array([x,y,z])
+                return
+        xyz = (x, y, z)
+                
+        # Not having a distance here is an error
+        if distance is None:
+            raise PBCException("Cannot set PBC if size of system is not specified.")
+
+        # Having a distance at zero without a solute for the extent is also an error
+        if not distance and not (protein or hole or disc):
+            raise PBCException("Having a PBC distance of 0 without having a "
+                               "solute/hole/disc results in a box with zero volume.")
+
+        if type(distance) in (float, int):
+            scale = zscale = distance
+        else:
+            scale, zscale = distance
+
+        if disc is not None:
+            scale += 2*disc
+        elif hole is not None:
+            scale += 2*hole
+
+        if protein:
+            # Assume proteins are centered - use min/max
+            zmax = max([ p.fun(max)[2] for p in protein ])
+            zmin = min([ p.fun(min)[2] for p in protein ])
+            zscale += zmax - zmin
+
+        if x and y and not z:
+            print("Setting box from x/y vectors provided and distance set over z "
+                  "(including solute dimensions). Neglecting other PBC options!")
+            self.box = np.array([x,y,[0,0,zscale]])
+            return
+
+        # After this point, we need to finalize the box by (re)setting
+        # x, y and/or z, according to the xyz option.
+
+        if "cubic".startswith(shape):
+            if protein:
+                scale += protein[0].diam()
+            self.box = np.eye(3) * scale
+        elif "rectangular".startswith(shape):
+            if protein:
+                self.box = numpy.diag(
+                    protein.coord.max(axis=0) - 
+                    protein.coord.min(axis=0) +
+                    scale)
+            elif disc or hole:
+                self.box = np.array([[scale, 0, 0], 
+                                     [0, scale, 0], 
+                                     [0, 0, zscale]])
+            else:
+                self.box = np.eye(3)*scale
+        elif not membrane:
+            if protein:
+                scale += protein[0].diam()
+            # Add a hexagonal prism with long axis along X
+            # if "hexagonal".startswith(shape):
+            #     ...
+            # else:
+            # No membrane, no cubic/rectangular box, returning a rhombic dodecahedron
+            # (matches for "dodecahedron", "optimal")
+            self.box = np.array([[1, 0, 0], 
+                                 [0.5, np.sqrt(0.75), 0],
+                                 [0.5, np.sqrt(3)/6, np.sqrt(6)/3]])*scale
+        # Only the membrane cases left here
+        elif protein and not (disc or hole):
+            scale  += protein[0].diamxy()
+            if "square".startswith(shape):
+                self.box = np.array([[scale, 0, 0], 
+                                     [0, scale, 0],
+                                     [0, 0, zscale]])
+            elif "optimal".startswith(shape):
+                print("Warning: this box may be too skewed for Gromacs.")
+                self.box = np.array([[scale, 0, 0], 
+                                     [scale/2, scale*np.sqrt(0.75), 0],
+                                     [scale/2, scale*np.sqrt(3)/6, 0]])
+                self.box[2,2] = np.sqrt(zscale**2 - (self.box[2,:]**2).sum())
+            else:
+                self.box = np.array([[scale, 0, 0], 
+                                     [scale/2, scale*np.sqrt(0.75), 0],
+                                     [0, 0, zscale]])
+
+        for i, v in enumerate(xyz):
+            if v:
+                self.box[i,:] = v
+
+        return 
 
 
 class Structure(object):
@@ -562,10 +676,18 @@ def old_main(argv, options):
     # ==> PBC INITIAL BOOKKEEPING
 
     # Periodic boundary conditions
-    box = OPTS.get("box",[[0, 0, 0], [0, 0, 0], [0, 0, 0]])
-    if OPTS["pbc"] == 'keep' and tm:
+    if options["pbc"] == 'keep' and tm:
         box = tm[0].box
-    
+    else:
+        box = options.get("box")
+
+    # Set up base PBC
+    # Override where needed to accomodate additional components
+    # box/shape are final - if these are given and a solute does 
+    # not fit in it raises an exception
+    pbc = PBC(box=box, shape=options["pbc"], 
+              size=options["distance"], zsize=options["zdistance"],
+              x=options["xvector"], y=options["yvector"], z=options["zvector"])
 
     # option -box overrides everything
     if options["box"]:
@@ -598,38 +720,34 @@ def old_main(argv, options):
     elif options["zvector"]:
         pbcSetZ = [0, 0, options["zvector"]]
 
-    ## A. NO PROTEIN ---
-    if not tm:
+    # Initialize PBC -- override for protein
+    # Set the box -- If there is a disc/hole, add its radius to the distance
+    if options["disc"]:
+        pbcx = pbcy = pbcz = options["distance"] + 2*options["disc"]
+    elif options["hole"]:
+        pbcx = pbcy = pbcz = options["distance"] + 2*options["hole"]
+    else:
+        pbcx = pbcy = pbcz = options["distance"]
 
-        resi = 0
+    if "hexagonal".startswith(options["pbc"]):
+        # Hexagonal prism -- y derived from x directly
+        pbcy = math.sqrt(3)*pbcx/2
+        pbcz = (options["zdistance"]
+                or options["zvector"]
+                or options["distance"])
+    elif "optimal".startswith(options["pbc"]):
+        # Rhombic dodecahedron with hexagonal XY plane
+        pbcy = math.sqrt(3)*pbcx/2
+        pbcz = math.sqrt(6)*options["distance"]/3
+    elif "rectangular".startswith(options["pbc"]):
+        pbcz = (options["zdistance"]
+                or options["zvector"]
+                or options["distance"])
 
-        # Set the box -- If there is a disc/hole, add its radius to the distance
-        if options["disc"]:
-            pbcx = pbcy = pbcz = options["distance"] + 2*options["disc"]
-        elif options["hole"]:
-            pbcx = pbcy = pbcz = options["distance"] + 2*options["hole"]
-        else:
-            pbcx = pbcy = pbcz = options["distance"]
-
-        if "hexagonal".startswith(options["pbc"]):
-            # Hexagonal prism -- y derived from x directly
-            pbcy = math.sqrt(3)*pbcx/2
-            pbcz = (options["zdistance"]
-                    or options["zvector"]
-                    or options["distance"])
-        elif "optimal".startswith(options["pbc"]):
-            # Rhombic dodecahedron with hexagonal XY plane
-            pbcy = math.sqrt(3)*pbcx/2
-            pbcz = math.sqrt(6)*options["distance"]/3
-        if "rectangular".startswith(options["pbc"]):
-            pbcz = (options["zdistance"]
-                    or options["zvector"]
-                    or options["distance"])
-
-        # Possibly override
-        pbcx = pbcSetX and pbcSetX[0] or pbcx
-        pbcy = pbcSetY and pbcSetY[1] or pbcy
-        pbcz = pbcSetZ and pbcSetZ[2] or pbcz
+    # Possibly override
+    pbcx = pbcSetX and pbcSetX[0] or pbcx
+    pbcy = pbcSetY and pbcSetY[1] or pbcy
+    pbcz = pbcSetZ and pbcSetZ[2] or pbcz
 
 
     # <== END OF PBC INITIAL BOOKKEEPING
@@ -648,6 +766,7 @@ def old_main(argv, options):
     ################
 
 
+    resi = 0
     protein  = Structure()
     prot     = []
     xshifts  = [0] # Shift in x direction per protein
@@ -814,6 +933,8 @@ def old_main(argv, options):
     atid      = len(protein)+1
     molecules = []
 
+    #>> PBC
+
     # The box dimensions are now (likely) set.
     # If a protein was given, it is positioned in the center of the
     # rectangular brick.
@@ -840,6 +961,7 @@ def old_main(argv, options):
 
     rx, ry, rz = pbcx+1e-8, pbcy+1e-8, pbcz+1e-8
 
+    #<< PBC
 
     #################
     ## 2. MEMBRANE ##
