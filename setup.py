@@ -36,9 +36,9 @@ setup(
         'Programming Language :: Python :: 2.7',
     ],
 
-    install_require=['numpy'],
+    install_requires=['numpy'],
 
-    tests_require=['nose'],
+    tests_requires=['nose'],
 
     packages=['insane'],
     package_data={'insane': ['VERSION.txt']},
