@@ -143,6 +143,8 @@ class PBC(object):
 
         if protein:
             # Assume proteins are centered - use min/max
+            pmin, pmax = protein[0].fun(min), protein[0].fun(max)
+            prng       = (pmax[0]-pmin[0], pmax[1]-pmin[1], pmax[2]-pmin[2])
             zmax = max([ p.fun(max)[2] for p in protein ])
             zmin = min([ p.fun(min)[2] for p in protein ])
             zscale += zmax - zmin
@@ -156,46 +158,57 @@ class PBC(object):
         # After this point, we need to finalize the box by (re)setting
         # x, y and/or z, according to the xyz option.
 
-        if "cubic".startswith(shape):
+        if "cubic".startswith(shape) or ("square".startswith(shape) and not membrane):
             if protein:
                 scale += protein[0].diam()
             self.box = np.eye(3) * scale
         elif "rectangular".startswith(shape):
             if protein:
-                self.box = (np.diag(protein[0].fun(max)) - 
-                            np.diag(protein[0].fun(min)) + 
-                            scale)
+                self.box = np.diag(prng) + scale
             elif disc or hole:
                 self.box = np.array([[scale, 0, 0], 
                                      [0, scale, 0], 
                                      [0, 0, zscale]])
             else:
-                self.box = np.eye(3)*scale
+                self.box = np.diag((scale,scale,zscale))
         elif not membrane:
             if protein:
                 scale += protein[0].diam()
-            # Add a hexagonal prism with long axis along X
-            # if "hexagonal".startswith(shape):
-            #     ...
-            # else:
+            # Replace with hexagonal prism with long axis along X
+            # -- this one makes no sense at all!
+            if "hexagonal".startswith(shape) and not protein:
+                self.box = np.array([[1, 0, 0], 
+                                     [0, np.sqrt(0.75), 0],
+                                     [0.5, 0.5, 1]])*scale
+                self.box[2,2] = zscale
+            else:
             # No membrane, no cubic/rectangular box, returning a rhombic dodecahedron
             # (matches for "dodecahedron", "optimal")
-            self.box = np.array([[1, 0, 0], 
-                                 [0.5, np.sqrt(0.75), 0],
-                                 [0.5, np.sqrt(3)/6, np.sqrt(6)/3]])*scale
+#            self.box = np.array([[1, 0, 0], 
+#                                 [0.5, np.sqrt(0.75), 0],
+#                                 [0.5, np.sqrt(3)/6, np.sqrt(6)/3]])*scale
+                self.box = np.array([[1, 0, 0], 
+                                     [0, 1, 0],
+                                     [0.5, 0.5, np.sqrt(0.5)]])*scale
+                #self.box[2,2] = zscale
         # Only the membrane cases left here
         else:
             if protein and not (disc or hole):
-                scale  += protein[0].diamxy()
+                #scale  += protein[0].diamxy()
+                scale  += prng[0]
             if "square".startswith(shape):
                 self.box = np.array([[scale, 0, 0], 
                                      [0, scale, 0],
                                      [0, 0, zscale]])
             elif "optimal".startswith(shape):
                 #print("Warning: this box may be too skewed for Gromacs.")
+                #self.box = np.array([[scale, 0, 0], 
+                #                     [scale/2, scale*np.sqrt(0.75), 0],
+                #                     [scale/2, scale*np.sqrt(3)/6, 0]])
+                #self.box[2,2] = np.sqrt(zscale**2 - (self.box[2,:]**2).sum())
                 self.box = np.array([[scale, 0, 0], 
-                                     [scale/2, scale*np.sqrt(0.75), 0],
-                                     [scale/2, scale*np.sqrt(3)/6, 0]])
+                                     [0, scale, 0],
+                                     [scale/2, scale/2, 0]])
                 self.box[2,2] = np.sqrt(zscale**2 - (self.box[2,:]**2).sum())
             else:
                 self.box = np.array([[scale, 0, 0], 
@@ -553,7 +566,7 @@ def old_main(argv, options):
     elif "optimal".startswith(options["pbc"]):
         # Rhombic dodecahedron with hexagonal XY plane
         pbcy = math.sqrt(3)*pbcx/2
-        pbcz = math.sqrt(6)*options["distance"]/3
+        pbcz = math.sqrt(6)*options["distance"]/3 # This is wrong!
     elif "rectangular".startswith(options["pbc"]):
         pbcz = (options["zdistance"]
                 or options["zvector"]
@@ -563,7 +576,6 @@ def old_main(argv, options):
     pbcx = pbcSetX and pbcSetX[0] or pbcx
     pbcy = pbcSetY and pbcSetY[1] or pbcy
     pbcz = pbcSetZ and pbcSetZ[2] or pbcz
-
 
     # <== END OF PBC INITIAL BOOKKEEPING
 
@@ -756,12 +768,16 @@ def old_main(argv, options):
     else:
         box = options.get("box")
 
+    zdist = options["zdistance"]
+    if zdist == None:
+        zdist = options["distance"]
+
     # Set up base PBC
     # Override where needed to accomodate additional components
     # box/shape are final - if these are given and a solute does 
     # not fit in it raises an exception
     pbc = PBC(shape=options["pbc"], box=box, 
-              distance=(options["distance"], options["zdistance"]),
+              distance=(options["distance"], zdist),
               xyz=(options["xvector"], options["yvector"], options["zvector"]),
               disc=options["disc"], hole=options["hole"], 
               membrane=options["lower"], protein=tm)
@@ -788,6 +804,10 @@ def old_main(argv, options):
     box[0] = pbcSetX or box[0]
     box[1] = pbcSetY or box[1]
     box[2] = pbcSetZ or box[2]
+
+    #print(box)
+    box = pbc.box.tolist()
+    #print(box)
 
     pbcx, pbcy, pbcz = box[0][0], box[1][1], box[2][2]
 
