@@ -203,16 +203,19 @@ class Lipid_List(collections.MutableMapping):
             self.add_from_file(path)
 
     def add_from_def(self, usrnames, usrheads, usrlinks, usrtails, usrcharges):
+        if not usrcharges:
+            usrcharges = [None] * len(usrnames)
         lipids = zip(usrnames, usrheads, usrlinks, usrtails, usrcharges)
         for name, head, link, tail, charge in lipids:
-            heads   = head.replace(".", " ").split()
+            heads = head.replace(".", " ").split()
             linkers = link.replace(".", " ").split()
-            tails   = tail.replace(".", " ").split()
-            liplist[name] = Lipid(name=name,
-                                  head=heads,
-                                  link=linkers,
-                                  tail=tails,
-                                  charge=float(charge))
+            tails = tail.replace(".", " ").split()
+            charge = None if charge is None else float(charge)
+            self[name] = Lipid(name=name,
+                               head=heads,
+                               link=linkers,
+                               tail=tails,
+                               charge=charge)
 
 
 def get_lipids():

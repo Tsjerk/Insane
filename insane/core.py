@@ -62,8 +62,8 @@ def pdbAtom(a):
 
 
 # Reformatting of lines in structure file
-pdbBoxLine  = "CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f P 1           1\n"
-pdbline = "ATOM  %5i  %-3s %4s%1s%4i%1s   %8.3f%8.3f%8.3f%6.2f%6.2f           %1s  \n"
+pdbBoxLine  = "CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f P 1           1"
+pdbline = "ATOM  %5i  %-3s %4s%1s%4i%1s   %8.3f%8.3f%8.3f%6.2f%6.2f           %1s  "
 
 
 def pdbBoxString(box):
@@ -1134,7 +1134,7 @@ def write_pdb(outfile, title, atoms, box):
         The periodic box as a 3x3 matrix.
     """
     # Print the title
-    print(title, outfile)
+    print('TITLE ' + title, file=outfile)
 
     # Print the box
     print(pdbBoxString(box), file=outfile)
