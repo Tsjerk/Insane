@@ -103,12 +103,12 @@ class PBC(object):
         self.box = None
 
         if box:
-            print("Setting box from given box definition. Neglecting all other PBC options!")
-            self.box = np.array(box)
+            #print("Setting box from given box definition. Neglecting all other PBC options!")
+            self.box = np.array(box).reshape((3,3))
             return
 
         x, y, z = None, None, None
-        if xyz:
+        if xyz and any(xyz):
             x, y, z = xyz 
             if type(x) in (float, int):
                 x = (x, 0, 0)
@@ -117,7 +117,7 @@ class PBC(object):
             if type(z) in (float, int):
                 z = (0, 0, z)
             if all(xyz):
-                print("Setting box from x/y/z vectors provided. Neglecting all other PBC options!")
+                #print("Setting box from x/y/z vectors provided. Neglecting all other PBC options!")
                 self.box = np.array([x,y,z])
                 return
         xyz = (x, y, z)
@@ -148,8 +148,8 @@ class PBC(object):
             zscale += zmax - zmin
 
         if x and y and not z:
-            print("Setting box from x/y vectors provided and distance set over z "
-                  "(including solute dimensions). Neglecting other PBC options!")
+            #print("Setting box from x/y vectors provided and distance set over z "
+            #      "(including solute dimensions). Neglecting other PBC options!")
             self.box = np.array([x,y,[0,0,zscale]])
             return
 
@@ -162,10 +162,9 @@ class PBC(object):
             self.box = np.eye(3) * scale
         elif "rectangular".startswith(shape):
             if protein:
-                self.box = numpy.diag(
-                    protein.coord.max(axis=0) - 
-                    protein.coord.min(axis=0) +
-                    scale)
+                self.box = (np.diag(protein[0].fun(max)) - 
+                            np.diag(protein[0].fun(min)) + 
+                            scale)
             elif disc or hole:
                 self.box = np.array([[scale, 0, 0], 
                                      [0, scale, 0], 
@@ -185,14 +184,15 @@ class PBC(object):
                                  [0.5, np.sqrt(0.75), 0],
                                  [0.5, np.sqrt(3)/6, np.sqrt(6)/3]])*scale
         # Only the membrane cases left here
-        elif protein and not (disc or hole):
-            scale  += protein[0].diamxy()
+        else:
+            if protein and not (disc or hole):
+                scale  += protein[0].diamxy()
             if "square".startswith(shape):
                 self.box = np.array([[scale, 0, 0], 
                                      [0, scale, 0],
                                      [0, 0, zscale]])
             elif "optimal".startswith(shape):
-                print("Warning: this box may be too skewed for Gromacs.")
+                #print("Warning: this box may be too skewed for Gromacs.")
                 self.box = np.array([[scale, 0, 0], 
                                      [scale/2, scale*np.sqrt(0.75), 0],
                                      [scale/2, scale*np.sqrt(3)/6, 0]])
@@ -504,20 +504,6 @@ def old_main(argv, options):
 
     # ==> PBC INITIAL BOOKKEEPING
 
-    # Periodic boundary conditions
-    if options["pbc"] == 'keep' and tm:
-        box = tm[0].box
-    else:
-        box = options.get("box")
-
-    # Set up base PBC
-    # Override where needed to accomodate additional components
-    # box/shape are final - if these are given and a solute does 
-    # not fit in it raises an exception
-    pbc = PBC(box=box, shape=options["pbc"], 
-              size=options["distance"], zsize=options["zdistance"],
-              x=options["xvector"], y=options["yvector"], z=options["zvector"])
-
     # option -box overrides everything
     if options["box"]:
         options["xvector"] = options["box"][:3]
@@ -582,9 +568,9 @@ def old_main(argv, options):
     # <== END OF PBC INITIAL BOOKKEEPING
 
 
-    lo_lipd  = math.sqrt(options["-a"].value)
-    if options["-au"].value:
-        up_lipd = math.sqrt(options["-au"].value)
+    lo_lipd  = math.sqrt(options["area"])
+    if options["uparea"]:
+        up_lipd = math.sqrt(options["uparea"])
     else:
         up_lipd = lo_lipd
 
@@ -763,6 +749,23 @@ def old_main(argv, options):
     atid      = len(protein)+1
 
     #>> PBC
+
+    # Periodic boundary conditions
+    if options["pbc"] == 'keep' and tm:
+        box = tm[0].box
+    else:
+        box = options.get("box")
+
+    # Set up base PBC
+    # Override where needed to accomodate additional components
+    # box/shape are final - if these are given and a solute does 
+    # not fit in it raises an exception
+    pbc = PBC(shape=options["pbc"], box=box, 
+              distance=(options["distance"], options["zdistance"]),
+              xyz=(options["xvector"], options["yvector"], options["zvector"]),
+              disc=options["disc"], hole=options["hole"], 
+              membrane=options["lower"], protein=tm)
+
 
     # The box dimensions are now (likely) set.
     # If a protein was given, it is positioned in the center of the
