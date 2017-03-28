@@ -42,5 +42,7 @@ def box3d(a):
     x = [ float(i) for i in a.split(",") ] + 6*[0]
     if len(x) == 12: # PDB format
         return pdbBoxRead("CRYST1 "+" ".join([str(i) for i in x]))
+    elif len(x) == 7:
+        return x[0], x[0], x[0], 0, 0, 0, 0, 0, 0
     else:            # GRO format
         return x[0], x[3], x[4], x[5], x[1], x[6], x[7], x[8], x[2]
