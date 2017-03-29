@@ -514,78 +514,11 @@ def old_main(argv, options):
 
     # <=== END OF LIPID BOOKKEEPING
 
-
-    # ==> PBC INITIAL BOOKKEEPING
-
-    # option -box overrides everything
-    if options["box"]:
-        options["xvector"] = options["box"][:3]
-        options["yvector"] = options["box"][3:6]
-        options["zvector"] = options["box"][6:]
-
-    # option -pbc keep really overrides everything
-    if options["pbc"] == "keep" and tm:
-        options["xvector"] = tm[0].box[:3]
-        options["yvector"] = tm[0].box[3:6]
-        options["zvector"] = tm[0].box[6:]
-
-    # options -x, -y, -z take precedence over automatic determination
-    pbcSetX = 0
-    if type(options["xvector"]) in (list, tuple):
-        pbcSetX = options["xvector"]
-    elif options["xvector"]:
-        pbcSetX = [options["xvector"], 0, 0]
-
-    pbcSetY = 0
-    if type(options["yvector"]) in (list, tuple):
-        pbcSetY = options["yvector"]
-    elif options["yvector"]:
-        pbcSetY = [0, options["yvector"], 0]
-
-    pbcSetZ = 0
-    if type(options["zvector"]) in (list, tuple):
-        pbcSetZ = options["zvector"]
-    elif options["zvector"]:
-        pbcSetZ = [0, 0, options["zvector"]]
-
-    # Initialize PBC -- override for protein
-    # Set the box -- If there is a disc/hole, add its radius to the distance
-    if options["disc"]:
-        pbcx = pbcy = pbcz = options["distance"] + 2*options["disc"]
-    elif options["hole"]:
-        pbcx = pbcy = pbcz = options["distance"] + 2*options["hole"]
-    else:
-        pbcx = pbcy = pbcz = options["distance"]
-
-    if "hexagonal".startswith(options["pbc"]):
-        # Hexagonal prism -- y derived from x directly
-        pbcy = math.sqrt(3)*pbcx/2
-        pbcz = (options["zdistance"]
-                or options["zvector"]
-                or options["distance"])
-    elif "optimal".startswith(options["pbc"]):
-        # Rhombic dodecahedron with hexagonal XY plane
-        pbcy = math.sqrt(3)*pbcx/2
-        pbcz = math.sqrt(6)*options["distance"]/3 # This is wrong!
-    elif "rectangular".startswith(options["pbc"]):
-        pbcz = (options["zdistance"]
-                or options["zvector"]
-                or options["distance"])
-
-    # Possibly override
-    pbcx = pbcSetX and pbcSetX[0] or pbcx
-    pbcy = pbcSetY and pbcSetY[1] or pbcy
-    pbcz = pbcSetZ and pbcSetZ[2] or pbcz
-
-    # <== END OF PBC INITIAL BOOKKEEPING
-
-
     lo_lipd  = math.sqrt(options["area"])
     if options["uparea"]:
         up_lipd = math.sqrt(options["uparea"])
     else:
         up_lipd = lo_lipd
-
 
 
     ################
@@ -598,6 +531,8 @@ def old_main(argv, options):
     prot     = []
     xshifts  = [0] # Shift in x direction per protein
 
+    if not lipL:
+        options["solexcl"] = -1
 
     ## B. PROTEIN ---
     if tm:
@@ -605,38 +540,8 @@ def old_main(argv, options):
 
         for prot in tm:
 
-
-            ## a. NO MEMBRANE --
-            if not lipL:
-
-                # A protein, but don't add lipids... Just solvate the protein
-                # Maybe align along principal axes and then build a cell according to PBC
-
-                # Set PBC starting from diameter and adding distance
-                if "cubic".startswith(options["pbc"]):
-                    pbcx = pbcy = pbcz = prot.diam() + options["distance"]
-                elif "rectangular".startswith(options["pbc"]):
-                    pbcx, pbcy, pbcz = linalg.vvadd(linalg.vvsub(prot.fun(max), prot.fun(min)), options["distance"])
-                else:
-                    # Rhombic dodecahedron
-                    pbcx = pbcy = prot.diam()+options["distance"]
-                    pbcz = math.sqrt(2)*pbcx/2
-
-                # Possibly override
-                pbcx = pbcSetX and pbcSetX[0] or pbcx
-                pbcy = pbcSetY and pbcSetY[1] or pbcy
-                pbcz = pbcSetZ and pbcSetZ[2] or pbcz
-
-                # Center coordinates in rectangular brick -- Add solvent next
-                if len(tm) == 1:
-                    prot.center((0.5*pbcx, 0.5*pbcy, 0.5*pbcz))
-
-                # Do not set an exclusion range for solvent
-                options["solexcl"] = -1
-
-
             ## b. PROTEIN AND MEMBRANE --
-            else:
+            if lipL:
 
                 # Have to build a membrane around the protein.
                 # So first put the protein in properly.
@@ -671,59 +576,26 @@ def old_main(argv, options):
                 prng       = (pmax[0]-pmin[0], pmax[1]-pmin[1], pmax[2]-pmin[2])
                 center     = (0.5*(pmin[0]+pmax[0]), 0.5*(pmin[1]+pmax[1]))
 
-
-                # Set the z-dimension
-                pbcz  = pbcSetZ and pbcSetZ[2]
-                # If it is not set, set pbcz to the dimension of the protein
-                pbcz  = pbcz or prng[2]
-                pbcz += options["zdistance"] or options["distance"] or 0
-
-
                 # At this point we should shift the subsequent proteins such
                 # that they end up at the specified distance, in case we have
                 # a number of them to do
                 # y-shift is always -ycenter
                 # x-shift is -xmin+distance+xmax(current)
-                xshft, yshft = (xshifts[-1]-pmin[0]+(options["distance"] or 0),
-                                -center[1])
                 xshifts.append(xshifts[-1]+pmax[0]+(options["distance"] or 0))
-
-
-                ## 6. Set box (brick) dimensions
-                if options["disc"]:
-                    pbcx = options["distance"] + 2*options["disc"]
-                    if ("square".startswith(options["pbc"]) or
-                        "rectangular".startswith(options["pbc"])):
-                        pbcy = pbcx
-                    else:
-                        pbcy  = math.cos(math.pi/6)*pbcx
-                else:
-                    pbcx = (options["distance"] or 0) + prng[0]
-                    if "square".startswith(options["pbc"]):
-                        pbcy = pbcx
-                    elif "rectangular".startswith(options["pbc"]):
-                        pbcy = options["distance"] + prng[1]
-                    else:
-                        # This goes for a hexagonal cell as well as for the optimal arrangement
-                        # The latter is hexagonal in the membrane plane anyway...
-                        pbcy  = math.cos(math.pi/6)*pbcx
-
 
                 ## 7. Adjust PBC for hole
                 # If we need to add a hole, we have to scale the system
                 # The scaling depends on the type of PBC
-                if options["hole"]:
-                    if ("square".startswith(options["pbc"]) or
-                        "rectangular".startswith(options["pbc"])):
-                        scale = 1 + options["hole"] / min(pbcx, pbcy)
-                    else:
-                        area  = options["hole"]**2/math.cos(math.pi/6)
-                        scale = 1+area/(pbcx*pbcy)
-                    pbcx, pbcy = scale*pbcx, scale*pbcy
-
-                pbcx = pbcSetX and pbcSetX[0] or pbcx
-                pbcy = pbcSetY and pbcSetY[1] or pbcy
-
+                #>>T The logic here is different from what happens in the PBC class
+                #>>T It seems that the hole aims to preserve the area...
+                #if options["hole"]:
+                #    if ("square".startswith(options["pbc"]) or
+                #        "rectangular".startswith(options["pbc"])):
+                #        scale = 1 + options["hole"] / min(pbcx, pbcy)
+                #    else:
+                #        area  = options["hole"]**2/math.cos(math.pi/6)
+                #        scale = 1+area/(pbcx*pbcy)
+                #    pbcx, pbcy = scale*pbcx, scale*pbcy
 
                 ## 2. Shift of protein relative to the membrane center
                 zshift = 0
@@ -738,27 +610,10 @@ def old_main(argv, options):
                 # Now we center the system in the rectangular
                 # brick corresponding to the unit cell
                 # If -center is given, also center z in plane
-                prot += (0.5*pbcx, 0.5*pbcy, zshift)
+                prot += (0, 0, zshift)
 
-
-            # And we collect the atoms
-            protein.atoms.extend(prot.atoms)
-            protein.coord.extend(prot.coord)
-
-
-        # Extract the parts of the protein that are in either leaflet
-        prot_up, prot_lo = [], []
-        for ix, iy, iz in protein.coord:
-            if   iz > 0 and iz <  2.4:
-                prot_up.append((ix, iy))
-            elif iz < 0 and iz > -2.4:
-                prot_lo.append((ix, iy))
-
-
-        # Current residue ID is set to that of the last atom
-        resi = protein.atoms[-1][2]
-
-    atid      = len(protein)+1
+                # The z position is now correct with respect to the membrane
+                # at z = 0. The x/y need to be set still
 
     #>> PBC
 
@@ -782,38 +637,43 @@ def old_main(argv, options):
               disc=options["disc"], hole=options["hole"], 
               membrane=options["lower"], protein=tm)
 
-
-    # The box dimensions are now (likely) set.
-    # If a protein was given, it is positioned in the center of the
-    # rectangular brick.
-
-    # Set the lattice vectors
-    if ("rectangular".startswith(options["pbc"]) or
-        "square".startswith(options["pbc"]) or
-        "cubic".startswith(options["pbc"])):
-        box    = [[pbcx, 0, 0], [0, pbcy, 0], [0, 0, pbcz]]
-    elif not lipL:
-        # Rhombic dodecahedron with square XY plane
-        box    = [[pbcx, 0, 0], [0, pbcy, 0], [0.5*pbcx, 0.5*pbcx, pbcz]]
-    elif "hexagonal".startswith(options["pbc"]):
-        box    = [[pbcx, 0, 0], [math.sin(math.pi/6)*pbcx, pbcy, 0], [0, 0, pbcz]]
-    else: # optimal packing; rhombic dodecahedron with hexagonal XY plane
-        box    = [[pbcx, 0, 0], [math.sin(math.pi/6)*pbcx, pbcy, 0], [pbcx/2, pbcy/3, pbcz]]
-
-    # Override lattice vectors if they were set explicitly
-    box[0] = pbcSetX or box[0]
-    box[1] = pbcSetY or box[1]
-    box[2] = pbcSetZ or box[2]
-
-    #print(box)
     box = pbc.box.tolist()
-    #print(box)
 
     pbcx, pbcy, pbcz = box[0][0], box[1][1], box[2][2]
 
     rx, ry, rz = pbcx+1e-8, pbcy+1e-8, pbcz+1e-8
 
     #<< PBC
+
+    # Now that PBC is set, we can shift the proteins
+    for xshft, prot in zip(xshifts,tm):
+        # Half the distance should be added to xshft
+        # to center the whole lot.
+        xshft += options["distance"]/2
+        xshft = pbcx/2
+        prot += (xshft, pbcy/2, (not lipL)*pbcz/2)
+
+    for prot in tm:
+        # And we collect the atoms
+        protein.atoms.extend(prot.atoms)
+        protein.coord.extend(prot.coord)
+
+    # Extract the parts of the protein that are in either leaflet
+    prot_up, prot_lo = [], []
+    for ix, iy, iz in protein.coord:
+        if   iz > 0 and iz <  2.4:
+            prot_up.append((ix, iy))
+        elif iz < 0 and iz > -2.4:
+            prot_lo.append((ix, iy))
+
+    if tm:
+        # Current residue ID is set to that of the last atom
+        resi = protein.atoms[-1][2]
+
+    atid      = len(protein)+1
+
+
+    
 
     #################
     ## 2. MEMBRANE ##
