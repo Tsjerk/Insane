@@ -392,6 +392,18 @@ class Structure(object):
         self.coord = [(ux*i+uy*j+uz*k, vx*i+vy*j+vz*k, wx*i+wy*j+wz*k)
                       for i, j, k in self.coord]
 
+
+    def rotate(self, what):
+            if what == "princ":
+                self.rotate_princ()
+            ## ii. Randomly
+            elif what == "random":
+                self.rotate_random()
+            ## iii. Specifically
+            elif what:
+                self.rotate_degrees(float(what))
+
+
     def rotate_princ(self):
         x, y, z = zip(*self.coord)
 
@@ -538,82 +550,49 @@ def old_main(argv, options):
     if tm:
         molecules.append(('Protein', len(tm)))
 
+    ## b. PROTEIN AND MEMBRANE --
+    if lipL:
+
         for prot in tm:
 
-            ## b. PROTEIN AND MEMBRANE --
-            if lipL:
+            # Have to build a membrane around the protein.
+            # So first put the protein in properly.
 
-                # Have to build a membrane around the protein.
-                # So first put the protein in properly.
+            # Center the protein and store the shift
+            shift = prot.center((0, 0, 0))
 
-                # Center the protein and store the shift
-                shift = prot.center((0, 0, 0))
+            ## 1. Orient with respect to membrane
+            # Orient the protein according to the TM region, if requested
+            # This doesn't actually work very well...
+            if options["orient"]:
+                prot.orient(options["origriddist"], options["oripower"])
 
-                ## 1. Orient with respect to membrane
-                # Orient the protein according to the TM region, if requested
-                # This doesn't actually work very well...
-                if options["orient"]:
-                    # Grid spacing (nm)
-                    d  = options["origriddist"]
-                    pw = options["oripower"]
+            ## 4. Orient the protein in the xy-plane
+            ## i. According to principal axes and unit cell
+            prot.rotate(options["rotate"])
 
-                    prot.orient(d, pw)
+            ## 5. Determine the minimum and maximum x and y of the protein
+            pmin, pmax = prot.fun(min), prot.fun(max)
 
-                ## 4. Orient the protein in the xy-plane
-                ## i. According to principal axes and unit cell
-                if options["rotate"] == "princ":
-                    prot.rotate_princ()
-                ## ii. Randomly
-                elif options["rotate"] == "random":
-                    prot.rotate_random()
+            # At this point we should shift the subsequent proteins such
+            # that they end up at the specified distance, in case we have
+            # a number of them to do
+            # y-shift is always -ycenter
+            # x-shift is -xmin+distance+xmax(current)
+            xshifts.append(xshifts[-1]+pmax[0]+(options["distance"] or 0))
 
-                ## iii. Specifically
-                elif options["rotate"]:
-                    prot.rotate_degrees(float(options["rotate"]))
+            ## 2. Shift of protein relative to the membrane center
+            zshift = options["memshift"] 
+            if not options["center"]:
+                zshift = -shift[2]
 
-                ## 5. Determine the minimum and maximum x and y of the protein
-                pmin, pmax = prot.fun(min), prot.fun(max)
-                prng       = (pmax[0]-pmin[0], pmax[1]-pmin[1], pmax[2]-pmin[2])
-                center     = (0.5*(pmin[0]+pmax[0]), 0.5*(pmin[1]+pmax[1]))
+            # Now we center the system in the rectangular
+            # brick corresponding to the unit cell
+            # If -center is given, also center z in plane
+            prot += (0, 0, zshift)
 
-                # At this point we should shift the subsequent proteins such
-                # that they end up at the specified distance, in case we have
-                # a number of them to do
-                # y-shift is always -ycenter
-                # x-shift is -xmin+distance+xmax(current)
-                xshifts.append(xshifts[-1]+pmax[0]+(options["distance"] or 0))
-
-                ## 7. Adjust PBC for hole
-                # If we need to add a hole, we have to scale the system
-                # The scaling depends on the type of PBC
-                #>>T The logic here is different from what happens in the PBC class
-                #>>T It seems that the hole aims to preserve the area...
-                #if options["hole"]:
-                #    if ("square".startswith(options["pbc"]) or
-                #        "rectangular".startswith(options["pbc"])):
-                #        scale = 1 + options["hole"] / min(pbcx, pbcy)
-                #    else:
-                #        area  = options["hole"]**2/math.cos(math.pi/6)
-                #        scale = 1+area/(pbcx*pbcy)
-                #    pbcx, pbcy = scale*pbcx, scale*pbcy
-
-                ## 2. Shift of protein relative to the membrane center
-                zshift = 0
-                if not options["center"]:
-                    zshift = -shift[2]
-                if options["memshift"]:
-                    if options["memshift"] < 0:
-                        zshift += options["memshift"] # - max(zip(*prot.coord)[2])
-                    else:
-                        zshift += options["memshift"] # - min(zip(*prot.coord)[2])
-
-                # Now we center the system in the rectangular
-                # brick corresponding to the unit cell
-                # If -center is given, also center z in plane
-                prot += (0, 0, zshift)
-
-                # The z position is now correct with respect to the membrane
-                # at z = 0. The x/y need to be set still
+            # The z position is now correct with respect to the membrane
+            # at z = 0. The x/y need to be set still
 
     #>> PBC
 
