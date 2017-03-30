@@ -78,7 +78,7 @@ OPTIONS = simopt.Options([
         ("-op",     "oripower",    float,       1,         4.0, False, "Hydrophobic ratio power for determining orientation"),
         ("-fudge",  "fudge",       float,       1,         0.1, False, "Fudge factor for allowing lipid-protein overlap"),
         ("-ring",   "inside",      bool,        0,        None, False, "Put lipids inside the protein"),
-        ("-dm",     "memshift",    float,       1,        None, False, "Shift protein with respect to membrane"),
+        ("-dm",     "memshift",    float,       1,           0, False, "Shift protein with respect to membrane"),
         """
     Solvent related options.
     """,

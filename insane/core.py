@@ -584,7 +584,7 @@ def old_main(argv, options):
             ## 2. Shift of protein relative to the membrane center
             zshift = options["memshift"] 
             if not options["center"]:
-                zshift = -shift[2]
+                zshift -= shift[2]
 
             # Now we center the system in the rectangular
             # brick corresponding to the unit cell
