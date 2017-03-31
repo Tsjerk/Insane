@@ -525,19 +525,7 @@ def old_main(argv, options):
     lipL      = options["lower"]
     lipU      = options["upper"]
     solv      = options["solvent"]
-    mollist   = options["molfile"]
-    usrnames  = options["lipnames"]
-    usrheads  = options["lipheads"]
-    usrlinks  = options["liplinks"]
-    usrtails  = options["liptails"]
-    usrcharg  = options["lipcharge"]
-
-    numU = []
-    numL = []
     molecules = []
-
-    # Description
-    desc = ""
 
     # Read in the structures (if any)
     tm = [ Structure(i) for i in options["solute"] ]
@@ -548,24 +536,14 @@ def old_main(argv, options):
     ## a. LIPIDS
 
     ## ==> LIPID  BOOKKEEPING:
-    # import lipids
-    # lipid_list = lipids.get_list()
-    # lipid_list.add_from_file(*options["mollist"])
-    # lipid_list.add_from_def(*zip(options["lipnames"], options["lipheads"], options["liplinks"], options["liptails"], options["lipcharge']))
-
+    # Read lipids defined in insane
     liplist = lipids.get_lipids()
     # Then add lipids from file
     liplist.add_from_files(options["molfile"])
     # Last, add lipids from command line
-    liplist.add_from_def(usrnames, usrheads, usrlinks, usrtails, usrcharg)
-
+    liplist.add_from_def(options["lipnames"], options["lipheads"], options["liplinks"], 
+                         options["liptails"], options["lipcharge"])
     # <=== END OF LIPID BOOKKEEPING
-
-    lo_lipd  = math.sqrt(options["area"])
-    if options["uparea"]:
-        up_lipd = math.sqrt(options["uparea"])
-    else:
-        up_lipd = lo_lipd
 
 
     ################
@@ -586,48 +564,46 @@ def old_main(argv, options):
         molecules.append(('Protein', len(tm)))
 
     ## b. PROTEIN AND MEMBRANE --
-    if lipL:
+    for prot in tm:
 
-        for prot in tm:
+        # Have to build a membrane around the protein.
+        # So first put the protein in properly.
 
-            # Have to build a membrane around the protein.
-            # So first put the protein in properly.
+        # Center the protein and store the shift
+        shift = prot.center((0, 0, 0))
+            
+        ## 1. Orient with respect to membrane
+        # Orient the protein according to the TM region, if requested
+        # This doesn't actually work very well...
+        if options["orient"]:
+            prot.orient(options["origriddist"], options["oripower"])
 
-            # Center the protein and store the shift
-            shift = prot.center((0, 0, 0))
+        ## 4. Orient the protein in the xy-plane
+        ## i. According to principal axes and unit cell
+        prot.rotate(options["rotate"])
+        
+        ## 5. Determine the minimum and maximum x and y of the protein
+        pmin, pmax = prot.fun(min), prot.fun(max)
+        
+        # At this point we should shift the subsequent proteins such
+        # that they end up at the specified distance, in case we have
+        # a number of them to do
+        # y-shift is always -ycenter
+        # x-shift is -xmin+distance+xmax(current)
+        xshifts.append(xshifts[-1]+pmax[0]+(options["distance"] or 0))
+        
+        ## 2. Shift of protein relative to the membrane center
+        zshift = options["memshift"] 
+        if not options["center"]:
+            zshift -= shift[2]
 
-            ## 1. Orient with respect to membrane
-            # Orient the protein according to the TM region, if requested
-            # This doesn't actually work very well...
-            if options["orient"]:
-                prot.orient(options["origriddist"], options["oripower"])
-
-            ## 4. Orient the protein in the xy-plane
-            ## i. According to principal axes and unit cell
-            prot.rotate(options["rotate"])
-
-            ## 5. Determine the minimum and maximum x and y of the protein
-            pmin, pmax = prot.fun(min), prot.fun(max)
-
-            # At this point we should shift the subsequent proteins such
-            # that they end up at the specified distance, in case we have
-            # a number of them to do
-            # y-shift is always -ycenter
-            # x-shift is -xmin+distance+xmax(current)
-            xshifts.append(xshifts[-1]+pmax[0]+(options["distance"] or 0))
-
-            ## 2. Shift of protein relative to the membrane center
-            zshift = options["memshift"] 
-            if not options["center"]:
-                zshift -= shift[2]
-
-            # Now we center the system in the rectangular
-            # brick corresponding to the unit cell
-            # If -center is given, also center z in plane
-            prot += (0, 0, zshift)
-
-            # The z position is now correct with respect to the membrane
-            # at z = 0. The x/y need to be set still
+        # Now we center the system in the rectangular
+        # brick corresponding to the unit cell
+        # If -center is given, also center z in plane
+        prot += (0, 0, zshift)
+        
+        # The z position is now correct with respect to the membrane
+        # at z = 0. The x/y need to be set still
 
     #>> PBC
 
@@ -687,6 +663,13 @@ def old_main(argv, options):
 
     membrane = Structure()
 
+    lo_lipd  = math.sqrt(options["area"])
+    if options["uparea"]:
+        up_lipd = math.sqrt(options["uparea"])
+    else:
+        up_lipd = lo_lipd
+
+    numL, numU = 0, 0
     if lipL:
         # Lipids are added on grid positions, using the prototypes defined above.
         # If a grid position is already occupied by protein, the position is untagged.
