@@ -6,12 +6,13 @@ from nose.plugins.base import Plugin
 
 def color_arguments(arguments):
     categories = (
-        (('l', 'alname', 'alhead', 'allink', 'altail'), '33'),
-        (('box', 'pbc', 'x', 'y', 'z'), '32'),
+        (('l', 'alname', 'alhead', 'allink', 'altail'), '1;33'),
+        (('box', 'pbc', 'x', 'y', 'z'), '38;5;214'),
         (('f', ),  '31'),
         (('d', 'dz'), '34'),
+        (('sol', ), '36'),
     )
-    template_from = "(-({}) [a-zA-Z0-9:,-]+)(\\s|$|')"
+    template_from = "(-({}) [a-zA-Z0-9:.,-]+)(\\s|$|')"
     template_to = '\\033[{}m\\1\\033[0m\\3'
     for option, color in categories:
         arguments = re.sub(template_from.format('|'.join(option)),
