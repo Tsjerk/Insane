@@ -308,6 +308,7 @@ def test_simple_cases():
             ref_gro=ref_gro,
             ref_stdout=ref_stdout,
             ref_stderr=ref_stderr)
+        _test_case.__doc__ = 'insane ' + case_args
         yield (_test_case, case_args, input_dir)
 
 
