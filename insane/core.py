@@ -289,8 +289,8 @@ class Structure(object):
         return len(self.atoms)
 
     def __iadd__(self, s):
-        for i in range(len(self)):
-            self.coord[i] = linalg.vvadd(self.coord[i], s)
+        #for i in range(len(self)):
+        #    self.coord[i] = linalg.vvadd(self.coord[i], s)
         if self.coord_np.shape[0]:
             self.coord_np += s ###
         return self
@@ -300,8 +300,8 @@ class Structure(object):
             result = self.__class__()
             result.atoms.extend(self.atoms)
             result.atoms.extend(other.atoms)
-            result.coord.extend(self.coord)
-            result.coord.extend(other.coord)
+            #result.coord.extend(self.coord)
+            #result.coord.extend(other.coord)
             result.coord_np = np.concatenate((
                 self.coord_np.reshape((-1,3)), 
                 other.coord_np.reshape((-1,3)))) ###
@@ -321,11 +321,12 @@ class Structure(object):
     def coord(self):
         if self._coord is None:
             self._coord = [i[4:7] for i in self.atoms]
-        return self._coord
+            self.coord_np = np.array(self._coord)
+        return self.coord_np
 
     @coord.setter
     def coord(self, other):
-        self._coord = other
+        #self._coord = other
         self.coord_np = np.array(other)
 
     @property
@@ -343,10 +344,10 @@ class Structure(object):
             self._center = [ sum(i)/len(i) for i in zip(*self.coord)]
         if other:
             s = linalg.vvsub(other, self._center)
-            for i in range(len(self)):
-                self.coord[i] = linalg.vvadd(self.coord[i], s)
+            #for i in range(len(self)):
+            #    self.coord[i] = linalg.vvadd(self.coord[i], s)
             self.coord_np += s ###
-            self._center = other
+            #self._center = other
             return s # return the shift
         return self._center
 
@@ -433,9 +434,9 @@ class Structure(object):
         (ux, uy, uz), (vx, vy, vz), (wx, wy, wz), r = linalg.mijn_eigen_sym_3x3(xx, yy, zz, xy, zx, yz)
 
         # Rotate the coordinates
-        self.coord = [(ux*i+uy*j+uz*k, vx*i+vy*j+vz*k, wx*i+wy*j+wz*k)
-                      for i, j, k in self.coord]
-
+        self.coord = np.array([(ux*i+uy*j+uz*k, vx*i+vy*j+vz*k, wx*i+wy*j+wz*k)
+                               for i, j, k in self.coord])
+        
 
     def rotate(self, what):
             if what == "princ":
@@ -449,7 +450,7 @@ class Structure(object):
 
 
     def rotate_princ(self):
-        x, y, z = zip(*self.coord)
+        x, y, z = self.coord.T.tolist()
 
         # The rotation matrix in the plane equals the transpose
         # of the matrix of eigenvectors from the 2x2 covariance
@@ -483,17 +484,17 @@ class Structure(object):
             # Finally we rotate the system in the plane by
             # matrix multiplication with the transpose of
             # the matrix of eigenvectors
-            self.coord = [(ux*i+uy*j, ux*j-uy*i, k) for i, j, k in zip(x, y, z)]
+            self.coord = np.array([(ux*i+uy*j, ux*j-uy*i, k) for i, j, k in zip(x, y, z)])
 
     def rotate_random(self):
         ux   = math.cos(random.random()*2*math.pi)
         uy   = math.sqrt(1-ux*ux)
-        self.coord = [(ux*i+uy*j, ux*j-uy*i, k) for i, j, k in self.coord]
+        self.coord = np.array([(ux*i+uy*j, ux*j-uy*i, k) for i, j, k in self.coord])
 
     def rotate_degrees(self, angle):
         ux   = math.cos(angle*math.pi/180.)
         uy   = math.sin(angle*math.pi/180.)
-        self.coord = [(ux*i+uy*j, ux*j-uy*i, k) for i, j, k in self.coord]
+        self.coord = np.array([(ux*i+uy*j, ux*j-uy*i, k) for i, j, k in self.coord])
 
 
 def _point(y, phi):
@@ -574,8 +575,6 @@ def old_main(argv, options):
 
 
     resi = 0
-    protein  = Structure()
-    prot     = []
     xshifts  = [0] # Shift in x direction per protein
 
     if not lipL:
@@ -695,26 +694,33 @@ def old_main(argv, options):
     for xshft, prot in zip(xshifts,tm):
         # Half the distance should be added to xshft
         # to center the whole lot.
-        xshft += options["distance"]/2
+        #xshft += options["distance"]/2
         xshft = pbc.x/2
-        prot += (xshft, pbc.y/2, (not lipL)*pbc.z/2)
+        prot.coord += (xshft, pbc.y/2, (not lipL)*pbc.z/2)
 
+    prot_coord = []
+    protein  = Structure()
     for prot in tm:
         # And we collect the atoms
         protein.atoms.extend(prot.atoms)
-        protein.coord.extend(prot.coord)
+        prot_coord.append(prot.coord)
+    if tm:
+        protein.coord = np.concatenate(prot_coord)
 
     # Extract the parts of the protein that are in either leaflet
-    prot_up, prot_lo = [], []
-    for ix, iy, iz in protein.coord:
-        if   iz > 0 and iz <  2.4:
-            prot_up.append((ix, iy))
-        elif iz < 0 and iz > -2.4:
-            prot_lo.append((ix, iy))
+    #prot_up, prot_lo = [], []
+    #for ix, iy, iz in protein.coord:
+    #    if   iz > 0 and iz <  2.4:
+    #        prot_up.append((ix, iy))
+    #    elif iz < 0 and iz > -2.4:
+    #        prot_lo.append((ix, iy))
+    mem_mask_up = (0 < protein.coord[:,2]) & (protein.coord[:,2] < 2.4)
+    mem_mask_lo = (0 > protein.coord[:,2]) & (protein.coord[:,2] > -2.4)
+    prot_up = protein.coord[mem_mask_up, :2]
+    prot_lo = protein.coord[mem_mask_lo, :2]
 
-    if tm:
-        # Current residue ID is set to that of the last atom
-        resi = protein.atoms[-1][2]
+    # Current residue ID is set to that of the last atom
+    resi = protein.atoms[-1:][2:3] or 0
 
     atid      = len(protein)+1
 
@@ -974,8 +980,8 @@ def old_main(argv, options):
         mz  = pbc.z/2
         z   = [ i[2] for i in (protein+membrane).coord ]
         mz -= (max(z)+min(z))/2
-        protein += (0, 0, mz)
-        membrane += (0, 0, mz)
+        protein.coord += (0, 0, mz)
+        membrane.coord += (0, 0, mz)
 
 
     ################
@@ -1008,7 +1014,7 @@ def old_main(argv, options):
         grid   = [[[i < hz-excl or i > hz+excl for i in xrange(nz)] for j in xrange(ny)] for i in xrange(nx)]
 
         # Flag all cells occupied by protein or membrane
-        for p, q, r in protein.coord+membrane.coord:
+        for p, q, r in (protein+membrane).coord:
             for s, t, u in pointsOnSphere(20):
                 x, y, z = p+0.33*s, q+0.33*t, r+0.33*u
                 if z >= pbc.z:
@@ -1099,6 +1105,7 @@ def old_main(argv, options):
 
         # Build the solvent
         sol = Structure()
+        solcoord = []
         for resn, (rndm, x, y, z) in solvent:
             resi += 1
             solmol = SOLVENTS.get(resn)
@@ -1114,14 +1121,15 @@ def old_main(argv, options):
                     ry = y + qp*qy + qq*py + qw*(qz*px-qx*pz)
                     rz = z + qp*qz + qq*pz + qw*(qx*py-qy*px)
                     sol.atoms.append((atnm, resn, resi, 0, 0, 0))
-                    sol.coord.append((rx, ry, rz))
+                    solcoord.append((rx, ry, rz))
                     atid += 1
             else:
                 sol.atoms.append((solmol and solmol[0][0] or resn,
                                   resn, resi,
                                   0, 0, 0))
-                sol.coord.append((x, y, z))
+                solcoord.append((x, y, z))
                 atid += 1
+        sol.coord = solcoord
     else:
         solvent, sol = None, Structure()
 
