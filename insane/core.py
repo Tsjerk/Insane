@@ -496,28 +496,22 @@ def ssd(u, v):
     return sum([(i-u[0])*(j-v[0]) for i, j in zip(u, v)])/(len(u)-1)
 
 
-# Parse a string for a lipid as given on the command line (LIPID[:NUMBER])
+# Parse a string for a lipid as given on the command line (LIPID[=NUMBER|:NUMBER])
+# If both absolute and relative number are set False, then relative count is 1
 def parse_mol(x):
-    l = x.split(":")
-    return l[0], len(l) == 1 and 1 or float(l[1])
-
-
-# Very simple option class
-class Option:
-    def __init__(self, func=str, num=1, default=None, description=""):
-        self.func        = func
-        self.num         = num
-        self.value       = default
-        self.description = description
-    def __nonzero__(self):
-        return self.value != None
-    def __str__(self):
-        return self.value and str(self.value) or ""
-    def setvalue(self, v):
-        if len(v) == 1:
-            self.value = self.func(v[0])
+    lip = x.split(":")
+    abn = lip[0].split("=")
+    names = abn[0]
+    if len(abn) > 1:
+        nrel = 0
+        nabs = float(abn[1])
+    else:
+        nabs = 0
+        if len(lip) > 1:
+            nrel = float(lip[1])
         else:
-            self.value = [ self.func(i) for i in v ]
+            nrel = 1
+    return abn[0], nabs, nrel
 
 
 def old_main(argv, options):
@@ -543,6 +537,15 @@ def old_main(argv, options):
     # Last, add lipids from command line
     liplist.add_from_def(options["lipnames"], options["lipheads"], options["liplinks"], 
                          options["liptails"], options["lipcharge"])
+
+    relU, relL, absU, absL = [], [], [], []
+    if lipL:
+        lipU = lipU or lipL
+        lipL, absL, relL = zip(*[ parse_mol(i) for i in lipL ])
+        totL       = float(sum(relL))
+        lipU, absU, relU = zip(*[ parse_mol(i) for i in lipU ])
+        totU       = float(sum(relU))
+
     # <=== END OF LIPID BOOKKEEPING
 
 
@@ -627,6 +630,46 @@ def old_main(argv, options):
               disc=options["disc"], hole=options["hole"], 
               membrane=options["lower"], protein=tm)
 
+    if any(relL) and any(relU):
+        # Determine box from size
+        # If one leaflet is defined with an absolute number of lipids
+        # then the other leaflet (with relative numbers) will follow
+        # from that.
+        # box/d/x/y/z needed to define unit cell
+
+        # box is set up already...
+        pass
+    elif any(absL) or any(absU):
+        # All numbers are absolute.. determine size from number of lipids
+        # Box x/y will be set, d/dz/z is needed to set third box vector.
+        # The area is needed to determine the size of the x/y plane OR
+        # the area will be SET if a box is given.
+
+        # A scaling factor is needed for the box
+        # This is the area for the given number of lipids
+        upsize = sum(absU)*options["uparea"]
+        losize = sum(absU)*options["uparea"]
+        # This is the size of the hole, going through both leaflets
+        holesize = numpy.pi*options.hole**2
+        # This is the area of the PBC xy plane
+        xysize = pbc.x*pbc.y
+        # This is the total area of the proteins per leaflet (IMPLEMENT!)
+        psize_up = sum([p.xyarea("up") for p in tm]) 
+        psize_lo = sum([p.xyarea("lo") for p in tm]) 
+        # So this is unavailable:
+        unavail_up = holesize + psize_up
+        unavail_lo = holesize + psize_lo
+        # This is the current area marked for lipids
+        # xysize_up = xysize - unavail_up
+        # xysize_lo = xysize - unavail_lo
+        # This is how much the unit cell xy needs to be scaled
+        # to accomodate the fixed amount of lipids with given area.
+        upscale = (upsize + unavail_up)/xysize
+        loscale = (losize + unavail_lo)/xysize
+        scale = max(upscale, loscale)
+        pbc.box[:2,:] *= scale
+        
+
     #<< PBC
 
     # Now that PBC is set, we can shift the proteins
@@ -669,7 +712,7 @@ def old_main(argv, options):
     else:
         up_lipd = lo_lipd
 
-    numL, numU = 0, 0
+    num_up, num_lo = [], []
     if lipL:
         # Lipids are added on grid positions, using the prototypes defined above.
         # If a grid position is already occupied by protein, the position is untagged.
@@ -863,23 +906,16 @@ def old_main(argv, options):
 
         # Types of lipids, relative numbers, fractions and numbers
 
-        lipU = lipU or lipL
-
         # Upper leaflet (+1)
-        lipU, numU = zip(*[ parse_mol(i) for i in lipU ])
-        totU       = float(sum(numU))
-        num_up     = [int(len(upper)*i/totU) for i in numU]
+        num_up     = [int(len(upper)*i/totU) for i in relU]
         lip_up     = [l for i, l in zip(num_up, lipU) for j in range(i)]
         leaf_up    = ( 1, zip(lip_up, upper), up_lipd, up_lipdx, up_lipdy)
+        molecules.extend(zip(lipU, num_up))
 
         # Lower leaflet (-1)
-        lipL, numL = zip(*[ parse_mol(i) for i in lipL ])
-        totL       = float(sum(numL))
-        num_lo     = [int(len(lower)*i/totL) for i in numL]
+        num_lo     = [int(len(lower)*i/totL) for i in relL]
         lip_lo     = [l for i, l in zip(num_lo, lipL) for j in range(i)]
         leaf_lo    = (-1, zip(lip_lo, lower), lo_lipd, lo_lipdx, lo_lipdy)
-
-        molecules.extend(zip(lipU, num_up))
         molecules.extend(zip(lipL, num_lo))
 
         kick       = options["randkick"]
@@ -991,7 +1027,7 @@ def old_main(argv, options):
         # (like when mixing a 1M solution of this with a 1M solution of that
 
         # First get names and relative numbers for each solvent
-        solnames, solnums = zip(*[ parse_mol(i) for i in solv ])
+        solnames, solabs, solnums = zip(*[ parse_mol(i) for i in solv ])
         solnames, solnums = list(solnames), list(solnums)
         totS       = float(sum(solnums))
 
@@ -1071,7 +1107,7 @@ def old_main(argv, options):
         solvent, sol = None, Structure()
 
     return (molecules, protein, membrane, sol,
-            lipU, lipL, numU, numL, pbc.box)
+            lipU, lipL, relU, relL, pbc.box)
 
 
 
