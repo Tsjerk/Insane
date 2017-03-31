@@ -251,7 +251,7 @@ class Structure(object):
     def __init__(self, filename=None):
         self.title   = ""
         self.atoms   = []
-        self.coord   = []
+        self._coord  = None
         self.rest    = []
         self.box     = []
         self._center = None
@@ -277,8 +277,10 @@ class Structure(object):
                 self.rest  = [lines[0], lines[1], lines[-1]]
                 self.box   = groBoxRead(lines[-1])
                 self.title = lines[0]
-            self.coord = [i[4:7] for i in self.atoms]
             self.center()
+
+        # Temporary... to replace self.coord
+        self.coord_np = np.array(self.coord).reshape((-1,3)) ###
 
     def __nonzero__(self):
         return bool(self.atoms)
@@ -289,6 +291,8 @@ class Structure(object):
     def __iadd__(self, s):
         for i in range(len(self)):
             self.coord[i] = linalg.vvadd(self.coord[i], s)
+        if self.coord_np.shape[0]:
+            self.coord_np += s ###
         return self
 
     def __add__(self, other):
@@ -298,6 +302,9 @@ class Structure(object):
             result.atoms.extend(other.atoms)
             result.coord.extend(self.coord)
             result.coord.extend(other.coord)
+            result.coord_np = np.concatenate((
+                self.coord_np.reshape((-1,3)), 
+                other.coord_np.reshape((-1,3)))) ###
             return result
         raise TypeError('Cannot add {} to {}'
                         .format(self.__class__, other.__class__))
@@ -309,6 +316,17 @@ class Structure(object):
             if resname.endswith('.o'):
                 resname = rn[:-2]
             yield idx, atname, resname, resid, x, y, z
+
+    @property
+    def coord(self):
+        if self._coord is None:
+            self._coord = [i[4:7] for i in self.atoms]
+        return self._coord
+
+    @coord.setter
+    def coord(self, other):
+        self._coord = other
+        self.coord_np = np.array(other)
 
     @property
     def charge(self):
@@ -327,6 +345,7 @@ class Structure(object):
             s = linalg.vvsub(other, self._center)
             for i in range(len(self)):
                 self.coord[i] = linalg.vvadd(self.coord[i], s)
+            self.coord_np += s ###
             self._center = other
             return s # return the shift
         return self._center
@@ -738,7 +757,6 @@ def old_main(argv, options):
         up_lipdy    = pbc.y/up_lipids_y
         up_rlipy    = range(up_lipids_y)
 
-
         # Set up grids to check where to place the lipids
         grid_lo = [[0 for j in lo_rlipy] for i in lo_rlipx]
         grid_up = [[0 for j in up_rlipy] for i in up_rlipx]
@@ -750,7 +768,6 @@ def old_main(argv, options):
                 grid_lo[ int(lo_lipids_x*i[0]/pbc.rx)%lo_lipids_x ][ int(lo_lipids_y*i[1]/pbc.ry)%lo_lipids_y ] += 1
             for i in prot_up:
                 grid_up[ int(up_lipids_x*i[0]/pbc.rx)%up_lipids_x ][ int(up_lipids_y*i[1]/pbc.ry)%up_lipids_y ] += 1
-
 
         # Determine which cells to consider occupied, given the fudge factor
         # The array is changed to boolean type here
@@ -876,7 +893,6 @@ def old_main(argv, options):
                             xi -= up_lipids_x
                         grid_up[xi][yj] = False
 
-
         # Set the XY coordinates
         # To randomize the lipids we add a random number which is used for sorting
         upper, lower = [], []
@@ -889,11 +905,9 @@ def old_main(argv, options):
                 if grid_lo[i][j]:
                     lower.append((random.random(), i*pbc.x/lo_lipids_x, j*pbc.y/lo_lipids_y))
 
-
         # Sort on the random number
         upper.sort()
         lower.sort()
-
 
         # Extract coordinates, taking asymmetry in account
         asym  = options["asymmetry"] or 0
@@ -920,6 +934,8 @@ def old_main(argv, options):
 
         kick       = options["randkick"]
 
+        mematoms = []
+        memcoords = []
         # Build the membrane
         for leaflet, leaf_lip, lipd, lipdx, lipdy in [leaf_up, leaf_lo]:
             for lipid, pos in leaf_lip:
@@ -947,13 +963,16 @@ def old_main(argv, options):
                 # Add the atoms to the list
                 for i in range(len(at)):
                     atom  = "%5d%-5s%5s%5d"%(resi, lipid, at[i], atid)
-                    membrane.coord.append((nx[i], ny[i], az[i]))
-                    membrane.atoms.append((at[i], lipid, resi, 0, 0, 0))
+                    memcoords.append((nx[i], ny[i], az[i]))
+                    mematoms.append((at[i], lipid, resi, 0, 0, 0))
                     atid += 1
+                
+        membrane.coord = memcoords
+        membrane.atoms = mematoms
 
         # Now move everything to the center of the box before adding solvent
         mz  = pbc.z/2
-        z   = [ i[2] for i in protein.coord+membrane.coord ]
+        z   = [ i[2] for i in (protein+membrane).coord ]
         mz -= (max(z)+min(z))/2
         protein += (0, 0, mz)
         membrane += (0, 0, mz)
