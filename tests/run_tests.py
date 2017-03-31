@@ -1,6 +1,6 @@
 import sys
 import nose
-from color import ColorVerbose
+from easy_copy import ImprovedDisplay
 
 if __name__ == '__main__':
-    nose.main(addplugins=[ColorVerbose()], argv=sys.argv)
+    nose.main(addplugins=[ImprovedDisplay()], argv=sys.argv)
