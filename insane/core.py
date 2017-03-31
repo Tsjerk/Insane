@@ -39,6 +39,7 @@ from .converters import *
 from .constants import d2r
 from .data import SOLVENTS, CHARGES, APOLARS
 
+RTOL = 1e-8
 
 # Set the random seed.
 # The seed is set to an arbitary value set in the INSANE_SEED environment
@@ -220,6 +221,30 @@ class PBC(object):
                 self.box[i,:] = v
 
         return 
+
+    @property
+    def x(self):
+        return self.box[0,0]
+
+    @property
+    def y(self):
+        return self.box[1,1]
+
+    @property
+    def z(self):
+        return self.box[2,2]
+
+    @property
+    def rx(self):
+        return self.box[0,0] + RTOL
+
+    @property
+    def ry(self):
+        return self.box[1,1] + RTOL
+
+    @property
+    def rz(self):
+        return self.box[2,2] + RTOL
 
 
 class Structure(object):
@@ -452,14 +477,24 @@ class Structure(object):
         self.coord = [(ux*i+uy*j, ux*j-uy*i, k) for i, j, k in self.coord]
 
 
+def _point(y, phi):
+    r = math.sqrt(1-y*y)
+    return math.cos(phi)*r, y, math.sin(phi)*r
+
+
+def pointsOnSphere(n):
+    return [_point((2.*k+1)/n-1, k*2.3999632297286531) for k in range(n)]
+
 
 # Mean of deviations from initial value
 def meand(v):
     return sum([i-v[0] for i in v])/len(v)
 
+
 # Sum of squares/crossproducts of deviations
 def ssd(u, v):
     return sum([(i-u[0])*(j-v[0]) for i, j in zip(u, v)])/(len(u)-1)
+
 
 # Parse a string for a lipid as given on the command line (LIPID[:NUMBER])
 def parse_mol(x):
@@ -505,7 +540,7 @@ def old_main(argv, options):
     desc = ""
 
     # Read in the structures (if any)
-    tm    = [ Structure(i) for i in options["solute"] ]
+    tm = [ Structure(i) for i in options["solute"] ]
 
 
     ## I. STRUCTURES
@@ -616,12 +651,6 @@ def old_main(argv, options):
               disc=options["disc"], hole=options["hole"], 
               membrane=options["lower"], protein=tm)
 
-    box = pbc.box.tolist()
-
-    pbcx, pbcy, pbcz = box[0][0], box[1][1], box[2][2]
-
-    rx, ry, rz = pbcx+1e-8, pbcy+1e-8, pbcz+1e-8
-
     #<< PBC
 
     # Now that PBC is set, we can shift the proteins
@@ -629,8 +658,8 @@ def old_main(argv, options):
         # Half the distance should be added to xshft
         # to center the whole lot.
         xshft += options["distance"]/2
-        xshft = pbcx/2
-        prot += (xshft, pbcy/2, (not lipL)*pbcz/2)
+        xshft = pbc.x/2
+        prot += (xshft, pbc.y/2, (not lipL)*pbc.z/2)
 
     for prot in tm:
         # And we collect the atoms
@@ -652,8 +681,6 @@ def old_main(argv, options):
     atid      = len(protein)+1
 
 
-    
-
     #################
     ## 2. MEMBRANE ##
     #################
@@ -667,22 +694,22 @@ def old_main(argv, options):
         lipd = lo_lipd
 
         # Number of lipids in x and y in lower leaflet if there were no solute
-        lo_lipids_x = int(pbcx/lipd+0.5)
-        lo_lipdx    = pbcx/lo_lipids_x
+        lo_lipids_x = int(pbc.x/lipd+0.5)
+        lo_lipdx    = pbc.x/lo_lipids_x
         lo_rlipx    = range(lo_lipids_x)
-        lo_lipids_y = int(pbcy/lipd+0.5)
-        lo_lipdy    = pbcy/lo_lipids_y
+        lo_lipids_y = int(pbc.y/lipd+0.5)
+        lo_lipdy    = pbc.y/lo_lipids_y
         lo_rlipy    = range(lo_lipids_y)
 
         if options["uparea"]:
             lipd = up_lipd
 
         # Number of lipids in x and y in upper leaflet if there were no solute
-        up_lipids_x = int(pbcx/lipd+0.5)
-        up_lipdx    = pbcx/up_lipids_x
+        up_lipids_x = int(pbc.x/lipd+0.5)
+        up_lipdx    = pbc.x/up_lipids_x
         up_rlipx    = range(up_lipids_x)
-        up_lipids_y = int(pbcy/lipd+0.5)
-        up_lipdy    = pbcy/up_lipids_y
+        up_lipids_y = int(pbc.y/lipd+0.5)
+        up_lipdy    = pbc.y/up_lipids_y
         up_rlipy    = range(up_lipids_y)
 
 
@@ -694,9 +721,9 @@ def old_main(argv, options):
         if protein:
             # Calculate number density per cell
             for i in prot_lo:
-                grid_lo[ int(lo_lipids_x*i[0]/rx)%lo_lipids_x ][ int(lo_lipids_y*i[1]/ry)%lo_lipids_y ] += 1
+                grid_lo[ int(lo_lipids_x*i[0]/pbc.rx)%lo_lipids_x ][ int(lo_lipids_y*i[1]/pbc.ry)%lo_lipids_y ] += 1
             for i in prot_up:
-                grid_up[ int(up_lipids_x*i[0]/rx)%up_lipids_x ][ int(up_lipids_y*i[1]/ry)%up_lipids_y ] += 1
+                grid_up[ int(up_lipids_x*i[0]/pbc.rx)%up_lipids_x ][ int(up_lipids_y*i[1]/pbc.ry)%up_lipids_y ] += 1
 
 
         # Determine which cells to consider occupied, given the fudge factor
@@ -749,14 +776,14 @@ def old_main(argv, options):
             if protein:
                 cx, cy = protein.center()[:2]
             else:
-                cx, cy = 0.5*pbcx, 0.5*pbcy
+                cx, cy = 0.5*pbc.x, 0.5*pbc.y
             for i in range(len(grid_lo)):
                 for j in range(len(grid_lo[i])):
-                    if (i*pbcx/lo_lipids_x - cx)**2 + (j*pbcy/lo_lipids_y - cy)**2 > options["disc"]**2:
+                    if (i*pbc.x/lo_lipids_x - cx)**2 + (j*pbc.y/lo_lipids_y - cy)**2 > options["disc"]**2:
                         grid_lo[i][j] = False
             for i in range(len(grid_up)):
                 for j in range(len(grid_up[i])):
-                    if (i*pbcx/up_lipids_x - cx)**2 + (j*pbcy/up_lipids_y - cy)**2 > options["disc"]**2:
+                    if (i*pbc.x/up_lipids_x - cx)**2 + (j*pbc.y/up_lipids_y - cy)**2 > options["disc"]**2:
                         grid_up[i][j] = False
 
 
@@ -775,7 +802,7 @@ def old_main(argv, options):
             else:
                 hx, hy = (int(0.5*lo_lipids_x), int(0.5*lo_lipids_y))
             hr = int(options["hole"]/min(lo_lipdx,  lo_lipdy)+0.5)
-            ys = int(lo_lipids_x*box[1][0]/box[0][0]+0.5)
+            ys = int(lo_lipids_x*pbc.box[1,0]/pbc.box[0,0]+0.5)
             print("; Making a hole with radius %f nm centered at grid cell (%d,%d)"%(options["hole"], hx, hy), hr, file=sys.stderr)
             hr -= 1
             for ii in range(hx-hr-1, hx+hr+1):
@@ -804,7 +831,7 @@ def old_main(argv, options):
             else:
                 hx, hy = (int(0.5*up_lipids_x), int(0.5*up_lipids_y))
             hr = int(options["hole"]/min(up_lipdx, up_lipdy)+0.5)
-            ys = int(up_lipids_x*box[1][0]/box[0][0]+0.5)
+            ys = int(up_lipids_x*pbc.box[1,0]/pbc.box[0,0]+0.5)
             print("; Making a hole with radius %f nm centered at grid cell (%d,%d)"%(options["hole"], hx, hy), hr, file=sys.stderr)
             hr -= 1
             for ii in range(hx-hr-1, hx+hr+1):
@@ -830,11 +857,11 @@ def old_main(argv, options):
         for i in xrange(up_lipids_x):
             for j in xrange(up_lipids_y):
                 if grid_up[i][j]:
-                    upper.append((random.random(), i*pbcx/up_lipids_x, j*pbcy/up_lipids_y))
+                    upper.append((random.random(), i*pbc.x/up_lipids_x, j*pbc.y/up_lipids_y))
         for i in xrange(lo_lipids_x):
             for j in xrange(lo_lipids_y):
                 if grid_lo[i][j]:
-                    lower.append((random.random(), i*pbcx/lo_lipids_x, j*pbcy/lo_lipids_y))
+                    lower.append((random.random(), i*pbc.x/lo_lipids_x, j*pbc.y/lo_lipids_y))
 
 
         # Sort on the random number
@@ -847,8 +874,8 @@ def old_main(argv, options):
         upper = [i[1:] for i in upper[max(0, asym):]]
         lower = [i[1:] for i in lower[max(0, -asym):]]
 
-        print("; X: %.3f (%d bins) Y: %.3f (%d bins) in upper leaflet"%(pbcx, up_lipids_x, pbcy, up_lipids_y), file=sys.stderr)
-        print("; X: %.3f (%d bins) Y: %.3f (%d bins) in lower leaflet"%(pbcx, lo_lipids_x, pbcy, lo_lipids_y), file=sys.stderr)
+        print("; X: %.3f (%d bins) Y: %.3f (%d bins) in upper leaflet"%(pbc.x, up_lipids_x, pbc.y, up_lipids_y), file=sys.stderr)
+        print("; X: %.3f (%d bins) Y: %.3f (%d bins) in lower leaflet"%(pbc.x, lo_lipids_x, pbc.y, lo_lipids_y), file=sys.stderr)
         print("; %d lipids in upper leaflet, %d lipids in lower leaflet"%(len(upper), len(lower)), file=sys.stderr)
 
         # Types of lipids, relative numbers, fractions and numbers
@@ -906,7 +933,7 @@ def old_main(argv, options):
                     atid += 1
 
         # Now move everything to the center of the box before adding solvent
-        mz  = pbcz/2
+        mz  = pbc.z/2
         z   = [ i[2] for i in protein.coord+membrane.coord ]
         mz -= (max(z)+min(z))/2
         protein += (0, 0, mz)
@@ -922,30 +949,20 @@ def old_main(argv, options):
     mcharge = membrane.charge
     pcharge = protein.charge
 
-
-    def _point(y, phi):
-        r = math.sqrt(1-y*y)
-        return math.cos(phi)*r, y, math.sin(phi)*r
-
-
-    def pointsOnSphere(n):
-        return [_point((2.*k+1)/n-1, k*2.3999632297286531) for k in range(n)]
-
-
     if solv:
 
         # Set up a grid
         d        = 1/options["soldiam"]
 
-        nx, ny, nz = int(1+d*pbcx), int(1+d*pbcy), int(1+d*pbcz)
-        dx, dy, dz = pbcx/nx, pbcy/ny, pbcz/nz
-        excl, hz  = int(nz*options["solexcl"]/pbcz), int(0.5*nz)
+        nx, ny, nz = int(1+d*pbc.x), int(1+d*pbc.y), int(1+d*pbc.z)
+        dx, dy, dz = pbc.x/nx, pbc.y/ny, pbc.z/nz
+        excl, hz  = int(nz*options["solexcl"]/pbc.z), int(0.5*nz)
 
         zshift   = 0
         if membrane:
             memz   = [i[2] for i in membrane.coord]
             midz   = (max(memz)+min(memz))/2
-            hz     = int(nz*midz/pbcz)  # Grid layer in which the membrane is located
+            hz     = int(nz*midz/pbc.z)  # Grid layer in which the membrane is located
             zshift = (hz+0.5)*nz - midz # Shift of membrane middle to center of grid layer
 
         # Initialize a grid of solvent, spanning the whole cell
@@ -956,25 +973,25 @@ def old_main(argv, options):
         for p, q, r in protein.coord+membrane.coord:
             for s, t, u in pointsOnSphere(20):
                 x, y, z = p+0.33*s, q+0.33*t, r+0.33*u
-                if z >= pbcz:
-                    x -= box[2][0]
-                    y -= box[2][1]
-                    z -= box[2][2]
+                if z >= pbc.z:
+                    x -= pbc.box[2,0]
+                    y -= pbc.box[2,1]
+                    z -= pbc.box[2,2]
                 if z < 0:
-                    x += box[2][0]
-                    y += box[2][1]
-                    z += box[2][2]
-                if y >= pbcy:
-                    x -= box[1][0]
-                    y -= box[1][1]
+                    x += pbc.box[2,0]
+                    y += pbc.box[2,1]
+                    z += pbc.box[2,2]
+                if y >= pbc.y:
+                    x -= pbc.box[1,0]
+                    y -= pbc.box[1,1]
                 if y < 0:
-                    x += box[1][0]
-                    y += box[1][1]
-                if x >= pbcx:
-                    x -= box[0][0]
+                    x += pbc.box[1,0]
+                    y += pbc.box[1,1]
+                if x >= pbc.x:
+                    x -= pbc.box[0,0]
                 if x < 0:
-                    x += box[0][0]
-                grid[int(nx*x/rx)][int(ny*y/ry)][int(nz*z/rz)] = False
+                    x += pbc.box[0,0]
+                grid[int(nx*x/pbc.rx)][int(ny*y/pbc.ry)][int(nz*z/pbc.rz)] = False
 
         ##-T grid should be a wrapper around a numpy.ndarray
         # Set the center for each solvent molecule
@@ -1071,7 +1088,7 @@ def old_main(argv, options):
         solvent, sol = None, Structure()
 
     return (molecules, protein, membrane, sol,
-            lipU, lipL, numU, numL, box)
+            lipU, lipL, numU, numL, pbc.box)
 
 
 
@@ -1224,9 +1241,9 @@ def write_all(output, topology, molecules, protein, membrane, solvent,
     oStream = output and open(output, "w") or sys.stdout
     with oStream:
         if output.endswith(".gro"):
-            write_gro(oStream, title, atoms, box)
+            write_gro(oStream, title, atoms, box.tolist())
         else:
-            write_pdb(oStream, title, atoms, box)
+            write_pdb(oStream, title, atoms, box.tolist())
 
     write_top(topology, molecules, title)
 
