@@ -221,6 +221,7 @@ class PBC(object):
             if v:
                 self.box[i,:] = v
 
+        self.box = self.box.astype(np.float64)
         return 
 
     @property
@@ -636,6 +637,7 @@ def old_main(argv, options):
         # box/d/x/y/z needed to define unit cell
 
         # box is set up already...
+        # yet it may be set to 0, then there is nothing we can do.
         if 0 in (pbc.x, pbc.y, pbc.z):
             raise PBCException('Not enough information to set the box size.')
     elif any(absL) or any(absU):
@@ -672,8 +674,11 @@ def old_main(argv, options):
         # to accomodate the fixed amount of lipids with given area.
         upscale = (upsize + unavail_up)/xysize
         loscale = (losize + unavail_lo)/xysize
-        scale = max(upscale, loscale)
-        pbc.box[:2,:] *= scale
+        area_scale = max(upscale, loscale)
+        aspect_ratio = pbc.x / pbc.y
+        scale_x = math.sqrt(area_scale / aspect_ratio)
+        scale_y = math.sqrt(area_scale / aspect_ratio)
+        pbc.box[:2,:] *= math.sqrt(area_scale)
         
 
     #<< PBC
