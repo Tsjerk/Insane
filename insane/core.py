@@ -440,51 +440,21 @@ class Structure(object):
 
 
     def rotate_princ(self):
-        x, y, z = self.coord.T.tolist()
+        R = np.linalg.eig(np.dot(self.coord[:,:2].T,self.coord[:,:2]))
+        self.coord[:,:2] = np.dot(self.coord[:,:2], R[1][:,np.argsort(R[0])[::-1]])
+        return
 
-        # The rotation matrix in the plane equals the transpose
-        # of the matrix of eigenvectors from the 2x2 covariance
-        # matrix of the positions.
-        # For numerical stability we do
-        # d_i     = x_i - x_0
-        # mean(x) = x_0 + sum(d_i)/N =
-        # var(x)  = sum((d_i - mean(d))**2)/(N-1)
-        xy        = ssd(x, y)
-        if xy != 0:
-            xx     = ssd(x, x)
-            yy     = ssd(y, y)
-
-            # The eigenvalues are the roots of the 2nd order
-            # characteristic polynomial, with the coefficients
-            # equal to the trace and the determinant of the
-            # matrix.
-            t,  d  = xx+yy, xx*yy - xy*xy
-            # The two eigenvectors form a 2D rotation matrix
-            # R = ((cos, sin), (-sin, cos)), which means that
-            # the second eigenvector follows directly from
-            # the first. We thus only need to determine one.
-            l1     = t/2 + math.sqrt(0.25*t*t-d)
-
-            ux, uy = l1-yy, xy
-            lu     = math.sqrt(ux*ux+uy*uy)
-
-            ux    /=  lu
-            uy    /=  lu
-
-            # Finally we rotate the system in the plane by
-            # matrix multiplication with the transpose of
-            # the matrix of eigenvectors
-            self.coord = np.array([(ux*i+uy*j, ux*j-uy*i, k) for i, j, k in zip(x, y, z)])
 
     def rotate_random(self):
         ux   = math.cos(random.random()*2*math.pi)
         uy   = math.sqrt(1-ux*ux)
-        self.coord = np.array([(ux*i+uy*j, ux*j-uy*i, k) for i, j, k in self.coord])
+        self.coord[:,:2] = np.dot(self.coord[:,:2],[[ux,-uy],[uy,ux]])
+
 
     def rotate_degrees(self, angle):
         ux   = math.cos(angle*math.pi/180.)
         uy   = math.sin(angle*math.pi/180.)
-        self.coord = np.array([(ux*i+uy*j, ux*j-uy*i, k) for i, j, k in self.coord])
+        self.coord[:,:2] = np.dot(self.coord[:,:2], [[ux, -uy],[uy, ux]])
 
 
 def _point(y, phi):
