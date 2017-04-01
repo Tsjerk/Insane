@@ -557,8 +557,8 @@ def resize_pbc_for_lipids(pbc, relL, relU, absL, absU,
         # This is the area of the PBC xy plane
         xysize = pbc.x * pbc.y
         # This is the total area of the proteins per leaflet (IMPLEMENT!)
-        psize_up = sum([p.xyarea(0, 2.4) for p in proteins])
-        psize_lo = sum([p.xyarea(-2.4, 0) for p in proteins])
+        psize_up = sum([p.areaxy(0, 2.4) for p in proteins])
+        psize_lo = sum([p.areaxy(-2.4, 0) for p in proteins])
         # So this is unavailable:
         unavail_up = holesize + psize_up
         unavail_lo = holesize + psize_lo
