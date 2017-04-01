@@ -628,7 +628,6 @@ def old_main(argv, options):
               disc=options["disc"], hole=options["hole"], 
               membrane=options["lower"], protein=tm)
 
-    print(relL, relU, absL, absU, pbc.box)
     if any(relL) and any(relU):
         # Determine box from size
         # If one leaflet is defined with an absolute number of lipids
@@ -640,7 +639,6 @@ def old_main(argv, options):
         if 0 in (pbc.x, pbc.y, pbc.z):
             raise PBCException('Not enough information to set the box size.')
     elif any(absL) or any(absU):
-        print('This happens')
         # All numbers are absolute.. determine size from number of lipids
         # Box x/y will be set, d/dz/z is needed to set third box vector.
         # The area is needed to determine the size of the x/y plane OR
@@ -655,7 +653,6 @@ def old_main(argv, options):
             pbc.x = pbc.y = 1
         # A scaling factor is needed for the box
         # This is the area for the given number of lipids
-        print(sum(absU), options["uparea"])
         upsize = sum(absU) * options["uparea"]
         losize = sum(absL) * options["area"]
         # This is the size of the hole, going through both leaflets
@@ -914,12 +911,10 @@ def old_main(argv, options):
         # Types of lipids, relative numbers, fractions and numbers
 
         # Upper leaflet (+1)
-        print(upper, totU, relU)
         if totU:
             num_up     = [int(len(upper)*i/totU) for i in relU]
         else:
             num_up = absU
-        print('num_up', num_up)
         lip_up     = [l for i, l in zip(num_up, lipU) for j in range(i)]
         leaf_up    = ( 1, zip(lip_up, upper), up_lipd, up_lipdx, up_lipdy)
         molecules.extend(zip(lipU, num_up))
