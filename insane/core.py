@@ -48,7 +48,8 @@ RTOL = 1e-8
 random.seed(os.environ.get('INSANE_SEED', None))
 
 
-## PRIVATE PARTS FROM THIS POINT ON ##
+class PBCException(Exception):
+    pass
 
 def mean(a):
     return sum(a)/len(a)
@@ -224,15 +225,27 @@ class PBC(object):
 
     @property
     def x(self):
-        return self.box[0,0]
+        return self.box[0, 0]
+
+    @x.setter
+    def x(self, value):
+        self.box[0, 0] = value
 
     @property
     def y(self):
-        return self.box[1,1]
+        return self.box[1, 1]
+
+    @y.setter
+    def y(self, value):
+        self.box[1, 1] = value
 
     @property
     def z(self):
         return self.box[2,2]
+
+    @z.setter
+    def z(self, value):
+        self.box[2, 2] = value
 
     @property
     def rx(self):
@@ -484,7 +497,7 @@ def parse_mol(x):
     names = abn[0]
     if len(abn) > 1:
         nrel = 0
-        nabs = float(abn[1])
+        nabs = int(abn[1])
     else:
         nabs = 0
         if len(lip) > 1:
@@ -526,6 +539,12 @@ def old_main(argv, options):
         lipU, absU, relU = zip(*[ parse_mol(i) for i in lipU ])
         totU       = float(sum(relU))
 
+    lo_lipd  = math.sqrt(options["area"])
+    if options["uparea"]:
+        up_lipd = math.sqrt(options["uparea"])
+    else:
+        up_lipd = lo_lipd
+        options["uparea"] = options["area"]
     # <=== END OF LIPID BOOKKEEPING
 
 
@@ -609,6 +628,7 @@ def old_main(argv, options):
               disc=options["disc"], hole=options["hole"], 
               membrane=options["lower"], protein=tm)
 
+    print(relL, relU, absL, absU, pbc.box)
     if any(relL) and any(relU):
         # Determine box from size
         # If one leaflet is defined with an absolute number of lipids
@@ -617,21 +637,31 @@ def old_main(argv, options):
         # box/d/x/y/z needed to define unit cell
 
         # box is set up already...
-        pass
+        if 0 in (pbc.x, pbc.y, pbc.z):
+            raise PBCException('Not enough information to set the box size.')
     elif any(absL) or any(absU):
+        print('This happens')
         # All numbers are absolute.. determine size from number of lipids
         # Box x/y will be set, d/dz/z is needed to set third box vector.
         # The area is needed to determine the size of the x/y plane OR
         # the area will be SET if a box is given.
 
+        if pbc.z == 0:
+            raise PBCException('Not enough information to set the box size.')
+
+        if 0 in (pbc.x, pbc.y):
+            # We do not know what size the box should be. Let's X and Y should
+            # be the same.
+            pbc.x = pbc.y = 1
         # A scaling factor is needed for the box
         # This is the area for the given number of lipids
-        upsize = sum(absU)*options["uparea"]
-        losize = sum(absU)*options["uparea"]
+        print(sum(absU), options["uparea"])
+        upsize = sum(absU) * options["uparea"]
+        losize = sum(absL) * options["area"]
         # This is the size of the hole, going through both leaflets
-        holesize = numpy.pi*options.hole**2
+        holesize = np.pi*options["hole"]**2
         # This is the area of the PBC xy plane
-        xysize = pbc.x*pbc.y
+        xysize = pbc.x * pbc.y
         # This is the total area of the proteins per leaflet (IMPLEMENT!)
         psize_up = sum([p.xyarea("up") for p in tm]) 
         psize_lo = sum([p.xyarea("lo") for p in tm]) 
@@ -693,12 +723,6 @@ def old_main(argv, options):
     #################
 
     membrane = Structure()
-
-    lo_lipd  = math.sqrt(options["area"])
-    if options["uparea"]:
-        up_lipd = math.sqrt(options["uparea"])
-    else:
-        up_lipd = lo_lipd
 
     num_up, num_lo = [], []
     if lipL:
@@ -890,13 +914,21 @@ def old_main(argv, options):
         # Types of lipids, relative numbers, fractions and numbers
 
         # Upper leaflet (+1)
-        num_up     = [int(len(upper)*i/totU) for i in relU]
+        print(upper, totU, relU)
+        if totU:
+            num_up     = [int(len(upper)*i/totU) for i in relU]
+        else:
+            num_up = absU
+        print('num_up', num_up)
         lip_up     = [l for i, l in zip(num_up, lipU) for j in range(i)]
         leaf_up    = ( 1, zip(lip_up, upper), up_lipd, up_lipdx, up_lipdy)
         molecules.extend(zip(lipU, num_up))
 
         # Lower leaflet (-1)
-        num_lo     = [int(len(lower)*i/totL) for i in relL]
+        if totL:
+            num_lo     = [int(len(lower)*i/totL) for i in relL]
+        else:
+            num_lo = absL
         lip_lo     = [l for i, l in zip(num_lo, lipL) for j in range(i)]
         leaf_lo    = (-1, zip(lip_lo, lower), lo_lipd, lo_lipdx, lo_lipdy)
         molecules.extend(zip(lipL, num_lo))

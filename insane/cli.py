@@ -64,7 +64,7 @@ OPTIONS = simopt.Options([
         ("-a",    "area",      float,       1,        0.60, False, "Area per lipid (nm*nm)"),
         ("-au",   "uparea",    float,       1,        None, False, "Area per lipid (nm*nm) for upper layer"),
         ("-asym", "asymmetry", int,         1,        None, False, "Membrane asymmetry (number of lipids)"),
-        ("-hole", "hole",      float,       1,        None, False, "Make a hole in the membrane with specified radius"),
+        ("-hole", "hole",      float,       1,           0, False, "Make a hole in the membrane with specified radius"),
         ("-disc", "disc",      float,       1,        None, False, "Make a membrane disc with specified radius"),
         ("-rand", "randkick",  float,       1,         0.1, False, "Random kick size (maximum atom displacement)"),
         ("-bd",   "beaddist",  float,       1,         0.3, False, "Bead distance unit for scaling z-coordinates (nm)"),
