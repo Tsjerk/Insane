@@ -22,6 +22,7 @@ from nose.tools import assert_equal, assert_raises
 import contextlib
 import functools
 import glob
+import itertools
 import os
 import shutil
 import shlex
@@ -248,9 +249,10 @@ def run_insane(arguments, input_directory=None):
                                stderr=subprocess.PIPE,
                                env={'INSANE_SEED': INSANE_SEED})
     out, err = process.communicate()
+    print("** Insane exited with return code {}.".format(process.returncode))
     if process.returncode:
         print(err)
-    return out, err
+    return out, err, process.returncode
 
 
 def compare(output, reference):
@@ -260,7 +262,8 @@ def compare(output, reference):
     out_file = _open_if_needed(output)
     ref_file = _open_if_needed(reference)
     with out_file, ref_file:
-        for out_line, ref_line in zip(out_file, ref_file):
+        lines_zip = itertools.izip_longest(out_file, ref_file, fillvalue=None)
+        for out_line, ref_line in lines_zip:
             assert_equal(out_line, ref_line)
         extra_out = list(out_file)
         extra_ref = list(ref_file)
@@ -283,7 +286,8 @@ def run_and_compare(arguments, input_dir, ref_gro, ref_stdout, ref_stderr):
     # We want insane to run in a temporary directory. This allows to keep the
     # file system clean, and it avoids mixing output of different tests.
     with tempdir():
-        out, err = run_insane(arguments, input_dir)
+        out, err, returncode = run_insane(arguments, input_dir)
+        assert not returncode
         assert os.path.exists(gro_output)
         compare(gro_output, ref_gro)
         compare(ContextStringIO(out), ref_stdout)
@@ -327,7 +331,7 @@ def generate_simple_case_references():
         ref_gro, ref_stdout, ref_stderr = _reference_path(case_args, alias)
         with tempdir():
             print(INSANE + ' ' + ' '.join(arguments))
-            out, err = run_insane(arguments, input_dir)
+            out, err, returncode = run_insane(arguments, input_dir)
             with open(ref_stdout, 'w') as outfile:
                 for line in out:
                     print(line, file=outfile, end='')
