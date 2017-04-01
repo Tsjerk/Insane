@@ -517,6 +517,24 @@ def occupancy(grid, points, spacing=0.01):
     return occupied
 
 
+def determine_molecule_numbers(total, molecules, absolute, relative):
+    """Determine molecule numbers for given total, 
+    absolute and relative numbers""" 
+    weight = sum(relative)
+    if not any(absolute):
+        # Only relative numbers
+        numbers = [int(total*i/weight) for i in relative]
+    elif any(relative):
+        # Absolute numbers and fill the rest with relative numbers
+        rest = total - sum(absolute)
+        numbers = [int(rest*i/weight) if i else j 
+                   for i,j in zip(relative, absolute)]
+    else:
+        # Only absolute numbers
+        numbers = absolute
+    return list(zip(molecules, numbers))
+
+
 def resize_pbc_for_lipids(pbc, relL, relU, absL, absU,
                           uparea, area, hole, proteins):
     """
@@ -957,25 +975,23 @@ def old_main(argv, options):
         print("; X: %.3f (%d bins) Y: %.3f (%d bins) in lower leaflet"%(pbc.x, lo_lipids_x, pbc.y, lo_lipids_y), file=sys.stderr)
         print("; %d lipids in upper leaflet, %d lipids in lower leaflet"%(len(upper), len(lower)), file=sys.stderr)
 
-        # Types of lipids, relative numbers, fractions and numbers
+        ##> Types of lipids, relative numbers, fractions and numbers
 
         # Upper leaflet (+1)
-        if totU:
-            num_up     = [int(len(upper)*i/totU) for i in relU]
-        else:
-            num_up = absU
-        lip_up     = [l for i, l in zip(num_up, lipU) for j in range(i)]
+        numbers = determine_molecule_numbers(len(upper), lipU, absU, relU)
+        lip_up     = [l for l, i in numbers for j in range(i)]
         leaf_up    = ( 1, zip(lip_up, upper), up_lipd, up_lipdx, up_lipdy)
-        molecules.extend(zip(lipU, num_up))
+        molecules.extend(numbers)
 
         # Lower leaflet (-1)
-        if totL:
-            num_lo     = [int(len(lower)*i/totL) for i in relL]
-        else:
-            num_lo = absL
-        lip_lo     = [l for i, l in zip(num_lo, lipL) for j in range(i)]
-        leaf_lo    = (-1, zip(lip_lo, lower), lo_lipd, lo_lipdx, lo_lipdy)
-        molecules.extend(zip(lipL, num_lo))
+        numbers = determine_molecule_numbers(len(lower), lipL, absL, relL)
+        lip_lo = [l for l, i in numbers for j in range(i)]
+        leaf_lo = (-1, zip(lip_lo, lower), lo_lipd, lo_lipdx, lo_lipdy)
+        molecules.extend(numbers)
+
+        ##< Done determining numbers per lipid
+
+        ##> Building lipids
 
         kick       = options["randkick"]
 
@@ -1011,6 +1027,8 @@ def old_main(argv, options):
                     memcoords.append((nx[i], ny[i], az[i]))
                     mematoms.append((at[i], lipid, resi, 0, 0, 0))
                     atid += 1
+
+        ##< Done building lipids
 
         membrane.coord = memcoords
         membrane.atoms = mematoms
