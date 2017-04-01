@@ -46,3 +46,25 @@ def box3d(a):
         return x[0], x[0], x[0], 0, 0, 0, 0, 0, 0
     else:            # GRO format
         return x[0], x[3], x[4], x[5], x[1], x[6], x[7], x[8], x[2]
+
+
+def molspec(x):
+    """
+    Parse a string for a lipid or a solvent as given on the command line
+    (MOLECULE[=NUMBER|:NUMBER]); where `=NUMBER` sets an absolute number of the
+    molecule, and `:NUMBER` sets a relative number of it.
+    If both absolute and relative number are set False, then relative count is 1.
+    """
+    lip = x.split(":")
+    abn = lip[0].split("=")
+    names = abn[0]
+    if len(abn) > 1:
+        nrel = 0
+        nabs = int(abn[1])
+    else:
+        nabs = 0
+        if len(lip) > 1:
+            nrel = float(lip[1])
+        else:
+            nrel = 1
+    return abn[0], nabs, nrel

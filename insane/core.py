@@ -48,7 +48,8 @@ RTOL = 1e-8
 random.seed(os.environ.get('INSANE_SEED', None))
 
 
-## PRIVATE PARTS FROM THIS POINT ON ##
+class PBCException(Exception):
+    pass
 
 def mean(a):
     return sum(a)/len(a)
@@ -100,7 +101,6 @@ def groBoxRead(a):
 
 class PBC(object):
     def __init__(self, shape=None, box=None, xyz=None, distance=None, membrane=None, protein=None, disc=None, hole=None):
-        
         self.box = None
 
         if box:
@@ -110,7 +110,7 @@ class PBC(object):
 
         x, y, z = None, None, None
         if xyz and any(xyz):
-            x, y, z = xyz 
+            x, y, z = xyz
             if type(x) in (float, int):
                 x = (x, 0, 0)
             if type(y) in (float, int):
@@ -122,7 +122,7 @@ class PBC(object):
                 self.box = np.array([x,y,z])
                 return
         xyz = (x, y, z)
-                
+
         # Not having a distance here is an error
         if distance is None:
             raise PBCException("Cannot set PBC if size of system is not specified.")
@@ -167,8 +167,8 @@ class PBC(object):
             if protein:
                 self.box = np.diag(prng) + scale
             elif disc or hole:
-                self.box = np.array([[scale, 0, 0], 
-                                     [0, scale, 0], 
+                self.box = np.array([[scale, 0, 0],
+                                     [0, scale, 0],
                                      [0, 0, zscale]])
             else:
                 self.box = np.diag((scale,scale,zscale))
@@ -178,17 +178,17 @@ class PBC(object):
             # Replace with hexagonal prism with long axis along X
             # -- this one makes no sense at all!
             if "hexagonal".startswith(shape) and not protein:
-                self.box = np.array([[1, 0, 0], 
+                self.box = np.array([[1, 0, 0],
                                      [0, np.sqrt(0.75), 0],
                                      [0.5, 0.5, 1]])*scale
                 self.box[2,2] = zscale
             else:
             # No membrane, no cubic/rectangular box, returning a rhombic dodecahedron
             # (matches for "dodecahedron", "optimal")
-#            self.box = np.array([[1, 0, 0], 
+#            self.box = np.array([[1, 0, 0],
 #                                 [0.5, np.sqrt(0.75), 0],
 #                                 [0.5, np.sqrt(3)/6, np.sqrt(6)/3]])*scale
-                self.box = np.array([[1, 0, 0], 
+                self.box = np.array([[1, 0, 0],
                                      [0, 1, 0],
                                      [0.5, 0.5, np.sqrt(0.5)]])*scale
                 #self.box[2,2] = zscale
@@ -198,21 +198,21 @@ class PBC(object):
                 #scale  += protein[0].diamxy()
                 scale  += prng[0]
             if "square".startswith(shape):
-                self.box = np.array([[scale, 0, 0], 
+                self.box = np.array([[scale, 0, 0],
                                      [0, scale, 0],
                                      [0, 0, zscale]])
             elif "optimal".startswith(shape):
                 #print("Warning: this box may be too skewed for Gromacs.")
-                #self.box = np.array([[scale, 0, 0], 
+                #self.box = np.array([[scale, 0, 0],
                 #                     [scale/2, scale*np.sqrt(0.75), 0],
                 #                     [scale/2, scale*np.sqrt(3)/6, 0]])
                 #self.box[2,2] = np.sqrt(zscale**2 - (self.box[2,:]**2).sum())
-                self.box = np.array([[scale, 0, 0], 
+                self.box = np.array([[scale, 0, 0],
                                      [0, scale, 0],
                                      [scale/2, scale/2, 0]])
                 self.box[2,2] = np.sqrt(zscale**2 - (self.box[2,:]**2).sum())
             else:
-                self.box = np.array([[scale, 0, 0], 
+                self.box = np.array([[scale, 0, 0],
                                      [scale/2, scale*np.sqrt(0.75), 0],
                                      [0, 0, zscale]])
 
@@ -220,19 +220,32 @@ class PBC(object):
             if v:
                 self.box[i,:] = v
 
-        return 
+        self.box = self.box.astype(np.float64)
+        return
 
     @property
     def x(self):
-        return self.box[0,0]
+        return self.box[0, 0]
+
+    @x.setter
+    def x(self, value):
+        self.box[0, 0] = value
 
     @property
     def y(self):
-        return self.box[1,1]
+        return self.box[1, 1]
+
+    @y.setter
+    def y(self, value):
+        self.box[1, 1] = value
 
     @property
     def z(self):
         return self.box[2,2]
+
+    @z.setter
+    def z(self, value):
+        self.box[2, 2] = value
 
     @property
     def rx(self):
@@ -296,7 +309,7 @@ class Structure(object):
             result.atoms.extend(self.atoms)
             result.atoms.extend(other.atoms)
             result._coord = np.concatenate((
-                self._coord.reshape((-1,3)), 
+                self._coord.reshape((-1,3)),
                 other._coord.reshape((-1,3)))) ###
             return result
         raise TypeError('Cannot add {} to {}'
@@ -335,7 +348,7 @@ class Structure(object):
         if self._center is None:
             self._center = self.coord.mean(axis=0)
         return self._center
-        
+
     @center.setter
     def center(self, other):
         s = other - self.coord.mean(axis=0)
@@ -426,7 +439,7 @@ class Structure(object):
         # Rotate the coordinates
         self.coord = np.array([(ux*i+uy*j+uz*k, vx*i+vy*j+vz*k, wx*i+wy*j+wz*k)
                                for i, j, k in self.coord])
-        
+
 
     def rotate(self, what):
             if what == "princ":
@@ -476,22 +489,63 @@ def ssd(u, v):
     return sum([(i-u[0])*(j-v[0]) for i, j in zip(u, v)])/(len(u)-1)
 
 
-# Parse a string for a lipid as given on the command line (LIPID[=NUMBER|:NUMBER])
-# If both absolute and relative number are set False, then relative count is 1
-def parse_mol(x):
-    lip = x.split(":")
-    abn = lip[0].split("=")
-    names = abn[0]
-    if len(abn) > 1:
-        nrel = 0
-        nabs = float(abn[1])
-    else:
-        nabs = 0
-        if len(lip) > 1:
-            nrel = float(lip[1])
-        else:
-            nrel = 1
-    return abn[0], nabs, nrel
+def resize_pbc_for_lipids(pbc, relL, relU, absL, absU,
+                          uparea, area, hole, proteins):
+    """
+    Adapt the size of the box to accomodate the lipids.
+
+    The PBC is changed **on place**.
+    """
+    if any(relL) and any(relU):
+        # Determine box from size
+        # If one leaflet is defined with an absolute number of lipids
+        # then the other leaflet (with relative numbers) will follow
+        # from that.
+        # box/d/x/y/z needed to define unit cell
+
+        # box is set up already...
+        # yet it may be set to 0, then there is nothing we can do.
+        if 0 in (pbc.x, pbc.y, pbc.z):
+            raise PBCException('Not enough information to set the box size.')
+    elif any(absL) or any(absU):
+        # All numbers are absolute.. determine size from number of lipids
+        # Box x/y will be set, d/dz/z is needed to set third box vector.
+        # The area is needed to determine the size of the x/y plane OR
+        # the area will be SET if a box is given.
+
+        if pbc.z == 0:
+            raise PBCException('Not enough information to set the box size.')
+
+        if 0 in (pbc.x, pbc.y):
+            # We do not know what size the box should be. Let's X and Y should
+            # be the same.
+            pbc.x = pbc.y = 1
+        # A scaling factor is needed for the box
+        # This is the area for the given number of lipids
+        upsize = sum(absU) * uparea
+        losize = sum(absL) * area
+        # This is the size of the hole, going through both leaflets
+        holesize = np.pi * hole ** 2
+        # This is the area of the PBC xy plane
+        xysize = pbc.x * pbc.y
+        # This is the total area of the proteins per leaflet (IMPLEMENT!)
+        psize_up = sum([p.xyarea("up") for p in proteins])
+        psize_lo = sum([p.xyarea("lo") for p in proteins])
+        # So this is unavailable:
+        unavail_up = holesize + psize_up
+        unavail_lo = holesize + psize_lo
+        # This is the current area marked for lipids
+        # xysize_up = xysize - unavail_up
+        # xysize_lo = xysize - unavail_lo
+        # This is how much the unit cell xy needs to be scaled
+        # to accomodate the fixed amount of lipids with given area.
+        upscale = (upsize + unavail_up)/xysize
+        loscale = (losize + unavail_lo)/xysize
+        area_scale = max(upscale, loscale)
+        aspect_ratio = pbc.x / pbc.y
+        scale_x = math.sqrt(area_scale / aspect_ratio)
+        scale_y = math.sqrt(area_scale / aspect_ratio)
+        pbc.box[:2,:] *= math.sqrt(area_scale)
 
 
 def old_main(argv, options):
@@ -515,17 +569,23 @@ def old_main(argv, options):
     # Then add lipids from file
     liplist.add_from_files(options["molfile"])
     # Last, add lipids from command line
-    liplist.add_from_def(options["lipnames"], options["lipheads"], options["liplinks"], 
+    liplist.add_from_def(options["lipnames"], options["lipheads"], options["liplinks"],
                          options["liptails"], options["lipcharge"])
 
     relU, relL, absU, absL = [], [], [], []
     if lipL:
         lipU = lipU or lipL
-        lipL, absL, relL = zip(*[ parse_mol(i) for i in lipL ])
+        lipL, absL, relL = zip(*lipL)
         totL       = float(sum(relL))
-        lipU, absU, relU = zip(*[ parse_mol(i) for i in lipU ])
+        lipU, absU, relU = zip(*lipU)
         totU       = float(sum(relU))
 
+    lo_lipd  = math.sqrt(options["area"])
+    if options["uparea"]:
+        up_lipd = math.sqrt(options["uparea"])
+    else:
+        up_lipd = lo_lipd
+        options["uparea"] = options["area"]
     # <=== END OF LIPID BOOKKEEPING
 
 
@@ -553,7 +613,7 @@ def old_main(argv, options):
         # Center the protein and store the shift
         shift = prot.center
         prot.center = (0, 0, 0)
-            
+
         ## 1. Orient with respect to membrane
         # Orient the protein according to the TM region, if requested
         # This doesn't actually work very well...
@@ -563,19 +623,19 @@ def old_main(argv, options):
         ## 4. Orient the protein in the xy-plane
         ## i. According to principal axes and unit cell
         prot.rotate(options["rotate"])
-        
+
         ## 5. Determine the minimum and maximum x and y of the protein
         pmin, pmax = prot.fun(min), prot.fun(max)
-        
+
         # At this point we should shift the subsequent proteins such
         # that they end up at the specified distance, in case we have
         # a number of them to do
         # y-shift is always -ycenter
         # x-shift is -xmin+distance+xmax(current)
         xshifts.append(xshifts[-1]+pmax[0]+(options["distance"] or 0))
-        
+
         ## 2. Shift of protein relative to the membrane center
-        zshift = options["memshift"] 
+        zshift = options["memshift"]
         if not options["center"]:
             zshift -= shift[2]
 
@@ -583,7 +643,7 @@ def old_main(argv, options):
         # brick corresponding to the unit cell
         # If -center is given, also center z in plane
         prot += (0, 0, zshift)
-        
+
         # The z position is now correct with respect to the membrane
         # at z = 0. The x/y need to be set still
 
@@ -601,53 +661,17 @@ def old_main(argv, options):
 
     # Set up base PBC
     # Override where needed to accomodate additional components
-    # box/shape are final - if these are given and a solute does 
+    # box/shape are final - if these are given and a solute does
     # not fit in it raises an exception
-    pbc = PBC(shape=options["pbc"], box=box, 
+    pbc = PBC(shape=options["pbc"], box=box,
               distance=(options["distance"], zdist),
               xyz=(options["xvector"], options["yvector"], options["zvector"]),
-              disc=options["disc"], hole=options["hole"], 
+              disc=options["disc"], hole=options["hole"],
               membrane=options["lower"], protein=tm)
 
-    if any(relL) and any(relU):
-        # Determine box from size
-        # If one leaflet is defined with an absolute number of lipids
-        # then the other leaflet (with relative numbers) will follow
-        # from that.
-        # box/d/x/y/z needed to define unit cell
-
-        # box is set up already...
-        pass
-    elif any(absL) or any(absU):
-        # All numbers are absolute.. determine size from number of lipids
-        # Box x/y will be set, d/dz/z is needed to set third box vector.
-        # The area is needed to determine the size of the x/y plane OR
-        # the area will be SET if a box is given.
-
-        # A scaling factor is needed for the box
-        # This is the area for the given number of lipids
-        upsize = sum(absU)*options["uparea"]
-        losize = sum(absU)*options["uparea"]
-        # This is the size of the hole, going through both leaflets
-        holesize = numpy.pi*options.hole**2
-        # This is the area of the PBC xy plane
-        xysize = pbc.x*pbc.y
-        # This is the total area of the proteins per leaflet (IMPLEMENT!)
-        psize_up = sum([p.xyarea("up") for p in tm]) 
-        psize_lo = sum([p.xyarea("lo") for p in tm]) 
-        # So this is unavailable:
-        unavail_up = holesize + psize_up
-        unavail_lo = holesize + psize_lo
-        # This is the current area marked for lipids
-        # xysize_up = xysize - unavail_up
-        # xysize_lo = xysize - unavail_lo
-        # This is how much the unit cell xy needs to be scaled
-        # to accomodate the fixed amount of lipids with given area.
-        upscale = (upsize + unavail_up)/xysize
-        loscale = (losize + unavail_lo)/xysize
-        scale = max(upscale, loscale)
-        pbc.box[:2,:] *= scale
-        
+    resize_pbc_for_lipids(pbc=pbc, relL=relL, relU=relU, absL=absL, absU=absU,
+                          uparea=options["uparea"], area=options["area"],
+                          hole=options["hole"], proteins=tm)
 
     #<< PBC
 
@@ -693,12 +717,6 @@ def old_main(argv, options):
     #################
 
     membrane = Structure()
-
-    lo_lipd  = math.sqrt(options["area"])
-    if options["uparea"]:
-        up_lipd = math.sqrt(options["uparea"])
-    else:
-        up_lipd = lo_lipd
 
     num_up, num_lo = [], []
     if lipL:
@@ -890,13 +908,19 @@ def old_main(argv, options):
         # Types of lipids, relative numbers, fractions and numbers
 
         # Upper leaflet (+1)
-        num_up     = [int(len(upper)*i/totU) for i in relU]
+        if totU:
+            num_up     = [int(len(upper)*i/totU) for i in relU]
+        else:
+            num_up = absU
         lip_up     = [l for i, l in zip(num_up, lipU) for j in range(i)]
         leaf_up    = ( 1, zip(lip_up, upper), up_lipd, up_lipdx, up_lipdy)
         molecules.extend(zip(lipU, num_up))
 
         # Lower leaflet (-1)
-        num_lo     = [int(len(lower)*i/totL) for i in relL]
+        if totL:
+            num_lo     = [int(len(lower)*i/totL) for i in relL]
+        else:
+            num_lo = absL
         lip_lo     = [l for i, l in zip(num_lo, lipL) for j in range(i)]
         leaf_lo    = (-1, zip(lip_lo, lower), lo_lipd, lo_lipdx, lo_lipdy)
         molecules.extend(zip(lipL, num_lo))
@@ -935,7 +959,7 @@ def old_main(argv, options):
                     memcoords.append((nx[i], ny[i], az[i]))
                     mematoms.append((at[i], lipid, resi, 0, 0, 0))
                     atid += 1
-                
+
         membrane.coord = memcoords
         membrane.atoms = mematoms
 
@@ -1015,7 +1039,7 @@ def old_main(argv, options):
         # (like when mixing a 1M solution of this with a 1M solution of that
 
         # First get names and relative numbers for each solvent
-        solnames, solabs, solnums = zip(*[ parse_mol(i) for i in solv ])
+        solnames, solabs, solnums = zip(*solv)
         solnames, solnums = list(solnames), list(solnums)
         totS       = float(sum(solnums))
 
