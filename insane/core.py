@@ -351,6 +351,26 @@ class Structure(object):
             self.center = (0, 0, 0)
         return 2*math.sqrt(max([i*i+j*j for i, j, k in self.coord]))
 
+    def areaxy(self, lowerbound=-np.inf, upperbound=np.inf, spacing=0.1):
+        mask = (self.coord[:,2] > lowerbound) & (self.coord[:,2] < upperbound)
+        points = self.coord[mask, :2]
+        # The magic number factor 1.1 is not critical at all
+        # Just a number to set a margin to the bounding box and 
+        # have all points fall within the boundaries
+        bbmin, bbmax = 1.1*points.min(axis=0), 1.1*points.max(axis=0)
+        size = bbmax - bbmin
+        cells = (size / spacing + 0.5).astype('int')
+        # Grid points over bounding box with specified spacing
+        grid = np.mgrid[bbmin[0]:bbmax[0]:(cells[0]*1j),
+                        bbmin[1]:bbmax[1]:(cells[1]*1j)].reshape((2,-1)).T
+        # Occupied cells is approximately equal to grid points within
+        # gridspacing distance of points
+        occupied = occupancy(grid, points, spacing)
+        # The occupied area follows from the fraction of occupied
+        # cells times the area spanned by the bounding box
+        return size[0]*size[1]*sum(occupied > 0)/occupied.size
+
+
     def fun(self, fn):
         return [fn(i) for i in zip(*self.coord)]
 
@@ -476,6 +496,14 @@ def ssd(u, v):
     return sum([(i-u[0])*(j-v[0]) for i, j in zip(u, v)])/(len(u)-1)
 
 
+def occupancy(grid, points, spacing=0.01):
+    """Return a vector with the occupancy of each grid point for 
+    given array of points"""
+    distances = ((grid[:,None,:] - points[None,:,:])**2).sum(axis=2)
+    occupied = (distances < spacing).sum(axis=1)
+    return occupied
+
+
 # Parse a string for a lipid as given on the command line (LIPID[=NUMBER|:NUMBER])
 # If both absolute and relative number are set False, then relative count is 1
 def parse_mol(x):
@@ -484,7 +512,7 @@ def parse_mol(x):
     names = abn[0]
     if len(abn) > 1:
         nrel = 0
-        nabs = float(abn[1])
+        nabs = int(abn[1])
     else:
         nabs = 0
         if len(lip) > 1:
@@ -525,6 +553,15 @@ def old_main(argv, options):
         totL       = float(sum(relL))
         lipU, absU, relU = zip(*[ parse_mol(i) for i in lipU ])
         totU       = float(sum(relU))
+    else:
+        options["solexcl"] = -1
+
+    lo_lipd  = math.sqrt(options["area"])
+    if options["uparea"] is not None:
+        up_lipd = math.sqrt(options["uparea"])
+    else:
+        options["uparea"] = options["area"]
+        up_lipd = lo_lipd
 
     # <=== END OF LIPID BOOKKEEPING
 
@@ -533,12 +570,7 @@ def old_main(argv, options):
     ## I. PROTEIN ##
     ################
 
-
-    resi = 0
     xshifts  = [0] # Shift in x direction per protein
-
-    if not lipL:
-        options["solexcl"] = -1
 
     ## B. PROTEIN ---
     if tm:
@@ -627,14 +659,14 @@ def old_main(argv, options):
         # A scaling factor is needed for the box
         # This is the area for the given number of lipids
         upsize = sum(absU)*options["uparea"]
-        losize = sum(absU)*options["uparea"]
+        losize = sum(absL)*options["area"]
         # This is the size of the hole, going through both leaflets
-        holesize = numpy.pi*options.hole**2
+        holesize = np.pi*options["hole"]**2
         # This is the area of the PBC xy plane
         xysize = pbc.x*pbc.y
         # This is the total area of the proteins per leaflet (IMPLEMENT!)
-        psize_up = sum([p.xyarea("up") for p in tm]) 
-        psize_lo = sum([p.xyarea("lo") for p in tm]) 
+        psize_up = sum([p.areaxy(0, 2.4) for p in tm]) 
+        psize_lo = sum([p.areaxy(-2.4, 0 ) for p in tm]) 
         # So this is unavailable:
         unavail_up = holesize + psize_up
         unavail_lo = holesize + psize_lo
@@ -645,9 +677,8 @@ def old_main(argv, options):
         # to accomodate the fixed amount of lipids with given area.
         upscale = (upsize + unavail_up)/xysize
         loscale = (losize + unavail_lo)/xysize
-        scale = max(upscale, loscale)
+        scale = np.sqrt(max(upscale, loscale))
         pbc.box[:2,:] *= scale
-        
 
     #<< PBC
 
@@ -681,7 +712,7 @@ def old_main(argv, options):
     prot_lo = protein.coord[mem_mask_lo, :2]
 
     # Current residue ID is set to that of the last atom
-    resi = 0
+    resi = 0 
     if protein.atoms:
         resi = protein.atoms[-1][2]
 
@@ -690,15 +721,9 @@ def old_main(argv, options):
 
     #################
     ## 2. MEMBRANE ##
-    #################
+    ################
 
     membrane = Structure()
-
-    lo_lipd  = math.sqrt(options["area"])
-    if options["uparea"]:
-        up_lipd = math.sqrt(options["uparea"])
-    else:
-        up_lipd = lo_lipd
 
     num_up, num_lo = [], []
     if lipL:
@@ -729,6 +754,26 @@ def old_main(argv, options):
         # Set up grids to check where to place the lipids
         grid_lo = [[0 for j in lo_rlipy] for i in lo_rlipx]
         grid_up = [[0 for j in up_rlipy] for i in up_rlipx]
+
+        ## NEW GRID
+        gx = slice(0, pbc.x, int(pbc.x/lipd + 0.5)*1j)
+        gy = slice(0, pbc.x, int(pbc.x/lipd + 0.5)*1j)
+        grid_l = np.mgrid[gx, gy][:,:-1,:-1].reshape((2,-1)).T
+        grid_u = np.mgrid[gx, gy][:,:-1,:-1].reshape((2,-1)).T
+        # If there is a protein, mark the corresponding POINTS as occupied
+        occupied_lo = np.zeros(grid_l.shape[0])
+        occupied_up = np.zeros(grid_u.shape[0])
+        for prot in tm:
+            upmask = (prot.coord[:,2] <  2.4) & (prot.coord[:,2] > 0)
+            lomask = (prot.coord[:,2] > -2.4) & (prot.coord[:,2] < 0)
+            occupied_lo += occupancy(grid_l, prot.coord[lomask,:2], lo_lipd)
+            occupied_up += occupancy(grid_u, prot.coord[upmask,:2], up_lipd)
+        maxd = max(occupied_lo.max(), occupied_up.max())
+        if maxd:
+            occupied_up = (occupied_up/maxd) > options["fudge"]
+            occupied_lo = (occupied_lo/maxd) > options["fudge"]
+        #print(absU, sum(~occupied_up.astype('bool')), 
+        #      absL, sum(~occupied_lo.astype('bool')))
 
         # If there is a protein, mark the corresponding cells as occupied
         if protein:
