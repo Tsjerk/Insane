@@ -277,10 +277,7 @@ class Structure(object):
                 self.rest  = [lines[0], lines[1], lines[-1]]
                 self.box   = groBoxRead(lines[-1])
                 self.title = lines[0]
-            self.center()
 
-        # Temporary... to replace self.coord
-        self.coord_np = np.array(self.coord).reshape((-1,3)) ###
 
     def __nonzero__(self):
         return bool(self.atoms)
@@ -289,10 +286,8 @@ class Structure(object):
         return len(self.atoms)
 
     def __iadd__(self, s):
-        #for i in range(len(self)):
-        #    self.coord[i] = linalg.vvadd(self.coord[i], s)
-        if self.coord_np.shape[0]:
-            self.coord_np += s ###
+        if self._coord.shape[0]:
+            self._coord += s ###
         return self
 
     def __add__(self, other):
@@ -300,11 +295,9 @@ class Structure(object):
             result = self.__class__()
             result.atoms.extend(self.atoms)
             result.atoms.extend(other.atoms)
-            #result.coord.extend(self.coord)
-            #result.coord.extend(other.coord)
-            result.coord_np = np.concatenate((
-                self.coord_np.reshape((-1,3)), 
-                other.coord_np.reshape((-1,3)))) ###
+            result._coord = np.concatenate((
+                self._coord.reshape((-1,3)), 
+                other._coord.reshape((-1,3)))) ###
             return result
         raise TypeError('Cannot add {} to {}'
                         .format(self.__class__, other.__class__))
@@ -320,14 +313,12 @@ class Structure(object):
     @property
     def coord(self):
         if self._coord is None:
-            self._coord = [i[4:7] for i in self.atoms]
-            self.coord_np = np.array(self._coord)
-        return self.coord_np
+            self._coord = np.array([i[4:7] for i in self.atoms]).reshape((-1,3))
+        return self._coord
 
     @coord.setter
     def coord(self, other):
-        #self._coord = other
-        self.coord_np = np.array(other)
+        self._coord = np.array(other).reshape((-1,3))
 
     @property
     def charge(self):
@@ -339,26 +330,25 @@ class Structure(object):
             last = j[1:3]
         return charge
 
-    def center(self, other=None):
-        if not self._center:
-            self._center = [ sum(i)/len(i) for i in zip(*self.coord)]
-        if other:
-            s = linalg.vvsub(other, self._center)
-            #for i in range(len(self)):
-            #    self.coord[i] = linalg.vvadd(self.coord[i], s)
-            self.coord_np += s ###
-            #self._center = other
-            return s # return the shift
+    @property
+    def center(self):
+        if self._center is None:
+            self._center = self.coord.mean(axis=0)
         return self._center
+        
+    @center.setter
+    def center(self, other):
+        s = other - self.coord.mean(axis=0)
+        self.coord += s ###
 
     def diam(self):
-        if self._center != (0, 0, 0):
-            self.center((0, 0, 0))
+        if np.any(self._center):
+            self.center = (0, 0, 0)
         return 2*math.sqrt(max([i*i+j*j+k*k for i, j, k in self.coord]))
 
     def diamxy(self):
-        if self._center != (0, 0, 0):
-            self.center((0, 0, 0))
+        if np.any(self._center):
+            self.center = (0, 0, 0)
         return 2*math.sqrt(max([i*i+j*j for i, j, k in self.coord]))
 
     def fun(self, fn):
@@ -419,7 +409,7 @@ class Structure(object):
                                         for m, i, j, k in zip(w, sx, sy, sz)])]
 
         # Place apolar center at origin
-        self.center((-sxm, -sym, -szm))
+        self.center = (-sxm, -sym, -szm)
         sx, sy, sz    = zip(*[(i-sxm, j-sym, k-szm) for i, j, k in zip(sx, sy, sz)])
 
         # Determine weighted deviations from centers
@@ -591,7 +581,8 @@ def old_main(argv, options):
         # So first put the protein in properly.
 
         # Center the protein and store the shift
-        shift = prot.center((0, 0, 0))
+        shift = prot.center
+        prot.center = (0, 0, 0)
             
         ## 1. Orient with respect to membrane
         # Orient the protein according to the TM region, if requested
@@ -720,7 +711,9 @@ def old_main(argv, options):
     prot_lo = protein.coord[mem_mask_lo, :2]
 
     # Current residue ID is set to that of the last atom
-    resi = protein.atoms[-1:][2:3] or 0
+    resi = 0
+    if protein.atoms:
+        resi = protein.atoms[-1][2]
 
     atid      = len(protein)+1
 
@@ -823,7 +816,7 @@ def old_main(argv, options):
         # protein or box center than the given radius as occupied.
         if options["disc"]:
             if protein:
-                cx, cy = protein.center()[:2]
+                cx, cy = protein.center[:2]
             else:
                 cx, cy = 0.5*pbc.x, 0.5*pbc.y
             for i in range(len(grid_lo)):
