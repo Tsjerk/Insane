@@ -490,24 +490,6 @@ def ssd(u, v):
     return sum([(i-u[0])*(j-v[0]) for i, j in zip(u, v)])/(len(u)-1)
 
 
-# Parse a string for a lipid as given on the command line (LIPID[=NUMBER|:NUMBER])
-# If both absolute and relative number are set False, then relative count is 1
-def parse_mol(x):
-    lip = x.split(":")
-    abn = lip[0].split("=")
-    names = abn[0]
-    if len(abn) > 1:
-        nrel = 0
-        nabs = int(abn[1])
-    else:
-        nabs = 0
-        if len(lip) > 1:
-            nrel = float(lip[1])
-        else:
-            nrel = 1
-    return abn[0], nabs, nrel
-
-
 def old_main(argv, options):
 
     lipL      = options["lower"]
@@ -535,9 +517,9 @@ def old_main(argv, options):
     relU, relL, absU, absL = [], [], [], []
     if lipL:
         lipU = lipU or lipL
-        lipL, absL, relL = zip(*[ parse_mol(i) for i in lipL ])
+        lipL, absL, relL = zip(*lipL)
         totL       = float(sum(relL))
-        lipU, absU, relU = zip(*[ parse_mol(i) for i in lipU ])
+        lipU, absU, relU = zip(*lipU)
         totU       = float(sum(relU))
 
     lo_lipd  = math.sqrt(options["area"])
@@ -1047,7 +1029,7 @@ def old_main(argv, options):
         # (like when mixing a 1M solution of this with a 1M solution of that
 
         # First get names and relative numbers for each solvent
-        solnames, solabs, solnums = zip(*[ parse_mol(i) for i in solv ])
+        solnames, solabs, solnums = zip(*solv)
         solnames, solnums = list(solnames), list(solnums)
         totS       = float(sum(solnums))
 

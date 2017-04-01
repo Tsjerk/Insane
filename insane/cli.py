@@ -21,7 +21,7 @@ import sys
 import simopt
 
 from . import core
-from .converters import vector, box3d
+from .converters import vector, box3d, molspec
 
 
 # Option list
@@ -59,8 +59,8 @@ OPTIONS = simopt.Options([
     meaning of the number depends on whether option -d is used to set up
     PBC
     """,
-        ("-l",    "lower",     str,         1,        None,  True, "Lipid type and relative abundance (NAME[:#])"),
-        ("-u",    "upper",     str,         1,        None,  True, "Lipid type and relative abundance (NAME[:#])"),
+        ("-l",    "lower",     molspec,     1,        None,  True, "Lipid type and relative abundance (NAME[:#])"),
+        ("-u",    "upper",     molspec,     1,        None,  True, "Lipid type and relative abundance (NAME[:#])"),
         ("-a",    "area",      float,       1,        0.60, False, "Area per lipid (nm*nm)"),
         ("-au",   "uparea",    float,       1,        None, False, "Area per lipid (nm*nm) for upper layer"),
         ("-asym", "asymmetry", int,         1,        None, False, "Membrane asymmetry (number of lipids)"),
@@ -82,7 +82,7 @@ OPTIONS = simopt.Options([
         """
     Solvent related options.
     """,
-        ("-sol",    "solvent",     str,         1,        None,  True, "Solvent type and relative abundance (NAME[:#])"),
+        ("-sol",    "solvent",     molspec,     1,        None,  True, "Solvent type and relative abundance (NAME[:#])"),
         ("-sold",   "soldiam",     float,       1,         0.5, False, "Solvent diameter"),
         ("-solr",   "solrandom",   float,       1,         0.1, False, "Solvent random kick"),
         ("-excl",   "solexcl",     float,       1,         1.5, False, "Exclusion range (nm) for solvent addition relative to membrane center"),
