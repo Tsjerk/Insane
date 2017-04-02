@@ -496,7 +496,7 @@ def _point(y, phi):
 
 
 def pointsOnSphere(n):
-    return [_point((2.*k+1)/n-1, k*2.3999632297286531) for k in range(n)]
+    return np.array([_point((2.*k+1)/n-1, k*2.3999632297286531) for k in range(n)])
 
 
 # Mean of deviations from initial value
@@ -596,28 +596,89 @@ def resize_pbc_for_lipids(pbc, relL, relU, absL, absU,
 
 def old_main(argv, options):
 
-    lipL      = options["lower"]
-    lipU      = options["upper"]
-    solv      = options["solvent"]
     molecules = []
+
+    #########################################
+    ## I. PROTEIN and other macromolecules ##
+    #########################################
 
     # Read in the structures (if any)
     tm = [ Structure(i) for i in options["solute"] ]
 
+    xshifts  = [0] # Shift in x direction per protein
 
-    ## I. STRUCTURES
+    if tm:
+        molecules.append(('Protein', len(tm)))
 
-    ## a. LIPIDS
+    for prot in tm:
+        # Center the protein and store the shift
+        shift = prot.center
+        prot.center = (0, 0, 0)
 
-    ## ==> LIPID  BOOKKEEPING:
-    # Read lipids defined in insane
-    liplist = lipids.get_lipids()
-    # Then add lipids from file
-    liplist.add_from_files(options["molfile"])
-    # Last, add lipids from command line
-    liplist.add_from_def(options["lipnames"], options["lipheads"], options["liplinks"],
-                         options["liptails"], options["lipcharge"])
+        ## 1. Orient with respect to membrane
+        # Orient the protein according to the TM region, if requested
+        # This doesn't actually work very well...
+        if options["orient"]:
+            prot.orient(options["origriddist"], options["oripower"])
 
+        ## 4. Orient the protein in the xy-plane
+        ## i. According to principal axes and unit cell
+        prot.rotate(options["rotate"])
+
+        ## 5. Determine the minimum and maximum x and y of the protein
+        pmin, pmax = prot.coord.min(axis=0), prot.coord.max(axis=0)
+
+        # At this point we should shift the subsequent proteins such
+        # that they end up at the specified distance, in case we have
+        # a number of them to do
+        # y-shift is always -ycenter
+        # x-shift is -xmin+distance+xmax(current)
+        xshifts.append(xshifts[-1]+pmax[0]+(options["distance"] or 0))
+
+        ## 2. Shift of protein relative to the membrane center
+        zshift = options["memshift"]
+        if not options["center"]:
+            zshift -= shift[2]
+
+        # Now we center the system in the rectangular
+        # brick corresponding to the unit cell
+        # If -center is given, also center z in plane
+        prot += (0, 0, zshift)
+
+        # The z position is now correct with respect to the membrane
+        # at z = 0. The x/y need to be set still
+
+    #############
+    ## II. PBC ##
+    #############
+
+    # Periodic boundary conditions
+    if options["pbc"] == 'keep' and tm:
+        box = tm[0].box
+    else:
+        box = options.get("box")
+
+    zdist = options["zdistance"]
+    if zdist == None:
+        zdist = options["distance"]
+
+    # Set up base PBC
+    # Override where needed to accomodate additional components
+    # box/shape are final - if these are given and a solute does
+    # not fit in it raises an exception
+    pbc = PBC(shape=options["pbc"], box=box,
+              distance=(options["distance"], zdist),
+              xyz=(options["xvector"], options["yvector"], options["zvector"]),
+              disc=options["disc"], hole=options["hole"],
+              membrane=options["lower"], protein=tm)
+
+
+    #################
+    ## III. LIPIDS ##
+    #################
+
+    lipL      = options["lower"]
+    lipU      = options["upper"]
     relU, relL, absU, absL = [], [], [], []
     if lipL:
         lipU = lipU or lipL
@@ -641,89 +702,16 @@ def old_main(argv, options):
     else:
         up_lipd = lo_lipd
         options["uparea"] = options["area"]
-    # <=== END OF LIPID BOOKKEEPING
-
-
-    ################
-    ## I. PROTEIN ##
-    ################
-
-    xshifts  = [0] # Shift in x direction per protein
-
-    ## B. PROTEIN ---
-    if tm:
-        molecules.append(('Protein', len(tm)))
-
-    ## b. PROTEIN AND MEMBRANE --
-    for prot in tm:
-
-        # Have to build a membrane around the protein.
-        # So first put the protein in properly.
-
-        # Center the protein and store the shift
-        shift = prot.center
-        prot.center = (0, 0, 0)
-
-        ## 1. Orient with respect to membrane
-        # Orient the protein according to the TM region, if requested
-        # This doesn't actually work very well...
-        if options["orient"]:
-            prot.orient(options["origriddist"], options["oripower"])
-
-        ## 4. Orient the protein in the xy-plane
-        ## i. According to principal axes and unit cell
-        prot.rotate(options["rotate"])
-
-        ## 5. Determine the minimum and maximum x and y of the protein
-        pmin, pmax = prot.fun(min), prot.fun(max)
-
-        # At this point we should shift the subsequent proteins such
-        # that they end up at the specified distance, in case we have
-        # a number of them to do
-        # y-shift is always -ycenter
-        # x-shift is -xmin+distance+xmax(current)
-        xshifts.append(xshifts[-1]+pmax[0]+(options["distance"] or 0))
-
-        ## 2. Shift of protein relative to the membrane center
-        zshift = options["memshift"]
-        if not options["center"]:
-            zshift -= shift[2]
-
-        # Now we center the system in the rectangular
-        # brick corresponding to the unit cell
-        # If -center is given, also center z in plane
-        prot += (0, 0, zshift)
-
-        # The z position is now correct with respect to the membrane
-        # at z = 0. The x/y need to be set still
-
-    #>> PBC
-
-    # Periodic boundary conditions
-    if options["pbc"] == 'keep' and tm:
-        box = tm[0].box
-    else:
-        box = options.get("box")
-
-    zdist = options["zdistance"]
-    if zdist == None:
-        zdist = options["distance"]
-
-    # Set up base PBC
-    # Override where needed to accomodate additional components
-    # box/shape are final - if these are given and a solute does
-    # not fit in it raises an exception
-    pbc = PBC(shape=options["pbc"], box=box,
-              distance=(options["distance"], zdist),
-              xyz=(options["xvector"], options["yvector"], options["zvector"]),
-              disc=options["disc"], hole=options["hole"],
-              membrane=options["lower"], protein=tm)
 
     resize_pbc_for_lipids(pbc=pbc, relL=relL, relU=relU, absL=absL, absU=absU,
                           uparea=options["uparea"], area=options["area"],
                           hole=options["hole"], proteins=tm)
 
-    #<< PBC
+    ##################
+    ## IV. MEMBRANE ##
+    ##################
+
+    ## 1. Proteins
 
     # Now that PBC is set, we can shift the proteins
     for xshft, prot in zip(xshifts,tm):
@@ -743,12 +731,6 @@ def old_main(argv, options):
         protein.coord = np.concatenate(prot_coord)
 
     # Extract the parts of the protein that are in either leaflet
-    #prot_up, prot_lo = [], []
-    #for ix, iy, iz in protein.coord:
-    #    if   iz > 0 and iz <  2.4:
-    #        prot_up.append((ix, iy))
-    #    elif iz < 0 and iz > -2.4:
-    #        prot_lo.append((ix, iy))
     mem_mask_up = (0 < protein.coord[:,2]) & (protein.coord[:,2] < 2.4)
     mem_mask_lo = (0 > protein.coord[:,2]) & (protein.coord[:,2] > -2.4)
     prot_up = protein.coord[mem_mask_up, :2]
@@ -761,10 +743,7 @@ def old_main(argv, options):
 
     atid      = len(protein)+1
 
-
-    #################
-    ## 2. MEMBRANE ##
-    ################
+    ## 2. Lipids
 
     membrane = Structure()
 
@@ -997,7 +976,18 @@ def old_main(argv, options):
 
         mematoms = []
         memcoords = []
+
         # Build the membrane
+
+        ## ==> LIPID  BOOKKEEPING:
+        # Read lipids defined in insane
+        liplist = lipids.get_lipids()
+        # Then add lipids from file
+        liplist.add_from_files(options["molfile"])
+        # Last, add lipids from command line
+        liplist.add_from_def(options["lipnames"], options["lipheads"], options["liplinks"],
+                             options["liptails"], options["lipcharge"])
+
         for leaflet, leaf_lip, lipd, lipdx, lipdy in [leaf_up, leaf_lo]:
             for lipid, pos in leaf_lip:
                 # Increase the residue number by one
@@ -1011,22 +1001,17 @@ def old_main(argv, options):
                 rsinx    = rsin*lipdx*2/3
                 rsiny    = rsin*lipdy*2/3
                 # Fetch the atom list with x, y, z coordinates
-                #atoms    = zip(lipidsa[lipid][1].split(), lipidsx[lipidsa[lipid][0]], lipidsy[lipidsa[lipid][0]], lipidsz[lipidsa[lipid][0]])
-                # Only keep atoms appropriate for the lipid
-                #at, ax, ay, az = zip(*[i for i in atoms if i[0] != "-"])
                 at, ax, ay, az = zip(*liplist[lipid].build(diam=lipd))
                 # The z-coordinates are spaced at 0.3 nm,
                 # starting with the first bead at 0.15 nm
-                az       = [ leaflet*(0.5+(i-min(az)))*options["beaddist"] for i in az ]
-                xx       = zip( ax, ay )
-                nx       = [rcosx*i-rsiny*j+pos[0]+lipdx/2+random.random()*kick for i, j in xx]
-                ny       = [rsinx*i+rcosy*j+pos[1]+lipdy/2+random.random()*kick for i, j in xx]
+                az = [ leaflet*(0.5+(i-min(az)))*options["beaddist"] for i in az ]
+                xx = np.array((ax, ay)).T
+                nx = np.dot(xx,(rcosx, -rsiny)) + pos[0] + lipdx/2 + [ kick*random.random() for i in az ]
+                ny = np.dot(xx,(rsinx, rcosy)) + pos[1] + lipdy/2 + [ kick*random.random() for i in az ]
                 # Add the atoms to the list
-                for i in range(len(at)):
-                    atom  = "%5d%-5s%5s%5d"%(resi, lipid, at[i], atid)
-                    memcoords.append((nx[i], ny[i], az[i]))
-                    mematoms.append((at[i], lipid, resi, 0, 0, 0))
-                    atid += 1
+                memcoords.extend([(nx[i], ny[i], az[i]) for i in range(len(at))])
+                mematoms.extend([(at[i], lipid, resi, 0, 0, 0) for i in range(len(at))])
+                atid += len(at)
 
         ##< Done building lipids
 
@@ -1050,6 +1035,8 @@ def old_main(argv, options):
     mcharge = membrane.charge
     pcharge = protein.charge
 
+    solv      = options["solvent"]
+
     if solv:
 
         # Set up a grid
@@ -1071,9 +1058,8 @@ def old_main(argv, options):
         grid   = [[[i < hz-excl or i > hz+excl for i in xrange(nz)] for j in xrange(ny)] for i in xrange(nx)]
 
         # Flag all cells occupied by protein or membrane
-        for p, q, r in (protein+membrane).coord:
-            for s, t, u in pointsOnSphere(20):
-                x, y, z = p+0.33*s, q+0.33*t, r+0.33*u
+        for coord in (protein+membrane).coord:
+            for x, y, z in coord + 0.33*pointsOnSphere(20):
                 if z >= pbc.z:
                     x -= pbc.box[2,0]
                     y -= pbc.box[2,1]
