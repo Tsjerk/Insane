@@ -135,7 +135,7 @@ def _arguments_as_list(arguments):
     return arguments_list
 
 
-def _gro_output_from_arguments(arguments):
+def _output_from_arguments(arguments, option='-o'):
     """
     Find the file name of the GRO output provided as argument to insane.
 
@@ -145,11 +145,11 @@ def _gro_output_from_arguments(arguments):
     This function reads the arguments provided as a list of arguments.
     """
     for i, argument in reversed(list(enumerate(arguments))):
-        if argument == '-o':
+        if argument == option:
             break
     else:
-        raise ValueError('Output GRO name is not provided to insane. '
-                         'Missing -o argument.')
+        raise ValueError('No output name is not provided to insane '
+                         'using the {} argument.'.format(option))
     return arguments[i + 1]
 
 
@@ -176,14 +176,21 @@ def _reference_path(arguments, alias=None):
     """
     Get the path to the reference files for the simple test cases.
     """
-    out_struct = _gro_output_from_arguments(_arguments_as_list(arguments))
+    arg_list = _arguments_as_list(arguments)
+    out_struct = _output_from_arguments(arg_list, option='-o')
     out_format = os.path.splitext(out_struct)[-1]
     simple_case_ref_data = os.path.join(DATA_DIR, 'simple_case')
     base_name = arguments if alias is None else alias
     ref_gro = os.path.join(simple_case_ref_data, base_name + out_format)
+    try:
+        out_top = _output_from_arguments(arg_list, option='-p')
+    except ValueError:
+        ref_top = None
+    else:
+        ref_top = os.path.join(simple_case_ref_data, base_name + '.top')
     ref_stdout = os.path.join(simple_case_ref_data, base_name + '.out')
     ref_stderr = os.path.join(simple_case_ref_data, base_name + '.err')
-    return ref_gro, ref_stdout, ref_stderr
+    return ref_gro, ref_top, ref_stdout, ref_stderr
 
 
 def _run_external(arguments):
@@ -247,7 +254,8 @@ def compare(output, reference):
 
 
 def run_and_compare(arguments, input_dir,
-                    ref_gro, ref_stdout, ref_stderr, runner=_run_external):
+                    ref_gro, ref_top,
+                    ref_stdout, ref_stderr, runner=_run_external):
     """
     Run insane and compare its output against a reference
     """
@@ -260,7 +268,9 @@ def run_and_compare(arguments, input_dir,
     # The name of the output gro file must be provided to insane for insane to
     # work. Since we also need that file name, let's get it from insane's
     # arguments.
-    gro_output = _gro_output_from_arguments(arguments)
+    gro_output = _output_from_arguments(arguments, option='-o')
+    if ref_top is not None:
+        top_output = _output_from_arguments(arguments, option='-p')
 
     # We want insane to run in a temporary directory. This allows to keep the
     # file system clean, and it avoids mixing output of different tests.
@@ -274,6 +284,8 @@ def run_and_compare(arguments, input_dir,
             compare(gro_output, ref_gro)
         compare(utils.ContextStringIO(out), ref_stdout)
         compare(utils.ContextStringIO(err), ref_stderr)
+        if ref_top is not None:
+            compare(top_output, ref_top)
 
 
 def _test_simple_cases():
@@ -283,7 +295,7 @@ def _test_simple_cases():
     """
     for case in SIMPLE_TEST_CASES:
         case_args, input_dir, alias = _split_case(case)
-        ref_gro, ref_stdout, ref_stderr = _reference_path(case_args, alias)
+        ref_gro, ref_top, ref_stdout, ref_stderr = _reference_path(case_args, alias)
         # The test generator could yield run and compare directly. Bt, then,
         # the verbose display of nosetests gets crowded with the very long
         # names of the reference file, that are very redundant. Using a partial
@@ -291,6 +303,7 @@ def _test_simple_cases():
         _test_case = functools.partial(
             run_and_compare,
             ref_gro=ref_gro,
+            ref_top=ref_top,
             ref_stdout=ref_stdout,
             ref_stderr=ref_stderr,
             runner=_run_external)
@@ -305,7 +318,7 @@ def test_simple_cases_internal():
     """
     for case in SIMPLE_TEST_CASES:
         case_args, input_dir, alias = _split_case(case)
-        ref_gro, ref_stdout, ref_stderr = _reference_path(case_args, alias)
+        ref_gro, ref_top, ref_stdout, ref_stderr = _reference_path(case_args, alias)
         # The test generator could yield run and compare directly. Bt, then,
         # the verbose display of nosetests gets crowded with the very long
         # names of the reference file, that are very redundant. Using a partial
@@ -313,6 +326,7 @@ def test_simple_cases_internal():
         _test_case = functools.partial(
             run_and_compare,
             ref_gro=ref_gro,
+            ref_top=ref_top,
             ref_stdout=ref_stdout,
             ref_stderr=ref_stderr,
             runner=_run_internal)
@@ -487,8 +501,12 @@ def generate_simple_case_references():
     for case in SIMPLE_TEST_CASES:
         case_args, input_dir, alias = _split_case(case)
         arguments = _arguments_as_list(case_args)
-        out_gro = _gro_output_from_arguments(arguments)
-        ref_gro, ref_stdout, ref_stderr = _reference_path(case_args, alias)
+        out_gro = _output_from_arguments(arguments, option='-o')
+        try:
+            out_top = _output_from_arguments(arguments, option='-p')
+        except ValueError:
+            out_top = None
+        ref_gro, ref_top, ref_stdout, ref_stderr = _reference_path(case_args, alias)
         with utils.tempdir():
             print(INSANE + ' ' + ' '.join(arguments))
             out, err, _ = run_insane(arguments, input_dir)
@@ -499,6 +517,8 @@ def generate_simple_case_references():
                 for line in err:
                     print(line, file=outfile, end='')
             shutil.copy2(out_gro, ref_gro)
+            if out_top is not None:
+                shutil.copy2(out_top, ref_top)
 
 
 def clean_simple_case_references():
