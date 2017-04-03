@@ -1,0 +1,10 @@
+#include "martini.itp"
+
+[ system ]
+; name
+Insanely solvated protein.
+
+
+[ molecules ]
+; name  number
+Protein          1
