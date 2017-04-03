@@ -2,11 +2,11 @@
 
 [ system ]
 ; name
-Protein in INSANE! Membrane UpperLeaflet>POPC=1 LowerLeaflet>POPC=1
+Protein in INSANE! Membrane UpperLeaflet>POPC=0 LowerLeaflet>POPC=0
 
 
 [ molecules ]
 ; name  number
 Protein          1
-POPC            21
-POPC            30
+POPC           512
+POPC           512
