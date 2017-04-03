@@ -1193,6 +1193,7 @@ def old_main(argv, options):
 
 
     solvent, added = setup_solvent(pbc, protein, membrane, options)
+    molecules.extend(added)
 
     return (molecules, protein, membrane, solvent,
             lipU, lipL, relU, relL, pbc.box)
