@@ -1,4 +1,22 @@
 #!/usr/bin/env python
+# INSert membrANE
+# A simple, versatile tool for building coarse-grained simulation systems
+# Copyright (C) 2017  Tsjerk A. Wassenaar and contributors
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+# MA  02110-1301, USA.
 
 """
 Regression tests for insane.
@@ -17,8 +35,6 @@ and compares the output to the reference.
 
 from __future__ import print_function
 
-from nose.tools import assert_equal, assert_raises
-
 from collections import namedtuple
 import copy
 import contextlib
@@ -35,6 +51,24 @@ import tempfile
 import textwrap
 
 from StringIO import StringIO
+from nose.tools import assert_equal, assert_raises
+
+
+# realpath and which are copied from MDAnalysis.
+# MDAnalysis is released under the GPL v2 license.
+# Read the full license at
+# <https://github.com/MDAnalysis/mdanalysis/blob/develop/LICENSE>
+def realpath(*args):
+    """Join all args and return the real path, rooted at /.
+    Expands '~', '~user', and environment variables such as :envvar`$HOME`.
+    Returns ``None`` if any of the args is ``None``.
+    """
+    if None in args:
+        return None
+    return os.path.realpath(
+        os.path.expanduser(os.path.expandvars(os.path.join(*args)))
+    )
+
 
 def which(program):
     """Determine full path of executable *program* on :envvar:`PATH`.
@@ -43,9 +77,12 @@ def which(program):
     """
 
     def is_exe(fpath):
+        """
+        Returns True is the path points to an executable file.
+        """
         return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
 
-    fpath, fname = os.path.split(program)
+    fpath, _ = os.path.split(program)
     if fpath:
         real_program = realpath(program)
         if is_exe(real_program):
@@ -57,9 +94,9 @@ def which(program):
                 return exe_file
     return None
 
+
 HERE = os.path.abspath(os.path.dirname(__file__))
-#INSANE = os.path.abspath(os.path.join(HERE, '../insane.py'))
-#INSANE = '/home/jon/Envs/tsjerk/bin/insane'
+# INSANE = os.path.abspath(os.path.join(HERE, '../insane.py'))
 INSANE = which('insane')
 DATA_DIR = os.path.join(HERE, 'data')
 INPUT_DIR = os.path.join(HERE, 'data', 'inputs')
@@ -80,19 +117,24 @@ SIMPLE_TEST_CASES = [
     ('-o test.gro -f CG1a0s.pdb', '1a0s'),
     ('-o test.gro -f CG1a0s.pdb -p CG1a0s.top -l POPC -ring', '1a0s'),
     ('-o test.gro -f CG1a0s.pdb -p CG1a0s.top -l POPC -orient', '1a0s'),
-    ('-o test.gro -f CG1a0s.pdb -p CG1a0s.top -l POPC -orient -od 0.2', '1a0s'),
+    ('-o test.gro -f CG1a0s.pdb -p CG1a0s.top -l POPC -orient -od 0.2',
+     '1a0s'),
     ('-o test.gro -f CG1a0s.pdb -p CG1a0s.top -l POPC -rotate princ', '1a0s'),
     ('-o test.gro -f CG1a0s.pdb -p CG1a0s.top -l POPC -rotate 30', '1a0s'),
     ('-o test.gro -f CG1a0s.pdb -p CG1a0s.top -l POPC -rotate 40', '1a0s'),
     ('-o test.gro -f CG1a0s.pdb -p CG1a0s.top -l POPC -dm 3', '1a0s'),
     ('-o test.gro -f CG1a0s.pdb -p CG1a0s.top -l POPC -center', '1a0s'),
     ('-o test.gro -f CG1a0s.pdb -p CG1a0s.top -l POPC -box 20,30,40', '1a0s'),
-    ('-o test.gro -f CG1a0s.pdb -p CG1a0s.top -l POPC -box 20,30,40 -d 3', '1a0s'),
-    ('-o test.gro -f CG1a0s.pdb -p CG1a0s.top -l POPC -box 2,3,4 -d 10', '1a0s'),
-    '-o test.gro -box 10,15,20 -l LOLO -alname LOLO -alhead C.P -allink G.G -altail CC.CDC',
+    ('-o test.gro -f CG1a0s.pdb -p CG1a0s.top -l POPC -box 20,30,40 -d 3',
+     '1a0s'),
+    ('-o test.gro -f CG1a0s.pdb -p CG1a0s.top -l POPC -box 2,3,4 -d 10',
+     '1a0s'),
+    ('-o test.gro -box 10,15,20 -l LOLO -alname LOLO '
+     '-alhead C.P -allink G.G -altail CC.CDC'),
     ('-o test.gro -box 10,15,20 -l LOLO -l LOL2 '
      '-alname LOLO -alhead C.P -allink G.G -altail CC.CDC '
-     '-alname LOL2 -alhead E.P -allink A.A -altail TCC.CDDC', None, 'multi-custom-lipids'),
+     '-alname LOL2 -alhead E.P -allink A.A -altail TCC.CDDC',
+     None, 'multi-custom-lipids'),
     '-o test.pdb -box 10,15,20',
     ('-o test.pdb -f CG1a0s.pdb -p CG1a0s.top -l POPC -ring', '1a0s'),
     ('-o test.gro -pbc keep -f CG1a0s-box.pdb', '1a0s'),
@@ -105,7 +147,8 @@ SIMPLE_TEST_CASES = [
 # Add test cases for all PBC options.
 for pbc in ('hexagonal', 'rectangular', 'square', 'cubic', 'optimal'):
     SIMPLE_TEST_CASES.extend([
-        ('-o test.gro -pbc {} -f CG1a0s.pdb -p CG1a0s.top'.format(pbc), '1a0s'),
+        ('-o test.gro -pbc {} -f CG1a0s.pdb -p CG1a0s.top'.format(pbc),
+         '1a0s'),
         '-o test.gro -pbc {} -d 10'.format(pbc),
         '-o test.gro -pbc {} -d 10 -dz 5'.format(pbc),
         '-o test.gro -hole 4 -pbc {} -d 10 -dz 5'.format(pbc),
@@ -129,7 +172,8 @@ GRO_FIELDS = {
     "y": ((28, 36), float),
     "z": ((36, 44), float),
 }
-GRO_TEMPLATE = '{resid:>5}{resname:<5}{name:>5}{index:>5}{x:8.3f}{y:8.3f}{z:8.3f}'
+GRO_TEMPLATE = ('{resid:>5}{resname:<5}{name:>5}{index:>5}'
+                '{x:8.3f}{y:8.3f}{z:8.3f}')
 
 GroDiff = namedtuple('GroDiff', 'linenum line ref_line fields')
 
@@ -241,7 +285,8 @@ def read_gro(stream):
     except StopIteration:
         pass
     else:
-        raise ValueError('Extra lines after the box or invalid number of atoms declared')
+        raise ValueError('Extra lines after the box or '
+                         'invalid number of atoms declared')
 
     return title, atoms, box
 
@@ -381,6 +426,9 @@ def format_gro_diff(differences, outstream=sys.stdout, max_atoms=10):
 
 
 def assert_gro_equal(path, ref_path):
+    """
+    Raise an AssertionError if two GRO files are not semantically identical.
+    """
     diff_out = StringIO()
     with open(path) as stream, open(ref_path) as ref_stream:
         differences = compare_gro(stream, ref_stream)
@@ -449,6 +497,11 @@ def _reference_path(arguments, alias=None):
 
 
 def run_insane(arguments, input_directory=None):
+    """
+    Run insane with the given arguments
+
+    Insane is run in a copy of `input_directory`.
+    """
     # Copy the content of the input directory in the current directory if an
     # input directory is provided.
     if input_directory is not None:
@@ -486,6 +539,9 @@ def compare(output, reference):
 
 
 def run_and_compare(arguments, input_dir, ref_gro, ref_stdout, ref_stderr):
+    """
+    Run insane and compare its output against a reference
+    """
     # Create the command as a list for subprocess.Popen.
     # The arguments can be pass to the current function as a string or as a
     # list of arguments. If they are passed as a string, they need to be
@@ -511,12 +567,11 @@ def run_and_compare(arguments, input_dir, ref_gro, ref_stdout, ref_stderr):
         compare(ContextStringIO(err), ref_stderr)
 
 
-# This function generates test functions for nosetests. These test functions
-# execute insane with the argument listed in SIMPLE_TEST_CASES.
-# Do not add a docstring to this function. The docstring would be displayed in
-# the verbose mode of nosetests preventing to distinguish among the different
-# tests that are generated.
 def test_simple_cases():
+    """
+    This function generates test functions for nosetests. These test functions
+    execute insane with the argument listed in SIMPLE_TEST_CASES.
+    """
     for case in SIMPLE_TEST_CASES:
         case_args, input_dir, alias = _split_case(case)
         ref_gro, ref_stdout, ref_stderr = _reference_path(case_args, alias)
@@ -552,7 +607,8 @@ class TestGroTester(object):
         """
         with tempdir():
             with open('ref.gro', 'w') as outfile:
-                print(textwrap.dedent(self.ref_gro_content), file=outfile, end='')
+                print(textwrap.dedent(self.ref_gro_content),
+                      file=outfile, end='')
             assert_gro_equal('ref.gro', 'ref.gro')
 
     def test_diff_x(self):
@@ -570,10 +626,12 @@ class TestGroTester(object):
 
         with tempdir():
             with open('ref.gro', 'w') as outfile:
-                print(textwrap.dedent(self.ref_gro_content), file=outfile, end='')
+                print(textwrap.dedent(self.ref_gro_content),
+                      file=outfile, end='')
             with open('content.gro', 'w') as outfile:
                 print(textwrap.dedent(gro_content), file=outfile, end='')
-            assert_raises(AssertionError, assert_gro_equal, 'content.gro', 'ref.gro')
+            assert_raises(AssertionError, assert_gro_equal,
+                          'content.gro', 'ref.gro')
 
     def test_diff_in_tolerance(self):
         """
@@ -590,7 +648,8 @@ class TestGroTester(object):
 
         with tempdir():
             with open('ref.gro', 'w') as outfile:
-                print(textwrap.dedent(self.ref_gro_content), file=outfile, end='')
+                print(textwrap.dedent(self.ref_gro_content),
+                      file=outfile, end='')
             with open('content.gro', 'w') as outfile:
                 print(textwrap.dedent(gro_content), file=outfile, end='')
             assert_gro_equal('content.gro', 'ref.gro')
@@ -612,10 +671,12 @@ class TestGroTester(object):
 
         with tempdir():
             with open('ref.gro', 'w') as outfile:
-                print(textwrap.dedent(self.ref_gro_content), file=outfile, end='')
+                print(textwrap.dedent(self.ref_gro_content),
+                      file=outfile, end='')
             with open('content.gro', 'w') as outfile:
                 print(textwrap.dedent(gro_content), file=outfile, end='')
-            assert_raises(AssertionError, assert_gro_equal, 'content.gro', 'ref.gro')
+            assert_raises(AssertionError, assert_gro_equal,
+                          'content.gro', 'ref.gro')
 
     def test_diff_title(self):
         """
@@ -632,10 +693,12 @@ class TestGroTester(object):
 
         with tempdir():
             with open('ref.gro', 'w') as outfile:
-                print(textwrap.dedent(self.ref_gro_content), file=outfile, end='')
+                print(textwrap.dedent(self.ref_gro_content),
+                      file=outfile, end='')
             with open('content.gro', 'w') as outfile:
                 print(textwrap.dedent(gro_content), file=outfile, end='')
-            assert_raises(AssertionError, assert_gro_equal, 'content.gro', 'ref.gro')
+            assert_raises(AssertionError, assert_gro_equal,
+                          'content.gro', 'ref.gro')
 
     def test_diff_box(self):
         """
@@ -652,10 +715,12 @@ class TestGroTester(object):
 
         with tempdir():
             with open('ref.gro', 'w') as outfile:
-                print(textwrap.dedent(self.ref_gro_content), file=outfile, end='')
+                print(textwrap.dedent(self.ref_gro_content),
+                      file=outfile, end='')
             with open('content.gro', 'w') as outfile:
                 print(textwrap.dedent(gro_content), file=outfile, end='')
-            assert_raises(AssertionError, assert_gro_equal, 'content.gro', 'ref.gro')
+            assert_raises(AssertionError, assert_gro_equal,
+                          'content.gro', 'ref.gro')
 
     def test_diff_field(self):
         """
@@ -672,10 +737,12 @@ class TestGroTester(object):
 
         with tempdir():
             with open('ref.gro', 'w') as outfile:
-                print(textwrap.dedent(self.ref_gro_content), file=outfile, end='')
+                print(textwrap.dedent(self.ref_gro_content),
+                      file=outfile, end='')
             with open('content.gro', 'w') as outfile:
                 print(textwrap.dedent(gro_content), file=outfile, end='')
-            assert_raises(AssertionError, assert_gro_equal, 'content.gro', 'ref.gro')
+            assert_raises(AssertionError, assert_gro_equal,
+                          'content.gro', 'ref.gro')
 
 
 def generate_simple_case_references():
@@ -693,7 +760,7 @@ def generate_simple_case_references():
         ref_gro, ref_stdout, ref_stderr = _reference_path(case_args, alias)
         with tempdir():
             print(INSANE + ' ' + ' '.join(arguments))
-            out, err, returncode = run_insane(arguments, input_dir)
+            out, err, _ = run_insane(arguments, input_dir)
             with open(ref_stdout, 'w') as outfile:
                 for line in out:
                     print(line, file=outfile, end='')
@@ -717,6 +784,9 @@ def clean_simple_case_references():
 
 
 def main():
+    """
+    Command line entry point.
+    """
     help_ = """
 Generate or clean the reference files for insane's regression tests.
 
@@ -726,7 +796,7 @@ Generate or clean the reference files for insane's regression tests.
 nosetests -v: run the tests
 """.format(sys.argv[0])
     commands = {'gen': generate_simple_case_references,
-                'clean': clean_simple_case_references,}
+                'clean': clean_simple_case_references}
     if len(sys.argv) != 2:
         print(help_, file=sys.stderr)
         sys.exit(1)

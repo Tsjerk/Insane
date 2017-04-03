@@ -14,10 +14,11 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+# MA  02110-1301, USA.
 
 """
-Nose plugin that rewrite the test description for easier to use regression tests
+Nose plugin that rewrite the test description for better regression tests
 
 The plugin allows to:
 
@@ -34,10 +35,13 @@ from nose.plugins.base import Plugin
 
 
 def color_arguments(arguments):
+    """
+    Color insane arguments in regression tests
+    """
     categories = (
         (('l', 'alname', 'alhead', 'allink', 'altail'), '1;33'),  # lipids
         (('box', 'pbc', 'x', 'y', 'z'), '38;5;214'),  # PDB
-        (('f', ),  '31'),  # solute
+        (('f', ), '31'),  # solute
         (('d', 'dz'), '34'),  # distance to the box
         (('sol', ), '36'),  # solvent
     )
@@ -47,10 +51,13 @@ def color_arguments(arguments):
         arguments = re.sub(template_from.format('|'.join(option)),
                            template_to.format(color),
                            arguments)
-    return arguments 
+    return arguments
 
 
 def replace_function(arguments, replace_files=True):
+    """
+    Rewrites insane regression test description for easy copy-paste
+    """
     result = arguments
     input_dir = None
     func_name = 'test_regression.test_simple_cases'
@@ -72,42 +79,56 @@ def replace_function(arguments, replace_files=True):
 
 
 class ImprovedDisplay(Plugin):
+    """
+    Make regression test descriptions easier to read and use.
+    """
     enabled = True
-    name = 'color-verbose'
-    score = 1600
+
+    def __init__(self, *args, **kwargs):
+        super(ImprovedDisplay, self).__init__(*args, **kwargs)
+        self.color_verbose = self.enabled
+        self.easy_copy = self.enabled
+        self.replace_input = self.enabled
 
     def options(self, parser, env):
-        """Registers the commandline option, defaulting to enabled.
         """
+        Registers the commandline option, defaulting to enabled.
+        """
+        super(ImprovedDisplay, self).options(parser, env)
         parser.add_option(
-            "--no-color".format(self.name), action="store_false",
+            "--no-color", action="store_false",
             default=True, dest="color_verbose",
-            help="Disable color."
+            help="Disable color in regression tests."
         )
         parser.add_option(
-            "--no-easy-copy".format(self.name), action="store_false",
+            "--no-easy-copy", action="store_false",
             default=True, dest="easy_copy",
-            help="Disable easy copy paste."
+            help="Disable easy copy paste of regression tests."
         )
         parser.add_option(
-            "--np-replace-input".format(self.name), action="store_false",
+            "--np-replace-input", action="store_false",
             default=True, dest="replace_input",
-            help="Do not replace input files by their absolute path."
+            help=("Do not replace input files by their absolute path "
+                  "in regression test descriptions.")
         )
 
     def configure(self, options, conf):
-        """Configure plugin. Plugin is enabled by default.
         """
+        Configure plugin. Plugin is enabled by default.
+        """
+        super(ImprovedDisplay, self).configure(options, conf)
         self.color_verbose = options.color_verbose
         self.easy_copy = options.easy_copy
         self.replace_input = options.replace_input
-        self.config = conf
         try:
             self.enabled = options.color_verbose or options.easy_copy
         except AttributeError:
             self.enabled = False
 
     def describeTest(self, test):
+        """
+        Nose hook that rewrites test descriptions.
+        """
         args = test.id()
         if self.easy_copy:
             args = replace_function(args, self.replace_input)
@@ -115,5 +136,9 @@ class ImprovedDisplay(Plugin):
             args = color_arguments(args)
         return args
 
-    def report(self, stream):
+    @staticmethod
+    def report(stream):
+        """
+        Nose hook that prints at the end of the tests.
+        """
         stream.write('Color is beautiful\n')
