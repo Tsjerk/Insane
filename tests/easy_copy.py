@@ -60,8 +60,14 @@ def replace_function(arguments, replace_files=True):
     """
     result = arguments
     input_dir = None
-    func_name = 'test_regression.test_simple_cases'
-    if arguments.startswith(func_name):
+    func_names = ('test_regression.test_simple_cases',
+                  'test_regression.test_simple_cases_internal')
+    func_name = None
+    for name in func_names:
+        if arguments.startswith(name + '('):
+            func_name = name
+            break
+    if func_name is not None:
         reduced_name = arguments[len(func_name) + 1:-1]
         insane_args, input_dir = shlex.split(reduced_name)
         if replace_files:
