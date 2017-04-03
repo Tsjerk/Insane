@@ -299,8 +299,8 @@ class Structure(object):
         return len(self.atoms)
 
     def __iadd__(self, s):
-        if self._coord.shape[0]:
-            self._coord += s ###
+        if self.coord.shape[0]:
+            self.coord += s ###
         return self
 
     def __add__(self, other):
@@ -308,9 +308,9 @@ class Structure(object):
             result = self.__class__()
             result.atoms.extend(self.atoms)
             result.atoms.extend(other.atoms)
-            result._coord = np.concatenate((
-                self._coord.reshape((-1,3)),
-                other._coord.reshape((-1,3)))) ###
+            result.coord = np.concatenate((
+                self.coord.reshape((-1,3)),
+                other.coord.reshape((-1,3)))) ###
             return result
         raise TypeError('Cannot add {} to {}'
                         .format(self.__class__, other.__class__))
@@ -594,6 +594,306 @@ def resize_pbc_for_lipids(pbc, relL, relU, absL, absU,
         pbc.box[:2,:] *= math.sqrt(area_scale)
 
 
+def setup_membrane(pbc, protein, lipid, options):
+    membrane = Structure()
+    molecules = []
+
+    lower, upper = lipid
+    lipL, absL, relL = lower
+    lipU, absU, relU = upper
+
+    if not any((absL, relL, absU, relU)):
+        return membrane, molecules
+
+    lo_lipd  = math.sqrt(options["area"])
+    up_lipd = math.sqrt(options["uparea"])
+
+    num_up, num_lo = [], []
+
+    # Lipids are added on grid positions, using the prototypes defined above.
+    # If a grid position is already occupied by protein, the position is untagged.
+    
+    lipd = lo_lipd
+
+    # Number of lipids in x and y in lower leaflet if there were no solute
+    lo_lipids_x = int(pbc.x/lo_lipd+0.5)
+    lo_lipdx    = pbc.x/lo_lipids_x
+    lo_rlipx    = range(lo_lipids_x)
+    lo_lipids_y = int(pbc.y/lo_lipd+0.5)
+    lo_lipdy    = pbc.y/lo_lipids_y
+    lo_rlipy    = range(lo_lipids_y)
+    
+    if options["uparea"]:
+        lipd = up_lipd
+
+    # Number of lipids in x and y in upper leaflet if there were no solute
+    up_lipids_x = int(pbc.x/up_lipd+0.5)
+    up_lipdx    = pbc.x/up_lipids_x
+    up_rlipx    = range(up_lipids_x)
+    up_lipids_y = int(pbc.y/up_lipd+0.5)
+    up_lipdy    = pbc.y/up_lipids_y
+    up_rlipy    = range(up_lipids_y)
+
+    # Set up grids to check where to place the lipids
+    grid_lo = [[0 for j in lo_rlipy] for i in lo_rlipx]
+    grid_up = [[0 for j in up_rlipy] for i in up_rlipx]
+
+    ## NEW GRID
+    lo_gx = slice(0, pbc.x, int(pbc.x/lo_lipd + 0.5)*1j)
+    lo_gy = slice(0, pbc.x, int(pbc.x/lo_lipd + 0.5)*1j)
+    up_gx = slice(0, pbc.x, int(pbc.x/up_lipd + 0.5)*1j)
+    up_gy = slice(0, pbc.x, int(pbc.x/up_lipd + 0.5)*1j)
+    grid_l = np.mgrid[lo_gx, lo_gy][:,:-1,:-1].reshape((2,-1)).T
+    grid_u = np.mgrid[up_gx, up_gy][:,:-1,:-1].reshape((2,-1)).T
+    # If there is a protein, mark the corresponding POINTS as occupied
+    occupied_lo = np.zeros(grid_l.shape[0])
+    occupied_up = np.zeros(grid_u.shape[0])
+    if protein:
+        upmask = (protein.coord[:,2] <  2.4) & (protein.coord[:,2] > 0)
+        lomask = (protein.coord[:,2] > -2.4) & (protein.coord[:,2] < 0)
+        occupied_lo += occupancy(grid_l, protein.coord[lomask,:2], lo_lipd)
+        occupied_up += occupancy(grid_u, protein.coord[upmask,:2], up_lipd)
+        maxd = max(occupied_lo.max(), occupied_up.max())
+        if maxd:
+            occupied_up = (occupied_up/maxd) > options["fudge"]
+            occupied_lo = (occupied_lo/maxd) > options["fudge"]
+    #print(absU, sum(~occupied_up.astype('bool')), 
+    #      absL, sum(~occupied_lo.astype('bool')))
+
+    ## OLD GRID
+        
+    maxd = 1
+
+    # If there is a protein, mark the corresponding cells as occupied
+    if protein:
+        # Extract the parts of the protein that are in either leaflet
+        mem_mask_up = (0 < protein.coord[:,2]) & (protein.coord[:,2] < 2.4)
+        mem_mask_lo = (0 > protein.coord[:,2]) & (protein.coord[:,2] > -2.4)
+        prot_up = protein.coord[mem_mask_up, :2]
+        prot_lo = protein.coord[mem_mask_lo, :2]
+
+        # Calculate number density per cell
+        for i in prot_lo:
+            grid_lo[ int(lo_lipids_x*i[0]/pbc.rx)%lo_lipids_x ][ int(lo_lipids_y*i[1]/pbc.ry)%lo_lipids_y ] += 1
+        for i in prot_up:
+            grid_up[ int(up_lipids_x*i[0]/pbc.rx)%up_lipids_x ][ int(up_lipids_y*i[1]/pbc.ry)%up_lipids_y ] += 1
+
+        # Determine which cells to consider occupied, given the fudge factor
+        # The array is changed to boolean type here
+        maxd = float(max([max(i) for i in grid_up+grid_lo]))
+        if  maxd == 0:
+            print("; The protein seems not to be inside the membrane.", file=sys.stderr)
+            print("; Run with -orient to put it in.", file=sys.stderr)
+
+    fudge   = options["fudge"]
+    grid_up = [[(j/maxd) <= fudge for j in i] for i in grid_up]
+    grid_lo = [[(j/maxd) <= fudge for j in i] for i in grid_lo]
+
+    # If we don't want lipids inside of the protein
+    # we also mark everything from the center up to the first cell filled
+    if not options["inside"]:
+
+        # Upper leaflet
+        marked = [(i, j) for i in up_rlipx for j in up_rlipy if not grid_up[i][j]]
+        if marked:
+            # Find the center
+            cx, cy  = [float(sum(i))/len(marked) for i in zip(*marked)]
+            for i, j in marked:
+                md = int(abs(i-cx)+abs(j-cy)) # Manhattan length/distance
+                for f in range(md):
+                    ii = int(cx+f*(i-cx)/md)
+                    jj = int(cy+f*(j-cy)/md)
+                    grid_up[ii][jj] = False
+
+        # Lower leaflet
+        marked = [(i, j) for i in lo_rlipx for j in lo_rlipy if not grid_lo[i][j]]
+        if marked:
+            # Find the center
+            cx, cy  = [float(sum(i))/len(marked) for i in zip(*marked)]
+            for i, j in marked:
+                md = int(abs(i-cx)+abs(j-cy)) # Manhattan length
+                for f in range(md):
+                    ii = int(cx+f*(i-cx)/md)
+                    jj = int(cy+f*(j-cy)/md)
+                    grid_lo[ii][jj] = False
+
+    # If we make a circular patch, we flag the cells further from the
+    # protein or box center than the given radius as occupied.
+    if options["disc"]:
+        if protein:
+            cx, cy = protein.center[:2]
+        else:
+            cx, cy = 0.5*pbc.x, 0.5*pbc.y
+        for i in range(len(grid_lo)):
+            for j in range(len(grid_lo[i])):
+                if (i*pbc.x/lo_lipids_x - cx)**2 + (j*pbc.y/lo_lipids_y - cy)**2 > options["disc"]**2:
+                    grid_lo[i][j] = False
+        for i in range(len(grid_up)):
+            for j in range(len(grid_up[i])):
+                if (i*pbc.x/up_lipids_x - cx)**2 + (j*pbc.y/up_lipids_y - cy)**2 > options["disc"]**2:
+                    grid_up[i][j] = False
+
+    # If we need to add a hole, we simply flag the corresponding cells
+    # as occupied. The position of the hole depends on the type of PBC,
+    # to ensure an optimal arrangement of holes around the protein. If
+    # there is no protein, the hole is just put in the center.
+    if options["hole"]:
+        # Lower leaflet
+        if protein:
+            if ("square".startswith(options["pbc"]) or
+                "rectangular".startswith(options["pbc"])):
+                hx, hy = (0, 0)
+            else:
+                hx, hy = (0, int(lo_lipids_y*math.cos(math.pi/6)/9+0.5))
+        else:
+            hx, hy = (int(0.5*lo_lipids_x), int(0.5*lo_lipids_y))
+        hr = int(options["hole"]/min(lo_lipdx,  lo_lipdy)+0.5)
+        ys = int(lo_lipids_x*pbc.box[1,0]/pbc.box[0,0]+0.5)
+        print("; Making a hole with radius %f nm centered at grid cell (%d,%d)"%(options["hole"], hx, hy), hr, file=sys.stderr)
+        hr -= 1
+        for ii in range(hx-hr-1, hx+hr+1):
+            for jj in range(hx-hr-1, hx+hr+1):
+                xi, yj = ii, jj
+                if (ii-hx)**2+(jj-hy)**2 < hr**2:
+                    if jj < 0:
+                        xi += ys
+                        yj += lo_lipids_y
+                    if jj >= lo_lipids_y:
+                        xi -= ys
+                        yj -= lo_lipids_y
+                    if xi < 0:
+                        xi += lo_lipids_x
+                    if xi >= lo_lipids_x:
+                        xi -= lo_lipids_x
+                    grid_lo[xi][yj] = False
+                    grid_up[xi][yj] = False
+        # Upper leaflet
+        if protein:
+            if ("square".startswith(options["pbc"]) or
+                "rectangular".startswith(options["pbc"])):
+                hx, hy = (0, 0)
+            else:
+                hx, hy = (0, int(up_lipids_y*math.cos(math.pi/6)/9+0.5))
+        else:
+            hx, hy = (int(0.5*up_lipids_x), int(0.5*up_lipids_y))
+        hr = int(options["hole"]/min(up_lipdx, up_lipdy)+0.5)
+        ys = int(up_lipids_x*pbc.box[1,0]/pbc.box[0,0]+0.5)
+        print("; Making a hole with radius %f nm centered at grid cell (%d,%d)"%(options["hole"], hx, hy), hr, file=sys.stderr)
+        hr -= 1
+        for ii in range(hx-hr-1, hx+hr+1):
+            for jj in range(hx-hr-1, hx+hr+1):
+                xi, yj = ii, jj
+                if (ii-hx)**2+(jj-hy)**2 < hr**2:
+                    if jj < 0:
+                        xi += ys
+                        yj += up_lipids_y
+                    if jj >= up_lipids_y:
+                        xi -= ys
+                        yj -= up_lipids_y
+                    if xi < 0:
+                        xi += up_lipids_x
+                    if xi >= up_lipids_x:
+                        xi -= up_lipids_x
+                    grid_up[xi][yj] = False
+
+
+
+    # Set the XY coordinates
+    # To randomize the lipids we add a random number which is used for sorting
+    upper, lower = [], []
+    for i in xrange(up_lipids_x):
+        for j in xrange(up_lipids_y):
+            if grid_up[i][j]:
+                upper.append((random.random(), i*pbc.x/up_lipids_x, j*pbc.y/up_lipids_y))
+    for i in xrange(lo_lipids_x):
+        for j in xrange(lo_lipids_y):
+            if grid_lo[i][j]:
+                lower.append((random.random(), i*pbc.x/lo_lipids_x, j*pbc.y/lo_lipids_y))
+
+    # Sort on the random number
+    upper.sort()
+    lower.sort()
+
+    # Extract coordinates, taking asymmetry in account
+    asym  = options["asymmetry"] or 0
+    upper = [i[1:] for i in upper[max(0, asym):]]
+    lower = [i[1:] for i in lower[max(0, -asym):]]
+
+    print("; X: %.3f (%d bins) Y: %.3f (%d bins) in upper leaflet"%(pbc.x, up_lipids_x, pbc.y, up_lipids_y), file=sys.stderr)
+    print("; X: %.3f (%d bins) Y: %.3f (%d bins) in lower leaflet"%(pbc.x, lo_lipids_x, pbc.y, lo_lipids_y), file=sys.stderr)
+    print("; %d lipids in upper leaflet, %d lipids in lower leaflet"%(len(upper), len(lower)), file=sys.stderr)
+
+    ##> Types of lipids, relative numbers, fractions and numbers
+
+    # Upper leaflet (+1)
+    numbers = determine_molecule_numbers(len(upper), lipU, absU, relU)
+    lip_up     = [l for l, i in numbers for j in range(i)]
+    leaf_up    = ( 1, zip(lip_up, upper), up_lipd, up_lipdx, up_lipdy)
+    molecules.extend(numbers)
+
+    # Lower leaflet (-1)
+    numbers = determine_molecule_numbers(len(lower), lipL, absL, relL)
+    lip_lo = [l for l, i in numbers for j in range(i)]
+    leaf_lo = (-1, zip(lip_lo, lower), lo_lipd, lo_lipdx, lo_lipdy)
+    molecules.extend(numbers)
+
+    ##< Done determining numbers per lipid
+
+    ##> Building lipids
+
+    kick       = options["randkick"]
+
+    mematoms = []
+    memcoords = []
+
+    # Build the membrane
+
+    ## ==> LIPID  BOOKKEEPING:
+    # Read lipids defined in insane
+    liplist = lipids.get_lipids()
+    # Then add lipids from file
+    liplist.add_from_files(options["molfile"])
+    # Last, add lipids from command line
+    liplist.add_from_def(options["lipnames"], options["lipheads"], options["liplinks"],
+                         options["liptails"], options["lipcharge"])
+
+    if protein:
+        resi = protein.atoms[-1][2]
+    else:
+        resi = 0
+
+    for leaflet, leaf_lip, lipd, lipdx, lipdy in [leaf_up, leaf_lo]:
+        for lipid, pos in leaf_lip:
+            # Increase the residue number by one
+            resi += 1
+            # Set the random rotation for this lipid
+            rangle   = 2*random.random()*math.pi
+            rcos     = math.cos(rangle)
+            rsin     = math.sin(rangle)
+            rcosx    = rcos*lipdx*2/3
+            rcosy    = rcos*lipdy*2/3
+            rsinx    = rsin*lipdx*2/3
+            rsiny    = rsin*lipdy*2/3
+            # Fetch the atom list with x, y, z coordinates
+            at, ax, ay, az = zip(*liplist[lipid].build(diam=lipd))
+            # The z-coordinates are spaced at 0.3 nm,
+            # starting with the first bead at 0.15 nm
+            az = [ leaflet*(0.5+(i-min(az)))*options["beaddist"] for i in az ]
+            xx = np.array((ax, ay)).T
+            nx = np.dot(xx,(rcosx, -rsiny)) + pos[0] + lipdx/2 + [ kick*random.random() for i in az ]
+            ny = np.dot(xx,(rsinx, rcosy)) + pos[1] + lipdy/2 + [ kick*random.random() for i in az ]
+            # Add the atoms to the list
+            memcoords.extend([(nx[i], ny[i], az[i]) for i in range(len(at))])
+            mematoms.extend([(at[i], lipid, resi, 0, 0, 0) for i in range(len(at))])
+
+    ##< Done building lipids
+
+    membrane.coord = memcoords
+    membrane.atoms = mematoms
+
+    return membrane, molecules
+
+
 def old_main(argv, options):
 
     molecules = []
@@ -689,18 +989,7 @@ def old_main(argv, options):
     else:
         options["solexcl"] = -1
 
-    lo_lipd  = math.sqrt(options["area"])
-    if options["uparea"] is not None:
-        up_lipd = math.sqrt(options["uparea"])
-    else:
-        options["uparea"] = options["area"]
-        up_lipd = lo_lipd
-
-    lo_lipd  = math.sqrt(options["area"])
-    if options["uparea"]:
-        up_lipd = math.sqrt(options["uparea"])
-    else:
-        up_lipd = lo_lipd
+    if options["uparea"] is None:
         options["uparea"] = options["area"]
 
     resize_pbc_for_lipids(pbc=pbc, relL=relL, relU=relU, absL=absL, absU=absU,
@@ -730,301 +1019,27 @@ def old_main(argv, options):
     if tm:
         protein.coord = np.concatenate(prot_coord)
 
-    # Extract the parts of the protein that are in either leaflet
-    mem_mask_up = (0 < protein.coord[:,2]) & (protein.coord[:,2] < 2.4)
-    mem_mask_lo = (0 > protein.coord[:,2]) & (protein.coord[:,2] > -2.4)
-    prot_up = protein.coord[mem_mask_up, :2]
-    prot_lo = protein.coord[mem_mask_lo, :2]
-
     # Current residue ID is set to that of the last atom
     resi = 0 
-    if protein.atoms:
+    if protein:
         resi = protein.atoms[-1][2]
-
-    atid      = len(protein)+1
 
     ## 2. Lipids
 
-    membrane = Structure()
+    lipid = ((lipL, absL, relL), (lipU, absU, relU))
+    membrane, added = setup_membrane(pbc, protein, lipid, options)
+    molecules.extend(added)
 
-    num_up, num_lo = [], []
-    if lipL:
-        # Lipids are added on grid positions, using the prototypes defined above.
-        # If a grid position is already occupied by protein, the position is untagged.
-
-        lipd = lo_lipd
-
-        # Number of lipids in x and y in lower leaflet if there were no solute
-        lo_lipids_x = int(pbc.x/lipd+0.5)
-        lo_lipdx    = pbc.x/lo_lipids_x
-        lo_rlipx    = range(lo_lipids_x)
-        lo_lipids_y = int(pbc.y/lipd+0.5)
-        lo_lipdy    = pbc.y/lo_lipids_y
-        lo_rlipy    = range(lo_lipids_y)
-
-        if options["uparea"]:
-            lipd = up_lipd
-
-        # Number of lipids in x and y in upper leaflet if there were no solute
-        up_lipids_x = int(pbc.x/lipd+0.5)
-        up_lipdx    = pbc.x/up_lipids_x
-        up_rlipx    = range(up_lipids_x)
-        up_lipids_y = int(pbc.y/lipd+0.5)
-        up_lipdy    = pbc.y/up_lipids_y
-        up_rlipy    = range(up_lipids_y)
-
-        # Set up grids to check where to place the lipids
-        grid_lo = [[0 for j in lo_rlipy] for i in lo_rlipx]
-        grid_up = [[0 for j in up_rlipy] for i in up_rlipx]
-
-        ## NEW GRID
-        gx = slice(0, pbc.x, int(pbc.x/lipd + 0.5)*1j)
-        gy = slice(0, pbc.x, int(pbc.x/lipd + 0.5)*1j)
-        grid_l = np.mgrid[gx, gy][:,:-1,:-1].reshape((2,-1)).T
-        grid_u = np.mgrid[gx, gy][:,:-1,:-1].reshape((2,-1)).T
-        # If there is a protein, mark the corresponding POINTS as occupied
-        occupied_lo = np.zeros(grid_l.shape[0])
-        occupied_up = np.zeros(grid_u.shape[0])
-        for prot in tm:
-            upmask = (prot.coord[:,2] <  2.4) & (prot.coord[:,2] > 0)
-            lomask = (prot.coord[:,2] > -2.4) & (prot.coord[:,2] < 0)
-            occupied_lo += occupancy(grid_l, prot.coord[lomask,:2], lo_lipd)
-            occupied_up += occupancy(grid_u, prot.coord[upmask,:2], up_lipd)
-        maxd = max(occupied_lo.max(), occupied_up.max())
-        if maxd:
-            occupied_up = (occupied_up/maxd) > options["fudge"]
-            occupied_lo = (occupied_lo/maxd) > options["fudge"]
-        #print(absU, sum(~occupied_up.astype('bool')), 
-        #      absL, sum(~occupied_lo.astype('bool')))
-
-        # If there is a protein, mark the corresponding cells as occupied
-        if protein:
-            # Calculate number density per cell
-            for i in prot_lo:
-                grid_lo[ int(lo_lipids_x*i[0]/pbc.rx)%lo_lipids_x ][ int(lo_lipids_y*i[1]/pbc.ry)%lo_lipids_y ] += 1
-            for i in prot_up:
-                grid_up[ int(up_lipids_x*i[0]/pbc.rx)%up_lipids_x ][ int(up_lipids_y*i[1]/pbc.ry)%up_lipids_y ] += 1
-
-        # Determine which cells to consider occupied, given the fudge factor
-        # The array is changed to boolean type here
-        maxd    = float(max([max(i) for i in grid_up+grid_lo]))
-        if  maxd == 0:
-            if protein:
-                print("; The protein seems not to be inside the membrane.", file=sys.stderr)
-                print("; Run with -orient to put it in.", file=sys.stderr)
-            maxd = 1
-
-
-        fudge   = options["fudge"]
-        grid_up = [[(j/maxd) <= fudge for j in i] for i in grid_up]
-        grid_lo = [[(j/maxd) <= fudge for j in i] for i in grid_lo]
-
-
-        # If we don't want lipids inside of the protein
-        # we also mark everything from the center up to the first cell filled
-        if not options["inside"]:
-
-            # Upper leaflet
-            marked = [(i, j) for i in up_rlipx for j in up_rlipy if not grid_up[i][j]]
-            if marked:
-                # Find the center
-                cx, cy  = [float(sum(i))/len(marked) for i in zip(*marked)]
-                for i, j in marked:
-                    md = int(abs(i-cx)+abs(j-cy)) # Manhattan length/distance
-                    for f in range(md):
-                        ii = int(cx+f*(i-cx)/md)
-                        jj = int(cy+f*(j-cy)/md)
-                        grid_up[ii][jj] = False
-
-            # Lower leaflet
-            marked = [(i, j) for i in lo_rlipx for j in lo_rlipy if not grid_lo[i][j]]
-            if marked:
-                # Find the center
-                cx, cy  = [float(sum(i))/len(marked) for i in zip(*marked)]
-                for i, j in marked:
-                    md = int(abs(i-cx)+abs(j-cy)) # Manhattan length
-                    for f in range(md):
-                        ii = int(cx+f*(i-cx)/md)
-                        jj = int(cy+f*(j-cy)/md)
-                        grid_lo[ii][jj] = False
-
-
-        # If we make a circular patch, we flag the cells further from the
-        # protein or box center than the given radius as occupied.
-        if options["disc"]:
-            if protein:
-                cx, cy = protein.center[:2]
-            else:
-                cx, cy = 0.5*pbc.x, 0.5*pbc.y
-            for i in range(len(grid_lo)):
-                for j in range(len(grid_lo[i])):
-                    if (i*pbc.x/lo_lipids_x - cx)**2 + (j*pbc.y/lo_lipids_y - cy)**2 > options["disc"]**2:
-                        grid_lo[i][j] = False
-            for i in range(len(grid_up)):
-                for j in range(len(grid_up[i])):
-                    if (i*pbc.x/up_lipids_x - cx)**2 + (j*pbc.y/up_lipids_y - cy)**2 > options["disc"]**2:
-                        grid_up[i][j] = False
-
-
-        # If we need to add a hole, we simply flag the corresponding cells
-        # as occupied. The position of the hole depends on the type of PBC,
-        # to ensure an optimal arrangement of holes around the protein. If
-        # there is no protein, the hole is just put in the center.
-        if options["hole"]:
-            # Lower leaflet
-            if protein:
-                if ("square".startswith(options["pbc"]) or
-                    "rectangular".startswith(options["pbc"])):
-                    hx, hy = (0, 0)
-                else:
-                    hx, hy = (0, int(lo_lipids_y*math.cos(math.pi/6)/9+0.5))
-            else:
-                hx, hy = (int(0.5*lo_lipids_x), int(0.5*lo_lipids_y))
-            hr = int(options["hole"]/min(lo_lipdx,  lo_lipdy)+0.5)
-            ys = int(lo_lipids_x*pbc.box[1,0]/pbc.box[0,0]+0.5)
-            print("; Making a hole with radius %f nm centered at grid cell (%d,%d)"%(options["hole"], hx, hy), hr, file=sys.stderr)
-            hr -= 1
-            for ii in range(hx-hr-1, hx+hr+1):
-                for jj in range(hx-hr-1, hx+hr+1):
-                    xi, yj = ii, jj
-                    if (ii-hx)**2+(jj-hy)**2 < hr**2:
-                        if jj < 0:
-                            xi += ys
-                            yj += lo_lipids_y
-                        if jj >= lo_lipids_y:
-                            xi -= ys
-                            yj -= lo_lipids_y
-                        if xi < 0:
-                            xi += lo_lipids_x
-                        if xi >= lo_lipids_x:
-                            xi -= lo_lipids_x
-                        grid_lo[xi][yj] = False
-                        grid_up[xi][yj] = False
-            # Upper leaflet
-            if protein:
-                if ("square".startswith(options["pbc"]) or
-                    "rectangular".startswith(options["pbc"])):
-                    hx, hy = (0, 0)
-                else:
-                    hx, hy = (0, int(up_lipids_y*math.cos(math.pi/6)/9+0.5))
-            else:
-                hx, hy = (int(0.5*up_lipids_x), int(0.5*up_lipids_y))
-            hr = int(options["hole"]/min(up_lipdx, up_lipdy)+0.5)
-            ys = int(up_lipids_x*pbc.box[1,0]/pbc.box[0,0]+0.5)
-            print("; Making a hole with radius %f nm centered at grid cell (%d,%d)"%(options["hole"], hx, hy), hr, file=sys.stderr)
-            hr -= 1
-            for ii in range(hx-hr-1, hx+hr+1):
-                for jj in range(hx-hr-1, hx+hr+1):
-                    xi, yj = ii, jj
-                    if (ii-hx)**2+(jj-hy)**2 < hr**2:
-                        if jj < 0:
-                            xi += ys
-                            yj += up_lipids_y
-                        if jj >= up_lipids_y:
-                            xi -= ys
-                            yj -= up_lipids_y
-                        if xi < 0:
-                            xi += up_lipids_x
-                        if xi >= up_lipids_x:
-                            xi -= up_lipids_x
-                        grid_up[xi][yj] = False
-
-        # Set the XY coordinates
-        # To randomize the lipids we add a random number which is used for sorting
-        upper, lower = [], []
-        for i in xrange(up_lipids_x):
-            for j in xrange(up_lipids_y):
-                if grid_up[i][j]:
-                    upper.append((random.random(), i*pbc.x/up_lipids_x, j*pbc.y/up_lipids_y))
-        for i in xrange(lo_lipids_x):
-            for j in xrange(lo_lipids_y):
-                if grid_lo[i][j]:
-                    lower.append((random.random(), i*pbc.x/lo_lipids_x, j*pbc.y/lo_lipids_y))
-
-        # Sort on the random number
-        upper.sort()
-        lower.sort()
-
-        # Extract coordinates, taking asymmetry in account
-        asym  = options["asymmetry"] or 0
-        upper = [i[1:] for i in upper[max(0, asym):]]
-        lower = [i[1:] for i in lower[max(0, -asym):]]
-
-        print("; X: %.3f (%d bins) Y: %.3f (%d bins) in upper leaflet"%(pbc.x, up_lipids_x, pbc.y, up_lipids_y), file=sys.stderr)
-        print("; X: %.3f (%d bins) Y: %.3f (%d bins) in lower leaflet"%(pbc.x, lo_lipids_x, pbc.y, lo_lipids_y), file=sys.stderr)
-        print("; %d lipids in upper leaflet, %d lipids in lower leaflet"%(len(upper), len(lower)), file=sys.stderr)
-
-        ##> Types of lipids, relative numbers, fractions and numbers
-
-        # Upper leaflet (+1)
-        numbers = determine_molecule_numbers(len(upper), lipU, absU, relU)
-        lip_up     = [l for l, i in numbers for j in range(i)]
-        leaf_up    = ( 1, zip(lip_up, upper), up_lipd, up_lipdx, up_lipdy)
-        molecules.extend(numbers)
-
-        # Lower leaflet (-1)
-        numbers = determine_molecule_numbers(len(lower), lipL, absL, relL)
-        lip_lo = [l for l, i in numbers for j in range(i)]
-        leaf_lo = (-1, zip(lip_lo, lower), lo_lipd, lo_lipdx, lo_lipdy)
-        molecules.extend(numbers)
-
-        ##< Done determining numbers per lipid
-
-        ##> Building lipids
-
-        kick       = options["randkick"]
-
-        mematoms = []
-        memcoords = []
-
-        # Build the membrane
-
-        ## ==> LIPID  BOOKKEEPING:
-        # Read lipids defined in insane
-        liplist = lipids.get_lipids()
-        # Then add lipids from file
-        liplist.add_from_files(options["molfile"])
-        # Last, add lipids from command line
-        liplist.add_from_def(options["lipnames"], options["lipheads"], options["liplinks"],
-                             options["liptails"], options["lipcharge"])
-
-        for leaflet, leaf_lip, lipd, lipdx, lipdy in [leaf_up, leaf_lo]:
-            for lipid, pos in leaf_lip:
-                # Increase the residue number by one
-                resi += 1
-                # Set the random rotation for this lipid
-                rangle   = 2*random.random()*math.pi
-                rcos     = math.cos(rangle)
-                rsin     = math.sin(rangle)
-                rcosx    = rcos*lipdx*2/3
-                rcosy    = rcos*lipdy*2/3
-                rsinx    = rsin*lipdx*2/3
-                rsiny    = rsin*lipdy*2/3
-                # Fetch the atom list with x, y, z coordinates
-                at, ax, ay, az = zip(*liplist[lipid].build(diam=lipd))
-                # The z-coordinates are spaced at 0.3 nm,
-                # starting with the first bead at 0.15 nm
-                az = [ leaflet*(0.5+(i-min(az)))*options["beaddist"] for i in az ]
-                xx = np.array((ax, ay)).T
-                nx = np.dot(xx,(rcosx, -rsiny)) + pos[0] + lipdx/2 + [ kick*random.random() for i in az ]
-                ny = np.dot(xx,(rsinx, rcosy)) + pos[1] + lipdy/2 + [ kick*random.random() for i in az ]
-                # Add the atoms to the list
-                memcoords.extend([(nx[i], ny[i], az[i]) for i in range(len(at))])
-                mematoms.extend([(at[i], lipid, resi, 0, 0, 0) for i in range(len(at))])
-                atid += len(at)
-
-        ##< Done building lipids
-
-        membrane.coord = memcoords
-        membrane.atoms = mematoms
-
+    if added:
         # Now move everything to the center of the box before adding solvent
         mz  = pbc.z/2
-        z   = [ i[2] for i in (protein+membrane).coord ]
+        z   = (protein+membrane).coord[:,2]
         mz -= (max(z)+min(z))/2
         protein.coord += (0, 0, mz)
         membrane.coord += (0, 0, mz)
 
+    if membrane:
+        resi = membrane.atoms[-1][2]
 
     ################
     ## 3. SOLVENT ##
@@ -1165,16 +1180,15 @@ def old_main(argv, options):
                     rz = z + qp*qz + qq*pz + qw*(qx*py-qy*px)
                     sol.atoms.append((atnm, resn, resi, 0, 0, 0))
                     solcoord.append((rx, ry, rz))
-                    atid += 1
             else:
                 sol.atoms.append((solmol and solmol[0][0] or resn,
                                   resn, resi,
                                   0, 0, 0))
                 solcoord.append((x, y, z))
-                atid += 1
         sol.coord = solcoord
     else:
         solvent, sol = None, Structure()
+
 
     return (molecules, protein, membrane, sol,
             lipU, lipL, relU, relL, pbc.box)
