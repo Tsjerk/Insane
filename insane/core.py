@@ -594,6 +594,152 @@ def resize_pbc_for_lipids(pbc, relL, relU, absL, absU,
         pbc.box[:2,:] *= math.sqrt(area_scale)
 
 
+def setup_solvent(pbc, protein, membrane, options):
+    # Charge of the system so far
+
+    if not options["solvent"]:
+        return Structure(), []
+
+    solv = options["solvent"]
+    mcharge = membrane.charge
+    pcharge = protein.charge
+
+    # Set up a grid
+    d        = 1/options["soldiam"]
+
+    nx, ny, nz = int(1+d*pbc.x), int(1+d*pbc.y), int(1+d*pbc.z)
+    dx, dy, dz = pbc.x/nx, pbc.y/ny, pbc.z/nz
+    excl, hz  = int(nz*options["solexcl"]/pbc.z), int(0.5*nz)
+
+    zshift   = 0
+    if membrane:
+        memz   = [i[2] for i in membrane.coord]
+        midz   = (max(memz)+min(memz))/2
+        hz     = int(nz*midz/pbc.z)  # Grid layer in which the membrane is located
+        zshift = (hz+0.5)*nz - midz # Shift of membrane middle to center of grid layer
+
+    # Initialize a grid of solvent, spanning the whole cell
+    # Exclude all cells within specified distance from membrane center
+    grid   = [[[i < hz-excl or i > hz+excl for i in xrange(nz)] for j in xrange(ny)] for i in xrange(nx)]
+
+    # Flag all cells occupied by protein or membrane
+    for coord in (protein+membrane).coord:
+        for x, y, z in coord + 0.33*pointsOnSphere(20):
+            if z >= pbc.z:
+                x -= pbc.box[2,0]
+                y -= pbc.box[2,1]
+                z -= pbc.box[2,2]
+            if z < 0:
+                x += pbc.box[2,0]
+                y += pbc.box[2,1]
+                z += pbc.box[2,2]
+            if y >= pbc.y:
+                x -= pbc.box[1,0]
+                y -= pbc.box[1,1]
+            if y < 0:
+                x += pbc.box[1,0]
+                y += pbc.box[1,1]
+            if x >= pbc.x:
+                x -= pbc.box[0,0]
+            if x < 0:
+                x += pbc.box[0,0]
+            grid[int(nx*x/pbc.rx)][int(ny*y/pbc.ry)][int(nz*z/pbc.rz)] = False
+
+    ##-T grid should be a wrapper around a numpy.ndarray
+    # Set the center for each solvent molecule
+    kick = options["solrandom"]
+    grid = [ (random.random(), (i+0.5+random.random()*kick)*dx, (j+0.5+random.random()*kick)*dy, (k+0.5+random.random()*kick)*dz)
+             for i in xrange(nx) for j in xrange(ny) for k in xrange(nz) if grid[i][j][k] ]
+
+    # Sort on the random number
+    grid.sort()
+
+    # 'grid' contains all positions on which a solvent molecule can be placed.
+    # The number of positions is taken as the basis for determining the salt concentration.
+    # This is fine for simple salt solutions, but may not be optimal for complex mixtures
+    # (like when mixing a 1M solution of this with a 1M solution of that
+
+    # First get names and relative numbers for each solvent
+    solnames, solabs, solnums = zip(*solv)
+    solnames, solnums = list(solnames), list(solnums)
+    totS       = float(sum(solnums))
+
+    # Set the number of ions to add
+    nna, ncl = 0, 0
+    if options["salt"]:
+
+        # If the concentration is set negative, set the charge to zero
+        if options["salt"].startswith("-"):
+            charge = 0
+            options["salt"] = -float(options["salt"])
+        else:
+            options["salt"] = float(options["salt"])
+
+        # Determine charge to use, either determined or given on command line
+        if options["charge"] != "0":
+            charge = (options["charge"] != "auto") and int(options["charge"]) or charge
+        else:
+            charge = 0
+
+        # Determine number of sodium and chloride to add
+        concentration = options["salt"]
+        nsol = ("SPC" in solnames and 1 or 4)*len(grid)
+        ncl  = max(max(0, charge), int(.5+.5*(concentration*nsol/(27.7+concentration)+charge)))
+        nna  = ncl - charge
+
+    # Correct number of grid cells for placement of solvent
+    ngrid   = len(grid) - nna - ncl
+    num_sol = [int(ngrid*i/totS) for i in solnums]
+
+
+    # Add salt to solnames and num_sol
+    if nna:
+        solnames.append("NA+")
+        num_sol.append(nna)
+        solv.append("NA+")
+    if ncl:
+        solnames.append("CL-")
+        num_sol.append(ncl)
+        solv.append("CL-")
+
+
+    # Names and grid positions for solvent molecules
+    solvent    = zip([s for i, s in zip(num_sol, solnames) for j in range(i)], grid)
+
+    # Build the solvent
+    resi = 0
+    if protein:
+        resi = protein.atoms[-1][2]
+    if membrane:
+        resi = membrane.atoms[-1][2]
+    sol = Structure()
+    solcoord = []
+    for resn, (rndm, x, y, z) in solvent:
+        resi += 1
+        solmol = SOLVENTS.get(resn)
+        if solmol and len(solmol) > 1:
+            # Random rotation (quaternion)
+            u,  v,  w       = random.random(), 2*math.pi*random.random(), 2*math.pi*random.random()
+            s,  t           = math.sqrt(1-u), math.sqrt(u)
+            qw, qx, qy, qz  = s*math.sin(v), s*math.cos(v), t*math.sin(w), t*math.cos(w)
+            qq              = qw*qw-qx*qx-qy*qy-qz*qz
+            for atnm, (px, py, pz) in solmol:
+                qp = 2*(qx*px + qy*py + qz*pz)
+                rx = x + qp*qx + qq*px + qw*(qy*pz-qz*py)
+                ry = y + qp*qy + qq*py + qw*(qz*px-qx*pz)
+                rz = z + qp*qz + qq*pz + qw*(qx*py-qy*px)
+                sol.atoms.append((atnm, resn, resi, 0, 0, 0))
+                solcoord.append((rx, ry, rz))
+        else:
+            sol.atoms.append((solmol and solmol[0][0] or resn,
+                              resn, resi,
+                              0, 0, 0))
+            solcoord.append((x, y, z))
+    sol.coord = solcoord
+
+    return sol, zip(solnames, num_sol)
+
+
 def setup_membrane(pbc, protein, lipid, options):
     membrane = Structure()
     molecules = []
@@ -1045,152 +1191,10 @@ def old_main(argv, options):
     ## 3. SOLVENT ##
     ################
 
-    # Charge of the system so far
 
-    mcharge = membrane.charge
-    pcharge = protein.charge
+    solvent, added = setup_solvent(pbc, protein, membrane, options)
 
-    solv      = options["solvent"]
-
-    if solv:
-
-        # Set up a grid
-        d        = 1/options["soldiam"]
-
-        nx, ny, nz = int(1+d*pbc.x), int(1+d*pbc.y), int(1+d*pbc.z)
-        dx, dy, dz = pbc.x/nx, pbc.y/ny, pbc.z/nz
-        excl, hz  = int(nz*options["solexcl"]/pbc.z), int(0.5*nz)
-
-        zshift   = 0
-        if membrane:
-            memz   = [i[2] for i in membrane.coord]
-            midz   = (max(memz)+min(memz))/2
-            hz     = int(nz*midz/pbc.z)  # Grid layer in which the membrane is located
-            zshift = (hz+0.5)*nz - midz # Shift of membrane middle to center of grid layer
-
-        # Initialize a grid of solvent, spanning the whole cell
-        # Exclude all cells within specified distance from membrane center
-        grid   = [[[i < hz-excl or i > hz+excl for i in xrange(nz)] for j in xrange(ny)] for i in xrange(nx)]
-
-        # Flag all cells occupied by protein or membrane
-        for coord in (protein+membrane).coord:
-            for x, y, z in coord + 0.33*pointsOnSphere(20):
-                if z >= pbc.z:
-                    x -= pbc.box[2,0]
-                    y -= pbc.box[2,1]
-                    z -= pbc.box[2,2]
-                if z < 0:
-                    x += pbc.box[2,0]
-                    y += pbc.box[2,1]
-                    z += pbc.box[2,2]
-                if y >= pbc.y:
-                    x -= pbc.box[1,0]
-                    y -= pbc.box[1,1]
-                if y < 0:
-                    x += pbc.box[1,0]
-                    y += pbc.box[1,1]
-                if x >= pbc.x:
-                    x -= pbc.box[0,0]
-                if x < 0:
-                    x += pbc.box[0,0]
-                grid[int(nx*x/pbc.rx)][int(ny*y/pbc.ry)][int(nz*z/pbc.rz)] = False
-
-        ##-T grid should be a wrapper around a numpy.ndarray
-        # Set the center for each solvent molecule
-        kick = options["solrandom"]
-        grid = [ (random.random(), (i+0.5+random.random()*kick)*dx, (j+0.5+random.random()*kick)*dy, (k+0.5+random.random()*kick)*dz)
-                 for i in xrange(nx) for j in xrange(ny) for k in xrange(nz) if grid[i][j][k] ]
-
-        # Sort on the random number
-        grid.sort()
-
-        # 'grid' contains all positions on which a solvent molecule can be placed.
-        # The number of positions is taken as the basis for determining the salt concentration.
-        # This is fine for simple salt solutions, but may not be optimal for complex mixtures
-        # (like when mixing a 1M solution of this with a 1M solution of that
-
-        # First get names and relative numbers for each solvent
-        solnames, solabs, solnums = zip(*solv)
-        solnames, solnums = list(solnames), list(solnums)
-        totS       = float(sum(solnums))
-
-        # Set the number of ions to add
-        nna, ncl = 0, 0
-        if options["salt"]:
-
-            # If the concentration is set negative, set the charge to zero
-            if options["salt"].startswith("-"):
-                charge = 0
-                options["salt"] = -float(options["salt"])
-            else:
-                options["salt"] = float(options["salt"])
-
-            # Determine charge to use, either determined or given on command line
-            if options["charge"] != "0":
-                charge = (options["charge"] != "auto") and int(options["charge"]) or charge
-            else:
-                charge = 0
-
-            # Determine number of sodium and chloride to add
-            concentration = options["salt"]
-            nsol = ("SPC" in solnames and 1 or 4)*len(grid)
-            ncl  = max(max(0, charge), int(.5+.5*(concentration*nsol/(27.7+concentration)+charge)))
-            nna  = ncl - charge
-
-        # Correct number of grid cells for placement of solvent
-        ngrid   = len(grid) - nna - ncl
-        num_sol = [int(ngrid*i/totS) for i in solnums]
-
-
-        # Add salt to solnames and num_sol
-        if nna:
-            solnames.append("NA+")
-            num_sol.append(nna)
-            solv.append("NA+")
-        if ncl:
-            solnames.append("CL-")
-            num_sol.append(ncl)
-            solv.append("CL-")
-
-
-        # Names and grid positions for solvent molecules
-        solvent    = zip([s for i, s in zip(num_sol, solnames) for j in range(i)], grid)
-
-
-        # Extend the list of molecules (for the topology)
-        molecules.extend(zip(solnames, num_sol))
-
-
-        # Build the solvent
-        sol = Structure()
-        solcoord = []
-        for resn, (rndm, x, y, z) in solvent:
-            resi += 1
-            solmol = SOLVENTS.get(resn)
-            if solmol and len(solmol) > 1:
-                # Random rotation (quaternion)
-                u,  v,  w       = random.random(), 2*math.pi*random.random(), 2*math.pi*random.random()
-                s,  t           = math.sqrt(1-u), math.sqrt(u)
-                qw, qx, qy, qz  = s*math.sin(v), s*math.cos(v), t*math.sin(w), t*math.cos(w)
-                qq              = qw*qw-qx*qx-qy*qy-qz*qz
-                for atnm, (px, py, pz) in solmol:
-                    qp = 2*(qx*px + qy*py + qz*pz)
-                    rx = x + qp*qx + qq*px + qw*(qy*pz-qz*py)
-                    ry = y + qp*qy + qq*py + qw*(qz*px-qx*pz)
-                    rz = z + qp*qz + qq*pz + qw*(qx*py-qy*px)
-                    sol.atoms.append((atnm, resn, resi, 0, 0, 0))
-                    solcoord.append((rx, ry, rz))
-            else:
-                sol.atoms.append((solmol and solmol[0][0] or resn,
-                                  resn, resi,
-                                  0, 0, 0))
-                solcoord.append((x, y, z))
-        sol.coord = solcoord
-    else:
-        solvent, sol = None, Structure()
-
-
-    return (molecules, protein, membrane, sol,
+    return (molecules, protein, membrane, solvent,
             lipU, lipL, relU, relL, pbc.box)
 
 
