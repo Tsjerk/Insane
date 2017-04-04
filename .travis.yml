@@ -23,7 +23,7 @@ script:
     - |
         if [[ $BUILD == 'test' ]]; \
         then \
-        cd tests && nosetests -v; \
+        cd tests && python run_tests.py -v; \
         fi
     - |
         if [[ $BUILD == 'package' ]]; \
