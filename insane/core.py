@@ -601,8 +601,7 @@ def setup_solvent(pbc, protein, membrane, options):
         return Structure(), []
 
     solv = options["solvent"]
-    mcharge = membrane.charge
-    pcharge = protein.charge
+    charge = membrane.charge + protein.charge
 
     # Set up a grid
     d        = 1/options["soldiam"]
