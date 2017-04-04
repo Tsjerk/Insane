@@ -1,9 +1,11 @@
-#Insane - A simple, versatile tool for building coarse-grained simulation systems
+# Insane - A simple, versatile tool for building coarse-grained simulation systems
+
+[![Build Status](https://travis-ci.org/Tsjerk/Insane.svg?branch=master)](https://travis-ci.org/Tsjerk/Insane)
 
 Insane (INSert membrANE) is a versatile tool to build coarse-grained simulation
 systems containing solutes, lipid bilayers, and/or solvents. It is initially
-aimed at the Martini force field but can be used for other models. It can
-write PDB or gromacs files.
+aimed at the [Martini force field](http://cgmartini.nl) but can be used for
+other models. It can write PDB or [gromacs][] files.
 
 Using insane, you can build a system containing a transmembrane protein
 included in a lipid bilayers, with water and ions with the following command
@@ -57,7 +59,7 @@ pip2 install insane
 ```
 
 We recommend the use of python virtual environments. Read more about them on
-the MDAnalysis website.
+the [MDAnalysis website](https://raw.githubusercontent.com/MDAnalysis/MDAnalysis.github.io/54c1d37913dc1d87fdc66b27c773bbb51c62a00d/_posts/2017-11-11-environments.md).
 
 ## Quick start
 
@@ -71,7 +73,7 @@ insane -l POPC -box 10,10,7 -sol W -o bilayer.gro -p topol.top
 
 The `-l` argument tells insane to include the given lipid. The number of lipids
 to include is determined from the area per lipid and the size of the box; the
-default area per lipid in 0.6nm².
+default area per lipid in 0.6 nm².
 
 The `-box` argument defines the dimensions of the box. Here, we set an
 orthorhombic periodic box that is 10 nm along the X and Y axes, and 7 nm along
@@ -82,12 +84,13 @@ include Martini water. The total amount is defined from the free volume of the
 box, and the solvent diameter (0.5 nm per default).
 
 The `-o` and `-p` arguments specify the output of the program. With `-o
-bilayer.gro`, insane will write the system structure in a GRO file usable with
-gromacs. Insane can also write PDB files if the output file as the '.pdb' file
-extension. With `-p topol.top`, insane will write a template TOP file to be
-used with gromacs. If the `-p` argument is omitted, insane writes the content
-of the system on the standard output in a form that can be appended at the end
-of an existing TOP file.
+bilayer.gro`, insane will write the system structure in a [GRO
+file](http://manual.gromacs.org/current/online/gro.html) usable with
+[gromacs][]. Insane can also write PDB files if the output file as the '.pdb'
+file extension. With `-p topol.top`, insane will write a template TOP file to
+be used with [gromacs][]. If the `-p` argument is omitted, insane writes the
+content of the system on the standard output in a form that can be appended at
+the end of an existing TOP file.
 
 ### Create a more complex bilayer
 
@@ -117,11 +120,12 @@ composed of 90% of regular Martini water and 10% Martini anti-freeze water.
 ### Solvate a protein
 
 Insane can setup protein systems. Here we create a box of solvent around
-a protein. Note that insane does not prepare the protein itself. Use martinize
-to coarse grain a protein structure.
+a protein. Note that insane does not prepare the protein itself. Use
+[martinize](http://cgmartini.nl/index.php/tools2/proteins-and-bilayers) to
+coarse grain a protein structure.
 
 ```bash
-insane -o system.gro -p topol.top -f protein.pdb -d 7 -sol W -salt 0 -exclude 0
+insane -o system.gro -p topol.top -f protein.pdb -d 7 -sol W -salt 0
 ```
 Solutes, including proteins, can be read from a GRO or a PDB file provided with
 the `-f` argument.
@@ -131,12 +135,44 @@ between two periodic images is greater than 7 nm. By default, in the absence of
 a membrane, insane build a rhombic dodecahedral box. Setting the periodic box
 with `-box`, or setting the box geometry with `-pbc`, overwrite that default.
 
+If the `-salt` argument is set, insane will add ions to the system. With
+`-salt` is set to 0, insane will add enough chloride or sodium ions to
+neutralize the system charge. Is `-salt` is set to any positive value, it is
+read as the concentration of ions in molar.
 
 ### Insert a protein in a membrane
 
-### Create a box of solvent
+Now that we have seen how to build a membrane and how to build a protein
+system, we can insert a protein in a lipid bilayer.
+
+```bash
+insane \
+    -o system.gro -p topol.top \
+    -d 10 -pbc hexagonal \
+    -l POPC -sol PW \
+    -f protein.gro -center
+```
+
+Here, the protein structure we give with the `-f` argument is centered in the
+box along the Z axis with the `-center` argument.
+
+We build this system with [Martini polarizable
+water](http://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1000810)
+using `-sol PW`.
+
+With the `-pbc` option we set the shape of the periodic box to a prism with
+a hexagonal base.
 
 ## Get help
 
+Get the list of all the arguments by running `insane -h`.
+
+You can get additional help in the ["Tools" section of the Martini
+forum](http://cgmartini.nl/index.php/component/kunena/9-tools).
+
 ## Contribute
 
+Insane is hosted on [Github](https://github.com/Tsjerk/Insane). Please, report
+there any [issue](https://github.com/Tsjerk/Insane/issues) you encounter.
+
+[gromacs]: http://www.gromacs.org
