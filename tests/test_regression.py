@@ -38,6 +38,7 @@ from __future__ import print_function
 import contextlib
 import functools
 import glob
+import mock
 import os
 import random
 import shutil
@@ -216,8 +217,9 @@ def _run_internal(arguments):
     command = [INSANE] + arguments
     out = StringIO()
     err = StringIO()
-    with utils._redirect_out_and_err(out, err):
-        returncode = insane.cli.main(command)
+    with mock.patch('random.random', return_value=0.1):
+        with utils._redirect_out_and_err(out, err):
+            returncode = insane.cli.main(command)
     out = out.getvalue()
     err = err.getvalue()
     return out, err, returncode
