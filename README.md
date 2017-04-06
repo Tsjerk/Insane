@@ -68,16 +68,17 @@ the [MDAnalysis website](https://raw.githubusercontent.com/MDAnalysis/MDAnalysis
 The following command creates a hydrated POPC bilayer:
 
 ```bash
-insane -l POPC -box 10,10,7 -sol W -o bilayer.gro -p topol.top
+insane -l POPC -d 10 -dz 7 -sol W -o bilayer.gro -p topol.top
 ```
 
 The `-l` argument tells insane to include the given lipid. The number of lipids
 to include is determined from the area per lipid and the size of the box; the
 default area per lipid in 0.6 nm².
 
-The `-box` argument defines the dimensions of the box. Here, we set an
-orthorhombic periodic box that is 10 nm along the X and Y axes, and 7 nm along
-the Z axis.
+With `-d` and `-dz`, we specify the dimensions of the box. Here we create
+a hexagonal prism box where images are separated by 10 nm in the XY plane, and
+7 nm in the Z dimension. The shape of the box can be changed with the `-pbc`
+argument.
 
 The `-sol` argument tells insane to include some solvent in the box. Here we
 include Martini water. The total amount is defined from the free volume of the
