@@ -36,26 +36,29 @@ python2.7 -c 'import numpy'
 If this command line outputs an error message, you need to instal either python
 or numpy.
 
-Download the latest version of insane as a single executable.
+Download the [latest version of
+insane](https://github.com/Tsjerk/Insane/releases/download/v1.0rc1/insane) as
+a single executable.
 
 Run insane: `./insane -h`.
 
 ### Install insane as a python module
 
-Insane is available on pypi and can be installed using pip. To install insane
-for the current user, run
+Insane is available on [pypi](https://pypi.python.org/pypi/insane/1.0rc1) and
+can be installed using pip. To install insane for the current user, run
 
 ```bash
 pip2 install --user insane
 ```
 
-Pip installs insane in `~/.local/lib/python2.7/site-packages`. Check that the
-directory exists and that it is in your `PYTHON_PATH` and in your `PATH`.
+Pip installs the insane in `~/.local/lib/python2.7/site-packages`. Check that the
+directory exists and that it is in your `PYTHONPATH`. The insane program is
+installed in `~/.local/bin`, make sure this directory is in your `PATH`.
 
 To install insane system wide, run
 
 ```bash
-pip2 install insane
+sudo pip2 install insane
 ```
 
 We recommend the use of python virtual environments. Read more about them on
