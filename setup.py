@@ -36,7 +36,7 @@ setup(
         'Programming Language :: Python :: 2.7',
     ],
 
-    install_requires=['numpy'],
+    install_requires=['numpy', 'simopt'],
 
     tests_requires=['nose'],
 
