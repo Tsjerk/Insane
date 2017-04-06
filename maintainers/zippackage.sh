@@ -25,7 +25,7 @@ rsync -ruv ../* build \
 cd build
 
 # Download simopt
-wget "${SIMOPT_URL}" -O simopt.py
+wget "${SIMOPT_URL}" -O simopt.py || curl -O "${SIMOPT_URL}" 
 
 # __main__.py is the entry point of the script. We do not want it in the
 # module as it makes no sense to have it there, so we write it here.
