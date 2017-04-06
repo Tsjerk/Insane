@@ -17,13 +17,13 @@ install:
     - |
         if [[ $BUILD == 'test' ]]; \
         then \
-        pip install nose; \
+        pip install nose coverage; \
         fi
 script:
     - |
         if [[ $BUILD == 'test' ]]; \
         then \
-        cd tests && nosetests -v; \
+        cd tests && python run_tests.py -v --with-coverage --cover-package=insane; \
         fi
     - |
         if [[ $BUILD == 'package' ]]; \
