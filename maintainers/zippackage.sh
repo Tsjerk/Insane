@@ -18,8 +18,8 @@ SIMOPT_URL='https://raw.githubusercontent.com/Tsjerk/simopt/master/simopt.py'
 # We make a copy of the repository that we can modify without worrying to much.
 mkdir -p build
 rsync -ruv ../* build \
-    --exclude 'tests' \
-    --exclude 'maintainers' \
+    --exclude='tests' \
+    --exclude='maintainers' \
     --exclude='*.egg-info' \
     --exclude='setup.py'
 cd build

@@ -19,7 +19,7 @@
 import sys
 
 import simopt
-from simopt import MULTI
+from simopt import MULTI, MA
 
 from . import core
 from .converters import vector, box3d, molspec
@@ -32,7 +32,7 @@ OPTIONS = simopt.Options([
     Input/output related options
     """,
         (0, "-f", "solute",      str,         1,        None, MULTI, "Input GRO or PDB file 1: Solute (e.g. Protein)"),
-        (0, "-o", "output",      str,         1,        None,     0, "Output GRO file: Membrane with Protein"),
+        (0, "-o", "output",      str,         1,        None,    MA, "Output GRO file: Membrane with Protein"),
         (0, "-p", "topology",    str,         1,        None,     0, "Optional rudimentary topology file"),
         """
     Periodic boundary conditions
@@ -116,6 +116,9 @@ def main(argv):
     except simopt.SimoptHelp:
         print(OPTIONS.help(argv[1:]))
         return 0
+    except simopt.MissingMandatoryError as e:
+        print(e)
+        return 3
     except simopt.Usage as e:
         print(e)
         return 1
