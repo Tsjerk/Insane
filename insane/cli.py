@@ -37,10 +37,10 @@ OPTIONS = simopt.Options([
         """
     Periodic boundary conditions
     If -d is given, set up PBC according to -pbc such that no periodic
-    images are closer than the value given.  This will make the numbers
-    provided for lipids be interpreted as relative numbers. If -d is
-    omitted, those numbers are interpreted as absolute numbers, and the
-    PBC are set to fit the given number of lipids in.
+    images are closer than the value given. When macromolecules are 
+    included -d indicates the distance between any of them, within a 
+    unit cell or across PBC. When having only absolute numbers of lipids, 
+    the size of the cell will be calculate from the area per lipid.
     """,
         (1, "-pbc", "pbc",       str,         1, "hexagonal",     0, "PBC type: hexagonal, rectangular, square, cubic, optimal or keep"),
         (0, "-d",   "distance",  float,       1,           0,     0, "Distance between periodic images (nm)"),
