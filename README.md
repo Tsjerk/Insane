@@ -62,7 +62,7 @@ sudo pip2 install insane
 ```
 
 We recommend the use of python virtual environments. Read more about them on
-the [MDAnalysis website](https://raw.githubusercontent.com/MDAnalysis/MDAnalysis.github.io/54c1d37913dc1d87fdc66b27c773bbb51c62a00d/_posts/2017-11-11-environments.md).
+the [MDAnalysis website](http://www.mdanalysis.org/2017/04/07/environments/).
 
 ## Quick start
 
