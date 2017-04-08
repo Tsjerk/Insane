@@ -34,4 +34,4 @@ del os
 del here
 
 
-from core import *
+from .core import *

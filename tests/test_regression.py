@@ -38,7 +38,7 @@ from __future__ import print_function
 import contextlib
 import functools
 import glob
-import itertools
+import mock
 import os
 import random
 import shutil
@@ -48,12 +48,20 @@ import sys
 import tempfile
 import textwrap
 
-from StringIO import StringIO
 from nose.tools import assert_equal, assert_raises
 
 import insane.cli
 import utils
 
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from io import StringIO
+
+try:
+    from itertools import izip_longest as zip_longest
+except ImportError:
+    from itertools import zip_longest
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 # INSANE = os.path.abspath(os.path.join(HERE, '../insane.py'))
@@ -209,14 +217,15 @@ def _run_internal(arguments):
     command = [INSANE] + arguments
     out = StringIO()
     err = StringIO()
-    with utils._redirect_out_and_err(out, err):
-        returncode = insane.cli.main(command)
+    with mock.patch('random.random', return_value=0.1):
+        with utils._redirect_out_and_err(out, err):
+            returncode = insane.cli.main(command)
     out = out.getvalue()
     err = err.getvalue()
     return out, err, returncode
 
 
-def run_insane(arguments, input_directory=None, runner=_run_external):
+def run_insane(arguments, input_directory=None, runner=_run_internal):
     """
     Run insane with the given arguments
 
@@ -244,7 +253,7 @@ def compare(output, reference):
     out_file = utils._open_if_needed(output)
     ref_file = utils._open_if_needed(reference)
     with out_file, ref_file:
-        lines_zip = itertools.izip_longest(out_file, ref_file, fillvalue=None)
+        lines_zip = zip_longest(out_file, ref_file, fillvalue=None)
         for out_line, ref_line in lines_zip:
             assert_equal(out_line, ref_line)
         extra_out = list(out_file)

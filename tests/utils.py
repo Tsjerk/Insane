@@ -23,13 +23,21 @@ from __future__ import print_function
 import copy
 from collections import namedtuple
 import contextlib
-import itertools
 import math
 import os
 import shutil
-from StringIO import StringIO
 import sys
 import tempfile
+
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
+
+try:
+    from itertools import izip_longest as zip_longest
+except ImportError:
+    from itertools import zip_longest
 
 # GRO file format description. The key is the name of the field, the value is a
 # tuple from which the first element is the first (included) and last
@@ -237,7 +245,7 @@ def compare_gro(stream, ref_stream, tolerance=0.001):
 
     # Compare the atoms
     atom_iter = enumerate(
-        itertools.izip_longest(atoms, atoms_ref, fillvalue={}),
+        zip_longest(atoms, atoms_ref, fillvalue={}),
         start=3
     )
     for linenum, (atom, atom_ref) in atom_iter:

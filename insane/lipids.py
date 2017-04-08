@@ -112,12 +112,12 @@ class Lipid:
 
                 # Add the linkers
                 rl     = range(len(self.link))
-                struc.extend([(i%2, i/2, taillength) for i in rl ])
+                struc.extend([(i%2, i//2, taillength) for i in rl ])
 
                 # Add the tails
                 for j, tail in enumerate(self.tail):
                     rl = range(len(tail))
-                    struc.extend([(j%2, j/2, taillength-1-i) for i in rl])
+                    struc.extend([(j%2, j//2, taillength-1-i) for i in rl])
 
                 mx, my, mz = [ (max(i)+min(i))/2 for i in zip(*struc) ]
                 self.coords = [
@@ -128,7 +128,7 @@ class Lipid:
         # Scale the x/y based on the lipid's APL - diameter is less than sqrt(APL)
         diam   = kwargs.get("diam", self.diam)
         radius = diam*0.45
-        minmax = [ (min(i), max(i)) for i in zip(*self.coords)[1:] ]
+        minmax = [ (min(i), max(i)) for i in list(zip(*self.coords))[1:] ]
         mx, my, mz = [ sum(i)/2. for i in minmax ]
         scale  = radius/math.sqrt((minmax[0][0]-mx)**2 + (minmax[1][0]-my)**2)
 
