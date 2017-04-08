@@ -225,7 +225,7 @@ def _run_internal(arguments):
     return out, err, returncode
 
 
-def run_insane(arguments, input_directory=None, runner=_run_external):
+def run_insane(arguments, input_directory=None, runner=_run_internal):
     """
     Run insane with the given arguments
 
