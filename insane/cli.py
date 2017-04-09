@@ -136,6 +136,7 @@ def main(argv):
     # Build index
 
 
+
     (molecules,
      protein,
      membrane,
@@ -143,19 +144,18 @@ def main(argv):
      lipU, lipL,
      numU, numL,
      box) = core.old_main(**options)
-    core.write_all(
+
+    title = core.system_title(membrane, protein, lipU, lipL, numU, numL)
+    atoms = protein + membrane + solvent
+
+    core.write_summary(protein, membrane, solvent)
+    core.write_structure(
         output=options['output'],
-        topology=options['topology'],
-        molecules=molecules,
-        protein=protein,
-        membrane=membrane,
-        solvent=solvent,
-        lipU=lipU,
-        lipL=lipL,
-        numU=numU,
-        numL=numL,
+        title=title,
+        atoms=atoms,
         box=box,
     )
+    core.write_top(options['topology'], molecules, title)
 
     return 0
 

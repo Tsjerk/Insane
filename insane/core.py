@@ -1335,10 +1335,7 @@ def write_top(outpath, molecules, title):
         print("\n".join("%-10s %7d"%i for i in added_molecules), file=sys.stderr)
 
 
-def write_all(output, topology, molecules, protein, membrane, solvent,
-              lipU, lipL, numU, numL, box):
-    write_summary(protein, membrane, solvent)
-
+def system_title(membrane, protein, lipU, lipL, numU, numL):
     if membrane.atoms:
         title  = "INSANE! Membrane UpperLeaflet>"+":".join(lipU)+"="+":".join([str(i) for i in numU])
         title += " LowerLeaflet>"+":".join(lipL)+"="+":".join([str(i) for i in numL])
@@ -1347,17 +1344,16 @@ def write_all(output, topology, molecules, protein, membrane, solvent,
             title = "Protein in " + title
     else:
         title = "Insanely solvated protein."
+    return title
 
-    atoms = protein + membrane + solvent
 
+def write_structure(output, title, atoms, box):
     oStream = output and open(output, "w") or sys.stdout
     with oStream:
         if output.endswith(".gro"):
             write_gro(oStream, title, atoms, box.tolist())
         else:
             write_pdb(oStream, title, atoms, box.tolist())
-
-    write_top(topology, molecules, title)
 
 
 def insane(**options):
