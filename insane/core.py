@@ -1199,8 +1199,7 @@ def old_main(**options):
     solvent, added = setup_solvent(pbc, protein, membrane, options)
     molecules.extend(added)
 
-    return (molecules, protein, membrane, solvent,
-            lipU, lipL, relU, relL, pbc.box)
+    return (molecules, protein, membrane, solvent, lipid, pbc.box)
 
 
 
@@ -1335,10 +1334,11 @@ def write_top(outpath, molecules, title):
         print("\n".join("%-10s %7d"%i for i in added_molecules), file=sys.stderr)
 
 
-def system_title(membrane, protein, lipU, lipL, numU, numL):
+def system_title(membrane, protein, lipids):
+    (lipL, absL, relL), (lipU, absU, relU) = lipids
     if membrane.atoms:
-        title  = "INSANE! Membrane UpperLeaflet>"+":".join(lipU)+"="+":".join([str(i) for i in numU])
-        title += " LowerLeaflet>"+":".join(lipL)+"="+":".join([str(i) for i in numL])
+        title  = "INSANE! Membrane UpperLeaflet>"+":".join(lipU)+"="+":".join([str(i) for i in relU])
+        title += " LowerLeaflet>"+":".join(lipL)+"="+":".join([str(i) for i in relL])
 
         if protein:
             title = "Protein in " + title

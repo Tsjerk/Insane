@@ -141,11 +141,10 @@ def main(argv):
      protein,
      membrane,
      solvent,
-     lipU, lipL,
-     numU, numL,
+     lipids,
      box) = core.old_main(**options)
 
-    title = core.system_title(membrane, protein, lipU, lipL, numU, numL)
+    title = core.system_title(membrane, protein, lipids)
     atoms = protein + membrane + solvent
 
     core.write_summary(protein, membrane, solvent)
