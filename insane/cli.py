@@ -142,7 +142,7 @@ def main(argv):
      solvent,
      lipU, lipL,
      numU, numL,
-     box) = core.old_main(argv, options)
+     box) = core.old_main(**options)
     core.write_all(
         output=options['output'],
         topology=options['topology'],

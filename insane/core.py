@@ -1044,7 +1044,7 @@ def setup_membrane(pbc, protein, lipid, options):
     return membrane, molecules
 
 
-def old_main(argv, options):
+def old_main(**options):
 
     molecules = []
 
