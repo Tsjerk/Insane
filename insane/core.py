@@ -834,6 +834,7 @@ def setup_membrane(pbc, protein, lipid, options):
         if  maxd == 0:
             print("; The protein seems not to be inside the membrane.", file=sys.stderr)
             print("; Run with -orient to put it in.", file=sys.stderr)
+            maxd = 1
 
     fudge   = options["fudge"]
     grid_up = [[(j/maxd) <= fudge for j in i] for i in grid_up]
