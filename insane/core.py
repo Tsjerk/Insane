@@ -28,7 +28,6 @@ from __future__ import print_function
 
 import os
 import sys
-import math
 import random
 import collections
 import numpy as np
@@ -74,12 +73,12 @@ def pdbBoxString(box):
     u, v, w  = box
 
     # Box vector lengths
-    nu, nv, nw = [math.sqrt(linalg.norm2(i)) for i in (u, v, w)]
+    nu, nv, nw = [np.sqrt(linalg.norm2(i)) for i in (u, v, w)]
 
     # Box vector angles
-    alpha = nv*nw == 0 and 90 or math.acos(linalg.cos_angle(v, w))/d2r
-    beta  = nu*nw == 0 and 90 or math.acos(linalg.cos_angle(u, w))/d2r
-    gamma = nu*nv == 0 and 90 or math.acos(linalg.cos_angle(u, v))/d2r
+    alpha = nv*nw == 0 and 90 or np.arccos(linalg.cos_angle(v, w))/d2r
+    beta  = nu*nw == 0 and 90 or np.arccos(linalg.cos_angle(u, w))/d2r
+    gamma = nu*nv == 0 and 90 or np.arccos(linalg.cos_angle(u, v))/d2r
 
     return pdbBoxLine % (10*linalg.norm(u),
                          10*linalg.norm(v),
@@ -357,12 +356,12 @@ class Structure(object):
     def diam(self):
         if np.any(self._center):
             self.center = (0, 0, 0)
-        return 2*math.sqrt(max([i*i+j*j+k*k for i, j, k in self.coord]))
+        return 2*np.sqrt(max([i*i+j*j+k*k for i, j, k in self.coord]))
 
     def diamxy(self):
         if np.any(self._center):
             self.center = (0, 0, 0)
-        return 2*math.sqrt(max([i*i+j*j for i, j, k in self.coord]))
+        return 2*np.sqrt(max([i*i+j*j for i, j, k in self.coord]))
 
     def areaxy(self, lowerbound=-np.inf, upperbound=np.inf, spacing=0.1):
         mask = (self.coord[:,2] > lowerbound) & (self.coord[:,2] < upperbound)
@@ -479,20 +478,20 @@ class Structure(object):
 
 
     def rotate_random(self):
-        ux   = math.cos(random.random()*2*math.pi)
-        uy   = math.sqrt(1-ux*ux)
+        ux   = np.cos(random.random()*2*np.pi)
+        uy   = np.sqrt(1-ux*ux)
         self.coord[:,:2] = np.dot(self.coord[:,:2],[[ux,-uy],[uy,ux]])
 
 
     def rotate_degrees(self, angle):
-        ux   = math.cos(angle*math.pi/180.)
-        uy   = math.sin(angle*math.pi/180.)
+        ux   = np.cos(angle*np.pi/180.)
+        uy   = np.sin(angle*np.pi/180.)
         self.coord[:,:2] = np.dot(self.coord[:,:2], [[ux, -uy],[uy, ux]])
 
 
 def _point(y, phi):
-    r = math.sqrt(1-y*y)
-    return math.cos(phi)*r, y, math.sin(phi)*r
+    r = np.sqrt(1-y*y)
+    return np.cos(phi)*r, y, np.sin(phi)*r
 
 
 def pointsOnSphere(n):
@@ -589,8 +588,8 @@ def resize_pbc_for_lipids(pbc, relL, relU, absL, absU,
         loscale = (losize + unavail_lo)/xysize
         area_scale = max(upscale, loscale)
         aspect_ratio = pbc.x / pbc.y
-        scale_x = math.sqrt(area_scale / aspect_ratio)
-        scale_y = math.sqrt(area_scale / aspect_ratio)
+        scale_x = np.sqrt(area_scale / aspect_ratio)
+        scale_y = np.sqrt(area_scale / aspect_ratio)
         pbc.box[:2,:] *= math.sqrt(area_scale)
 
 
@@ -718,9 +717,9 @@ def setup_solvent(pbc, protein, membrane, options):
         solmol = SOLVENTS.get(resn)
         if solmol and len(solmol) > 1:
             # Random rotation (quaternion)
-            u,  v,  w       = random.random(), 2*math.pi*random.random(), 2*math.pi*random.random()
-            s,  t           = math.sqrt(1-u), math.sqrt(u)
-            qw, qx, qy, qz  = s*math.sin(v), s*math.cos(v), t*math.sin(w), t*math.cos(w)
+            u,  v,  w       = random.random(), 2*np.pi*random.random(), 2*np.pi*random.random()
+            s,  t           = np.sqrt(1-u), np.sqrt(u)
+            qw, qx, qy, qz  = s*np.sin(v), s*np.cos(v), t*np.sin(w), t*np.cos(w)
             qq              = qw*qw-qx*qx-qy*qy-qz*qz
             for atnm, (px, py, pz) in solmol:
                 qp = 2*(qx*px + qy*py + qz*pz)
@@ -750,8 +749,8 @@ def setup_membrane(pbc, protein, lipid, options):
     if not any((absL, relL, absU, relU)):
         return membrane, molecules
 
-    lo_lipd  = math.sqrt(options["area"])
-    up_lipd = math.sqrt(options["uparea"])
+    lo_lipd  = np.sqrt(options["area"])
+    up_lipd = np.sqrt(options["uparea"])
 
     num_up, num_lo = [], []
 
@@ -889,7 +888,7 @@ def setup_membrane(pbc, protein, lipid, options):
                 "rectangular".startswith(options["pbc"])):
                 hx, hy = (0, 0)
             else:
-                hx, hy = (0, int(lo_lipids_y*math.cos(math.pi/6)/9+0.5))
+                hx, hy = (0, int(lo_lipids_y*np.cos(np.pi/6)/9+0.5))
         else:
             hx, hy = (int(0.5*lo_lipids_x), int(0.5*lo_lipids_y))
         hr = int(options["hole"]/min(lo_lipdx,  lo_lipdy)+0.5)
@@ -918,7 +917,7 @@ def setup_membrane(pbc, protein, lipid, options):
                 "rectangular".startswith(options["pbc"])):
                 hx, hy = (0, 0)
             else:
-                hx, hy = (0, int(up_lipids_y*math.cos(math.pi/6)/9+0.5))
+                hx, hy = (0, int(up_lipids_y*np.cos(np.pi/6)/9+0.5))
         else:
             hx, hy = (int(0.5*up_lipids_x), int(0.5*up_lipids_y))
         hr = int(options["hole"]/min(up_lipdx, up_lipdy)+0.5)
@@ -1012,9 +1011,9 @@ def setup_membrane(pbc, protein, lipid, options):
             # Increase the residue number by one
             resi += 1
             # Set the random rotation for this lipid
-            rangle   = 2*random.random()*math.pi
-            rcos     = math.cos(rangle)
-            rsin     = math.sin(rangle)
+            rangle   = 2*random.random()*np.pi
+            rcos     = np.cos(rangle)
+            rsin     = np.sin(rangle)
             rcosx    = rcos*lipdx*2/3
             rcosy    = rcos*lipdy*2/3
             rsinx    = rsin*lipdx*2/3
