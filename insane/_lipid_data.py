@@ -172,6 +172,7 @@ lipidsy[moltype] = (    0,   0,   0,   0,   0,  0,  0,  0,  0,    0,    0,    0,
 lipidsz[moltype] = (    7,   8,   8,   9,  10, 10, 11, 12, 12,   13,   14,   14,   11,   10,  11,    9,   12,    6,    6,   5,   4,   3,   2,   1,   0,   5,   4,   3,   2,   1,   0)
 lipidsa.update({      # 1     2    3    4    5   6   7   8   9    10    11    12    13    14   15    16    17    18    19   20   21   22   23   24   25   26   27   28   29   30   31
     "DPG1": (moltype, "GM1  GM2  GM3  GM4  GM5 GM6 GM7 GM8 GM9  GM10  GM11  GM12  GM13  GM14 GM15  GM16  GM17   AM1   AM2  T1A  C2A  C3A   -    -    -   C1B  C2B  C3B  C4B   -    - "),
+    "DBG1": (moltype, "GM1  GM2  GM3  GM4  GM5 GM6 GM7 GM8 GM9  GM10  GM11  GM12  GM13  GM14 GM15  GM16  GM17   AM1   AM2  T1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B  C5B   - "),
     "DXG1": (moltype, "GM1  GM2  GM3  GM4  GM5 GM6 GM7 GM8 GM9  GM10  GM11  GM12  GM13  GM14 GM15  GM16  GM17   AM1   AM2  T1A  C2A  C3A  C4A  C5A   -   C1B  C2B  C3B  C4B  C5B  C6B"),
     "PNG1": (moltype, "GM1  GM2  GM3  GM4  GM5 GM6 GM7 GM8 GM9  GM10  GM11  GM12  GM13  GM14 GM15  GM16  GM17   AM1   AM2  T1A  C2A  C3A   -    -    -   C1B  C2B  C3B  D4B  C5B  C6B"),
     "XNG1": (moltype, "GM1  GM2  GM3  GM4  GM5 GM6 GM7 GM8 GM9  GM10  GM11  GM12  GM13  GM14 GM15  GM16  GM17   AM1   AM2  T1A  C2A  C3A  C4A  C5A   -   C1B  C2B  C3B  D4B  C5B  C6B"),
@@ -211,6 +212,26 @@ lipidsy[moltype] = (    0,   0,   0,    0,   0,   0,   0,   0,   0,    0,    0, 
 lipidsz[moltype] = (    6,   7,   7,   5.5,  5,  4.5,  4,  3.5, 2.5,   2,  1.5,    1)
 lipidsa.update({      # 1     2    3    4    5    6    7    8    9    10    11    12
     "PLQ": (moltype, " PLQ3 PLQ2 PLQ1 PLQ4 PLQ5 PLQ6 PLQ7 PLQ8 PLQ9 PLQ10 PLQ11 PLQ12"),
+})
+
+# Prototopology for triacylglycerols
+#
+#   4-17-18-19-20-21-22
+#  /
+# 1-3-11-12-13-14-15-16
+#  \
+#   2--5--6--7--8--9-10
+#
+# 1-4 is the glycerol moiety
+moltype = "Triacylglycerols"
+lipidsx[moltype] = (     0,   1,  0,  0,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0)
+lipidsy[moltype] = (     0,   0,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,  1,  1)
+lipidsz[moltype] = (     7,   6,  6,  6,  5,  4,  3,  2,  1,  0,  5,  4,  3,  2,  1,  0,  5,  4,  3,  2,  1,  0)
+lipidsa.update({      #  1    2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20  21  22
+    "O3TG": (moltype, "GL0  ES1 ES2 ES3 C1A D2A C3A C4A   -   - C1B D2B C3B C4B   -   - C1C D2C C3C C4C   -   -"),
+    "OOPG": (moltype, "GL0  ES1 ES2 ES3 C1A D2A C3A C4A   -   - C1B D2B C3B C4B   -   - C1C C2C C3C C4C   -   -"),
+    "OPPG": (moltype, "GL0  ES1 ES2 ES3 C1A D2A C3A C4A   -   - C1B C2B C3B C4B   -   - C1C C2C C3C C4C   -   -"),
+    "P3TG": (moltype, "GL0  ES1 ES2 ES3 C1A C2A C3A C4A   -   - C1B C2B C3B C4B   -   - C1C C2C C3C C4C   -   -"),
 })
 
 
