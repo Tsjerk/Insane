@@ -1,4 +1,10 @@
 language: python
+python:
+    - "2.7"
+    - "3.4"
+    - "3.5"
+    - "3.6"
+    - "nightly"
 env:
     matrix:
         - BUILD="test"
@@ -17,7 +23,7 @@ install:
     - |
         if [[ $BUILD == 'test' ]]; \
         then \
-        pip install nose coverage; \
+        pip install nose coverage mock; \
         fi
 script:
     - |

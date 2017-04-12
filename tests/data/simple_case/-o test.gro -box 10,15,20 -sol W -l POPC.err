@@ -6,9 +6,9 @@
 ; NDX Membrane 1 5928
 ; Charge of membrane: 0.000000
 ; Total charge: 0.000000
-; NDX Solvent 5929 25932
-; NDX System 1 25932
+; NDX Solvent 5929 25853
+; NDX System 1 25853
 ; "I mean, the good stuff is just INSANE" --Julia Ormond
 POPC           247
 POPC           247
-W            20004
+W            19925

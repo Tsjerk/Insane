@@ -38,6 +38,11 @@ from .converters import *
 from .constants import d2r
 from .data import SOLVENTS, CHARGES, APOLARS
 
+try:
+    range = xrange
+except NameError:
+    pass
+
 RTOL = 1e-8
 
 # Set the random seed.
@@ -618,7 +623,7 @@ def setup_solvent(pbc, protein, membrane, options):
 
     # Initialize a grid of solvent, spanning the whole cell
     # Exclude all cells within specified distance from membrane center
-    grid   = [[[i < hz-excl or i > hz+excl for i in xrange(nz)] for j in xrange(ny)] for i in xrange(nx)]
+    grid   = [[[i < hz-excl or i > hz+excl for i in range(nz)] for j in range(ny)] for i in range(nx)]
 
     # Flag all cells occupied by protein or membrane
     for coord in (protein+membrane).coord:
@@ -647,7 +652,7 @@ def setup_solvent(pbc, protein, membrane, options):
     # Set the center for each solvent molecule
     kick = options["solrandom"]
     grid = [ (random.random(), (i+0.5+random.random()*kick)*dx, (j+0.5+random.random()*kick)*dy, (k+0.5+random.random()*kick)*dz)
-             for i in xrange(nx) for j in xrange(ny) for k in xrange(nz) if grid[i][j][k] ]
+             for i in range(nx) for j in range(ny) for k in range(nz) if grid[i][j][k] ]
 
     # Sort on the random number
     grid.sort()
@@ -702,7 +707,7 @@ def setup_solvent(pbc, protein, membrane, options):
 
 
     # Names and grid positions for solvent molecules
-    solvent    = zip([s for i, s in zip(num_sol, solnames) for j in range(i)], grid)
+    solvent    = list(zip([s for i, s in zip(num_sol, solnames) for j in range(i)], grid))
 
     # Build the solvent
     resi = 0
@@ -762,10 +767,10 @@ def setup_membrane(pbc, protein, lipid, options):
     # Number of lipids in x and y in lower leaflet if there were no solute
     lo_lipids_x = int(pbc.x/lo_lipd+0.5)
     lo_lipdx    = pbc.x/lo_lipids_x
-    lo_rlipx    = range(lo_lipids_x)
+    lo_rlipx    = list(range(lo_lipids_x))
     lo_lipids_y = int(pbc.y/lo_lipd+0.5)
     lo_lipdy    = pbc.y/lo_lipids_y
-    lo_rlipy    = range(lo_lipids_y)
+    lo_rlipy    = list(range(lo_lipids_y))
     
     if options["uparea"]:
         lipd = up_lipd
@@ -773,10 +778,10 @@ def setup_membrane(pbc, protein, lipid, options):
     # Number of lipids in x and y in upper leaflet if there were no solute
     up_lipids_x = int(pbc.x/up_lipd+0.5)
     up_lipdx    = pbc.x/up_lipids_x
-    up_rlipx    = range(up_lipids_x)
+    up_rlipx    = list(range(up_lipids_x))
     up_lipids_y = int(pbc.y/up_lipd+0.5)
     up_lipdy    = pbc.y/up_lipids_y
-    up_rlipy    = range(up_lipids_y)
+    up_rlipy    = list(range(up_lipids_y))
 
     # Set up grids to check where to place the lipids
     grid_lo = [[0 for j in lo_rlipy] for i in lo_rlipx]
@@ -828,6 +833,7 @@ def setup_membrane(pbc, protein, lipid, options):
         if  maxd == 0:
             print("; The protein seems not to be inside the membrane.", file=sys.stderr)
             print("; Run with -orient to put it in.", file=sys.stderr)
+            maxd = 1
 
     fudge   = options["fudge"]
     grid_up = [[(j/maxd) <= fudge for j in i] for i in grid_up]
@@ -945,12 +951,12 @@ def setup_membrane(pbc, protein, lipid, options):
     # Set the XY coordinates
     # To randomize the lipids we add a random number which is used for sorting
     upper, lower = [], []
-    for i in xrange(up_lipids_x):
-        for j in xrange(up_lipids_y):
+    for i in range(up_lipids_x):
+        for j in range(up_lipids_y):
             if grid_up[i][j]:
                 upper.append((random.random(), i*pbc.x/up_lipids_x, j*pbc.y/up_lipids_y))
-    for i in xrange(lo_lipids_x):
-        for j in xrange(lo_lipids_y):
+    for i in range(lo_lipids_x):
+        for j in range(lo_lipids_y):
             if grid_lo[i][j]:
                 lower.append((random.random(), i*pbc.x/lo_lipids_x, j*pbc.y/lo_lipids_y))
 
@@ -1038,7 +1044,7 @@ def setup_membrane(pbc, protein, lipid, options):
     return membrane, molecules
 
 
-def old_main(argv, options):
+def old_main(**options):
 
     molecules = []
 
@@ -1193,8 +1199,7 @@ def old_main(argv, options):
     solvent, added = setup_solvent(pbc, protein, membrane, options)
     molecules.extend(added)
 
-    return (molecules, protein, membrane, solvent,
-            lipU, lipL, relU, relL, pbc.box)
+    return (molecules, protein, membrane, solvent, lipid, pbc.box)
 
 
 
@@ -1329,29 +1334,26 @@ def write_top(outpath, molecules, title):
         print("\n".join("%-10s %7d"%i for i in added_molecules), file=sys.stderr)
 
 
-def write_all(output, topology, molecules, protein, membrane, solvent,
-              lipU, lipL, numU, numL, box):
-    write_summary(protein, membrane, solvent)
-
+def system_title(membrane, protein, lipids):
+    (lipL, absL, relL), (lipU, absU, relU) = lipids
     if membrane.atoms:
-        title  = "INSANE! Membrane UpperLeaflet>"+":".join(lipU)+"="+":".join([str(i) for i in numU])
-        title += " LowerLeaflet>"+":".join(lipL)+"="+":".join([str(i) for i in numL])
+        title  = "INSANE! Membrane UpperLeaflet>"+":".join(lipU)+"="+":".join([str(i) for i in relU])
+        title += " LowerLeaflet>"+":".join(lipL)+"="+":".join([str(i) for i in relL])
 
         if protein:
             title = "Protein in " + title
     else:
         title = "Insanely solvated protein."
+    return title
 
-    atoms = protein + membrane + solvent
 
+def write_structure(output, title, atoms, box):
     oStream = output and open(output, "w") or sys.stdout
     with oStream:
         if output.endswith(".gro"):
             write_gro(oStream, title, atoms, box.tolist())
         else:
             write_pdb(oStream, title, atoms, box.tolist())
-
-    write_top(topology, molecules, title)
 
 
 def insane(**options):
