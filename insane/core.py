@@ -32,11 +32,14 @@ import random
 import collections
 import numpy as np
 
+from simopt import opt_func
+
 from . import linalg
 from . import lipids
 from .converters import *
 from .constants import d2r
 from .data import SOLVENTS, CHARGES, APOLARS
+from .options import OPTIONS
 
 try:
     range = xrange
@@ -1044,6 +1047,7 @@ def setup_membrane(pbc, protein, lipid, options):
     return membrane, molecules
 
 
+@opt_func(OPTIONS)
 def old_main(**options):
 
     molecules = []
