@@ -20,7 +20,7 @@
 Data tables for building systems.
 """
 
-import math
+import numpy as np
 
 __all__ = ['CHARGES', 'SOLVENTS', 'APOLARS']
 
@@ -30,10 +30,10 @@ CHARGES = {
     "DOPG":-1, "POPG":-1, "DOPS":-1, "POPS":-1, "DSSQ":-1
 }
 
-a, b  = math.sqrt(2) / 20, math.sqrt(2) / 60
+a, b  = np.sqrt(2) / 20, np.sqrt(2) / 60
 # Tetrahedral
-ct = math.cos(math.pi * 109.47 / 180)
-st = math.sin(math.pi * 109.47 / 180)
+ct = np.cos(np.pi * 109.47 / 180)
+st = np.sin(np.pi * 109.47 / 180)
 
 # The following dict is a data table. Whatever pylint says, it is clearer when
 # aligned.
@@ -49,7 +49,7 @@ SOLVENTS = {
                  ("WM", (0.07, 0, 0))),
     "BMW":      (("C", (0, 0, 0)),
                  ("Q1", (0.12, 0, 0)),
-                 ("Q2", (-0.06, math.cos(math.pi / 6) * 0.12, 0))),  # BMW water
+                 ("Q2", (-0.06, np.cos(np.pi / 6) * 0.12, 0))),  # BMW water
     "SPC":      (("OW", (0, 0, 0)),  # SPC
                  ("HW1", (0.01, 0, 0)),
                  ("HW2", (0.01 * ct, 0.01 * st, 0))),

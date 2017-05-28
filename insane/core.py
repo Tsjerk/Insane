@@ -36,7 +36,7 @@ from . import linalg
 from . import lipids
 from .converters import *
 from .constants import d2r
-from .data import SOLVENTS, CHARGES, APOLARS
+from ._data import SOLVENTS, CHARGES, APOLARS
 
 try:
     range = xrange
