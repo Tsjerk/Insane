@@ -269,7 +269,7 @@ class PBC(object):
 
 
 class Structure(object):
-    def __init__(self, filename=None):
+    def __init__(self, filename=None, options=None):
         self.title   = ""
         self.atoms   = []
         self._coord  = None
@@ -298,6 +298,9 @@ class Structure(object):
                 self.rest  = [lines[0], lines[1], lines[-1]]
                 self.box   = groBoxRead(lines[-1])
                 self.title = lines[0]
+
+        if options:
+            self.setup(**options)
 
 
     def __nonzero__(self):
@@ -468,7 +471,6 @@ class Structure(object):
         self.coord = np.array([(ux*i+uy*j+uz*k, vx*i+vy*j+vz*k, wx*i+wy*j+wz*k)
                                for i, j, k in self.coord])
 
-
     def rotate(self, what):
             if what == "princ":
                 self.rotate_princ()
@@ -479,23 +481,58 @@ class Structure(object):
             elif what:
                 self.rotate_degrees(float(what))
 
-
     def rotate_princ(self):
         R = np.linalg.eig(np.dot(self.coord[:,:2].T,self.coord[:,:2]))
         self.coord[:,:2] = np.dot(self.coord[:,:2], R[1][:,np.argsort(R[0])[::-1]])
         return
-
 
     def rotate_random(self):
         ux   = np.cos(random.random()*2*np.pi)
         uy   = np.sqrt(1-ux*ux)
         self.coord[:,:2] = np.dot(self.coord[:,:2],[[ux,-uy],[uy,ux]])
 
-
     def rotate_degrees(self, angle):
         ux   = np.cos(angle*np.pi/180.)
         uy   = np.sin(angle*np.pi/180.)
         self.coord[:,:2] = np.dot(self.coord[:,:2], [[ux, -uy],[uy, ux]])
+
+    def setup(self, **kwargs):
+        # Center the protein and store the shift
+        shift = self.center
+        self.center = (0, 0, 0)
+
+        ## 1. Orient with respect to membrane
+        # Orient the protein according to the TM region, if requested
+        # This doesn't actually work very well...
+        if kwargs["orient"]:
+            self.orient(kwargs["origriddist"], kwargs["oripower"])
+
+        ## 4. Orient the protein in the xy-plane
+        ## i. According to principal axes and unit cell
+        self.rotate(kwargs["rotate"])
+
+        ## 5. Determine the minimum and maximum x and y of the protein
+        pmin, pmax = self.coord.min(axis=0), self.coord.max(axis=0)
+
+        # At this point we should shift the subsequent proteins such
+        # that they end up at the specified distance, in case we have
+        # a number of them to do
+        # y-shift is always -ycenter
+        # x-shift is -xmin+distance+xmax(current)
+        # xshifts.append(xshifts[-1]+pmax[0]+(options["distance"] or 0))
+
+        ## 2. Shift of protein relative to the membrane center
+        zshift = kwargs["memshift"]
+        if not kwargs["center"]:
+            zshift -= shift[2]
+
+        # Now we center the system in the rectangular
+        # brick corresponding to the unit cell
+        # If -center is given, also center z in plane
+        self += (0, 0, zshift)
+
+        # The z position is now correct with respect to the membrane
+        # at z = 0. The x/y need to be set still
 
 
 def _point(y, phi):
@@ -548,7 +585,7 @@ def resize_pbc_for_lipids(pbc, relL, relU, absL, absU,
     """
     Adapt the size of the box to accomodate the lipids.
 
-    The PBC is changed **on place**.
+    The PBC is changed **in place**.
     """
     if any(relL) and any(relU):
         # Determine box from size
@@ -571,8 +608,9 @@ def resize_pbc_for_lipids(pbc, relL, relU, absL, absU,
             raise PBCException('Not enough information to set the box size.')
 
         if 0 in (pbc.x, pbc.y):
-            # We do not know what size the box should be. Let's X and Y should
-            # be the same.
+            # We do not know what size the box should be. 
+            # Let X and Y be the same.
+            #T This does not agree with the default pbc being hexagonal...
             pbc.x = pbc.y = 1
         # A scaling factor is needed for the box
         # This is the area for the given number of lipids
@@ -754,12 +792,15 @@ def setup_membrane(pbc, protein, lipid, options):
     lower, upper = lipid
     lipL, absL, relL = lower
     lipU, absU, relU = upper
+    nabsL, nabsU = sum(absL), sum(absU)
 
     if not any((absL, relL, absU, relU)):
         return membrane, molecules
 
-    lo_lipd  = np.sqrt(options["area"])
+    lo_lipd = np.sqrt(options["area"])
     up_lipd = np.sqrt(options["uparea"])
+
+    print('lipd', lo_lipd, up_lipd)
 
     num_up, num_lo = [], []
 
@@ -770,9 +811,17 @@ def setup_membrane(pbc, protein, lipid, options):
 
     # Number of lipids in x and y in lower leaflet if there were no solute
     lo_lipids_x = int(pbc.x/lo_lipd+0.5)
+    lo_lipids_y = int(pbc.y/lo_lipd+0.5)
+    q = False
+    while lo_lipids_x*lo_lipids_y < nabsL:
+        if q:
+            lo_lipids_x += 1
+        else:
+            lo_lipids_y += 1
+        q = not q
+
     lo_lipdx    = pbc.x/lo_lipids_x
     lo_rlipx    = list(range(lo_lipids_x))
-    lo_lipids_y = int(pbc.y/lo_lipd+0.5)
     lo_lipdy    = pbc.y/lo_lipids_y
     lo_rlipy    = list(range(lo_lipids_y))
     
@@ -781,9 +830,16 @@ def setup_membrane(pbc, protein, lipid, options):
 
     # Number of lipids in x and y in upper leaflet if there were no solute
     up_lipids_x = int(pbc.x/up_lipd+0.5)
+    up_lipids_y = int(pbc.y/up_lipd+0.5)
+    while up_lipids_x*up_lipids_y < nabsU:
+        if q:
+            up_lipids_x += 1
+        else:
+            up_lipids_y += 1
+        q = not q
+
     up_lipdx    = pbc.x/up_lipids_x
     up_rlipx    = list(range(up_lipids_x))
-    up_lipids_y = int(pbc.y/up_lipd+0.5)
     up_lipdy    = pbc.y/up_lipids_y
     up_rlipy    = list(range(up_lipids_y))
 
@@ -810,8 +866,12 @@ def setup_membrane(pbc, protein, lipid, options):
         if maxd:
             occupied_up = (occupied_up/maxd) > options["fudge"]
             occupied_lo = (occupied_lo/maxd) > options["fudge"]
+
     #print(absU, sum(~occupied_up.astype('bool')), 
     #      absL, sum(~occupied_lo.astype('bool')))
+    print('->', len(grid_lo), len(grid_lo[0]))
+    print('->', len(grid_up), len(grid_up[0]))
+
 
     ## OLD GRID
         
@@ -950,8 +1010,6 @@ def setup_membrane(pbc, protein, lipid, options):
                         xi -= up_lipids_x
                     grid_up[xi][yj] = False
 
-
-
     # Set the XY coordinates
     # To randomize the lipids we add a random number which is used for sorting
     upper, lower = [], []
@@ -1058,50 +1116,13 @@ def old_main(**options):
     #########################################
 
     # Read in the structures (if any)
-    tm = [ Structure(i) for i in options["solute"] ]
-
-    xshifts  = [0] # Shift in x direction per protein
+    tm = [ Structure(i, options) for i in options["solute"] ]
 
     if tm:
         molecules.append(('Protein', len(tm)))
 
-    for prot in tm:
-        # Center the protein and store the shift
-        shift = prot.center
-        prot.center = (0, 0, 0)
+    xshifts  = [0] # Shift in x direction per protein
 
-        ## 1. Orient with respect to membrane
-        # Orient the protein according to the TM region, if requested
-        # This doesn't actually work very well...
-        if options["orient"]:
-            prot.orient(options["origriddist"], options["oripower"])
-
-        ## 4. Orient the protein in the xy-plane
-        ## i. According to principal axes and unit cell
-        prot.rotate(options["rotate"])
-
-        ## 5. Determine the minimum and maximum x and y of the protein
-        pmin, pmax = prot.coord.min(axis=0), prot.coord.max(axis=0)
-
-        # At this point we should shift the subsequent proteins such
-        # that they end up at the specified distance, in case we have
-        # a number of them to do
-        # y-shift is always -ycenter
-        # x-shift is -xmin+distance+xmax(current)
-        xshifts.append(xshifts[-1]+pmax[0]+(options["distance"] or 0))
-
-        ## 2. Shift of protein relative to the membrane center
-        zshift = options["memshift"]
-        if not options["center"]:
-            zshift -= shift[2]
-
-        # Now we center the system in the rectangular
-        # brick corresponding to the unit cell
-        # If -center is given, also center z in plane
-        prot += (0, 0, zshift)
-
-        # The z position is now correct with respect to the membrane
-        # at z = 0. The x/y need to be set still
 
     #############
     ## II. PBC ##
@@ -1147,9 +1168,11 @@ def old_main(**options):
     if options["uparea"] is None:
         options["uparea"] = options["area"]
 
+    print(pbc.box)
     resize_pbc_for_lipids(pbc=pbc, relL=relL, relU=relU, absL=absL, absU=absU,
                           uparea=options["uparea"], area=options["area"],
                           hole=options["hole"], proteins=tm)
+    print(pbc.box)
 
     ##################
     ## IV. MEMBRANE ##
