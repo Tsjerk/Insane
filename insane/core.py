@@ -800,7 +800,7 @@ def setup_membrane(pbc, protein, lipid, options):
     lo_lipd = np.sqrt(options["area"])
     up_lipd = np.sqrt(options["uparea"])
 
-    print('lipd', lo_lipd, up_lipd)
+    #print('lipd', lo_lipd, up_lipd)
 
     num_up, num_lo = [], []
 
@@ -869,8 +869,8 @@ def setup_membrane(pbc, protein, lipid, options):
 
     #print(absU, sum(~occupied_up.astype('bool')), 
     #      absL, sum(~occupied_lo.astype('bool')))
-    print('->', len(grid_lo), len(grid_lo[0]))
-    print('->', len(grid_up), len(grid_up[0]))
+    #print('->', len(grid_lo), len(grid_lo[0]))
+    #print('->', len(grid_up), len(grid_up[0]))
 
 
     ## OLD GRID
@@ -1168,11 +1168,11 @@ def old_main(**options):
     if options["uparea"] is None:
         options["uparea"] = options["area"]
 
-    print(pbc.box)
+    #print(pbc.box)
     resize_pbc_for_lipids(pbc=pbc, relL=relL, relU=relU, absL=absL, absU=absU,
                           uparea=options["uparea"], area=options["area"],
                           hole=options["hole"], proteins=tm)
-    print(pbc.box)
+    #print(pbc.box)
 
     ##################
     ## IV. MEMBRANE ##
