@@ -22,17 +22,20 @@
 Test that a user can ask for an absolute number of lipids.
 """
 
+import sys
 from nose.tools import assert_equal, assert_raises
+import utils
 import insane
 
 def test_absolute_lipid_only():
-    (molecules,
-     protein,
-     membrane,
-     solvent,
-     lipids,
-     box) = insane.core.old_main(lower=[('DOPC', 72, 0)],
-                                 output='plop.gro', zdistance=15)
+    with utils._redirect_out_and_err(sys.stdout, sys.stdout):
+        (molecules,
+         protein,
+         membrane,
+         solvent,
+         lipids,
+         box) = insane.core.old_main(lower=[('DOPC', 72, 0)],
+                                     output='plop.gro', zdistance=15)
     npo4 = len([atom for atom in membrane.atoms if atom[0] == 'PO4'])
     assert_equal(npo4, 72 * 2)
     assert_equal(molecules, [('DOPC', 72), ('DOPC', 72)])
@@ -42,17 +45,37 @@ def test_absolute_lipid_only():
 
 
 def test_absolute_lipid_assym():
-    (molecules,
-     protein,
-     membrane,
-     solvent,
-     lipids,
-     box) = insane.core.old_main(lower=[('DOPC', 72, 0)],
-                                 upper=[('POPC', 89, 0)],
-                                 output='plop.gro', zdistance=15)
+    with utils._redirect_out_and_err(sys.stdout, sys.stdout):
+        (molecules,
+         protein,
+         membrane,
+         solvent,
+         lipids,
+         box) = insane.core.old_main(lower=[('DOPC', 72, 0)],
+                                     upper=[('POPC', 89, 0)],
+                                     output='plop.gro', zdistance=15)
     npo4 = len([atom for atom in membrane.atoms if atom[0] == 'PO4'])
     assert_equal(npo4, 72 + 89)
     assert_equal(molecules, [('POPC', 89), ('DOPC', 72)])
     assert_equal(lipids, ((('DOPC',), (72,), (0,)), (('POPC',), (89,), (0,))))
+    assert_equal(len(protein), 0)
+    assert_equal(len(solvent), 0)
+
+
+def test_absolute_lipid_multi():
+    with utils._redirect_out_and_err(sys.stdout, sys.stdout):
+        (molecules,
+         protein,
+         membrane,
+         solvent,
+         lipids,
+         box) = insane.core.old_main(lower=[('DOPC', 72, 0), ('POPC', 89, 0)],
+                                     output='plop.gro', zdistance=15)
+    npo4 = len([atom for atom in membrane.atoms if atom[0] == 'PO4'])
+    assert_equal(npo4, (72 + 89) * 2)
+    assert_equal(molecules, [('DOPC', 72), ('POPC', 89),
+                             ('DOPC', 72), ('POPC', 89)])
+    assert_equal(lipids, ((('DOPC', 'POPC'), (72, 89), (0, 0)),
+                          (('DOPC', 'POPC'), (72, 89), (0, 0))))
     assert_equal(len(protein), 0)
     assert_equal(len(solvent), 0)
