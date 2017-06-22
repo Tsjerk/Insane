@@ -331,7 +331,7 @@ class Structure(object):
         for idx, (atom, (x, y, z)) in atom_enumeration:
             atname, resname, resid = atom[:3]
             if resname.endswith('.o'):
-                resname = rn[:-2]
+                resname = resname[:-2]
             yield idx, atname, resname, resid, x, y, z
 
     @property
