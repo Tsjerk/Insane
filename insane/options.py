@@ -61,6 +61,7 @@ OPTIONS = Options([
         (0, "-hole", "hole",      float,       1,           0,     0, "Make a hole in the membrane with specified radius"),
         (0, "-disc", "disc",      float,       1,        None,     0, "Make a membrane disc with specified radius"),
         (2, "-rand", "randkick",  float,       1,         0.1,     0, "Random kick size (maximum atom displacement)"),
+        (2, "-norot","norotate",  bool,        0,        None,     0, "Do not rotate lipids in plane"),
         (2, "-bd",   "beaddist",  float,       1,         0.3,     0, "Bead distance unit for scaling z-coordinates (nm)"),
         """
     Protein related options.

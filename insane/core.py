@@ -62,7 +62,7 @@ class PBCException(Exception):
 def mean(a):
     return sum(a)/len(a)
 
-def isPDBAtom(l):
+def PDBAtom(l):
     return l.startswith("ATOM") or l.startswith("HETATM")
 
 def pdbAtom(a):
@@ -1078,22 +1078,29 @@ def setup_membrane(pbc, protein, lipid, options):
         for lipid, pos in leaf_lip:
             # Increase the residue number by one
             resi += 1
-            # Set the random rotation for this lipid
-            rangle   = 2*random.random()*np.pi
-            rcos     = np.cos(rangle)
-            rsin     = np.sin(rangle)
-            rcosx    = rcos*lipdx*2/3
-            rcosy    = rcos*lipdy*2/3
-            rsinx    = rsin*lipdx*2/3
-            rsiny    = rsin*lipdy*2/3
+
             # Fetch the atom list with x, y, z coordinates
             at, ax, ay, az = zip(*liplist[lipid].build(diam=lipd))
             # The z-coordinates are spaced at 0.3 nm,
             # starting with the first bead at 0.15 nm
             az = [ leaflet*(0.5+(i-min(az)))*options["beaddist"] for i in az ]
             xx = np.array((ax, ay)).T
-            nx = np.dot(xx,(rcosx, -rsiny)) + pos[0] + lipdx/2 + [ kick*random.random() for i in az ]
-            ny = np.dot(xx,(rsinx, rcosy)) + pos[1] + lipdy/2 + [ kick*random.random() for i in az ]
+
+            # Set the random rotation for this lipid
+            rangle   = 2*random.random()*np.pi
+            if options["norotate"]:
+                nx = pos[0] + lipdx/2 + [ kick*random.random() for i in az ]
+                ny = pos[1] + lipdy/2 + [ kick*random.random() for i in az ]
+            else:
+                rcos     = np.cos(rangle)
+                rsin     = np.sin(rangle)
+                rcosx    = rcos*lipdx*2/3
+                rcosy    = rcos*lipdy*2/3
+                rsinx    = rsin*lipdx*2/3
+                rsiny    = rsin*lipdy*2/3
+                nx = np.dot(xx,(rcosx, -rsiny)) + pos[0] + lipdx/2 + [ kick*random.random() for i in az ]
+                ny = np.dot(xx,(rsinx, rcosy)) + pos[1] + lipdy/2 + [ kick*random.random() for i in az ]
+
             # Add the atoms to the list
             memcoords.extend([(nx[i], ny[i], az[i]) for i in range(len(at))])
             mematoms.extend([(at[i], lipid, resi, 0, 0, 0) for i in range(len(at))])
