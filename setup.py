@@ -41,7 +41,7 @@ setup(
     tests_requires=['nose'],
 
     packages=['insane'],
-    package_data={'insane': ['VERSION.txt', 'insane/*.dat']},
+    package_data={'insane': ['VERSION.txt', 'data/*.dat']},
 
     entry_points={
         'console_scripts': [
