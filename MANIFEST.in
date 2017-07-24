@@ -1,4 +1,4 @@
 include README.md
 include LICENSE
-recursive-include insane/*.dat
+recursive-include insane *.dat
 
