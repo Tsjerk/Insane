@@ -20,9 +20,12 @@ import collections
 import math
 import os
 
-from ._lipid_data import lipidsa, lipidsx, lipidsy, lipidsz
 
 __all__ = ['Lipid', 'Lipid_List', 'get_lipids']
+
+
+# Lipid data file
+LIPIDFILE = 'lipids.dat'
 
 # Define supported lipid head beads. One letter name mapped to atom name
 HEADBEADS = {
@@ -218,10 +221,36 @@ class Lipid_List(collections.MutableMapping):
                                charge=charge)
 
 
+def read_lipids(filename):
+    lipids = Lipid_List()
+    with open(filename) as lipfile:
+        x, y, z = None, None, None
+        for line in lipfile:
+            stripped = line.strip()
+            if (not stripped) or stripped.startswith((';','#')):
+                # Comment or empty line
+                continue
+            elif stripped.startswith('['):
+                # Moleculetype tag
+                x, y, z = None, None, None
+                # moltype = stripped[2:stripped.find(']')].strip()
+            elif x is None:
+                x = [float(i) for i in line.split() ]
+            elif y is None:
+                y = [float(i) for i in line.split() ]
+            elif z is None:
+                z = [float(i) for i in line.split() ]
+            else:
+                splitted = line.split()
+                name = splitted.pop(0)
+                lipids[name] = Lipid(
+                    name=name, 
+                    beads=splitted, 
+                    template=zip(x, y, z)
+                )
+    return lipids
+
+
 def get_lipids():
-    liplist = Lipid_List()
-    for name, lip in lipidsa.items():
-        moltype  = lip[0]
-        template = zip(lipidsx[moltype], lipidsy[moltype], lipidsz[moltype])
-        liplist[name] = Lipid(name=name, beads=lip[1], template=template)
-    return liplist
+    return read_lipids(os.path.join(os.path.dirname(__file__), LIPIDFILE))
+
