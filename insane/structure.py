@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 import numpy as np
 
 from . import linalg
@@ -317,4 +319,77 @@ class Structure(object):
         # The z position is now correct with respect to the membrane
         # at z = 0. The x/y need to be set still
 
+
+def write_gro(outfile, title, atoms, box):
+    """
+    Write a GRO file.
+
+    Parameters
+    ----------
+    outfile
+        The stream to write in.
+    title
+        The title of the GRO file. Must be a single line.
+    atoms
+        An instance of Structure containing the atoms to write.
+    box
+        The periodic box as a 3x3 matrix.
+    """
+    # Print the title
+    print(title, file=outfile)
+
+    # Print the number of atoms
+    print("{:5d}".format(len(atoms)), file=outfile)
+
+    # Print the atoms
+    atom_template = "{:5d}{:<5s}{:>5s}{:5d}{:8.3f}{:8.3f}{:8.3f}"
+    for idx, atname, resname, resid, x, y, z in atoms:
+        print(atom_template
+              .format(int(resid % 1e5), resname, atname, int(idx % 1e5),
+                      x, y, z),
+              file=outfile)
+
+    # Print the box
+    grobox = (box[0][0], box[1][1], box[2][2],
+              box[0][1], box[0][2], box[1][0],
+              box[1][2], box[2][0], box[2][1])
+    box_template = '{:10.5f}' * 9
+    print(box_template.format(*grobox), file=outfile)
+
+
+def write_pdb(outfile, title, atoms, box):
+    """
+    Write a PDB file.
+
+    Parameters
+    ----------
+    outfile
+        The stream to write in.
+    title
+        The title of the GRO file. Must be a single line.
+    atoms
+        An instance of Structure containing the atoms to write.
+    box
+        The periodic box as a 3x3 matrix.
+    """
+    # Print the title
+    print('TITLE ' + title, file=outfile)
+
+    # Print the box
+    print(pdbBoxString(box), file=outfile)
+
+    # Print the atoms
+    for idx, atname, resname, resid, x, y, z in atoms:
+        print(pdbline % (idx % 1e5, atname, resname, "", resid % 1e5, '',
+                         10*x, 10*y, 10*z, 0, 0, ''),
+              file=outfile)
+
+
+def write_structure(output, title, atoms, box):
+    oStream = output and open(output, "w") or sys.stdout
+    with oStream:
+        if output.endswith(".gro"):
+            write_gro(oStream, title, atoms, box.tolist())
+        else:
+            write_pdb(oStream, title, atoms, box.tolist())
 

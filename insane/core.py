@@ -58,9 +58,6 @@ RTOL = 1e-8
 random.seed(os.environ.get('INSANE_SEED', None))
 
 
-def mean(a):
-    return sum(a)/len(a)
-
 def _point(y, phi):
     r = np.sqrt(1-y*y)
     return np.cos(phi)*r, y, np.sin(phi)*r
@@ -68,16 +65,6 @@ def _point(y, phi):
 
 def pointsOnSphere(n):
     return np.array([_point((2.*k+1)/n-1, k*2.3999632297286531) for k in range(n)])
-
-
-# Mean of deviations from initial value
-def meand(v):
-    return sum([i-v[0] for i in v])/len(v)
-
-
-# Sum of squares/crossproducts of deviations
-def ssd(u, v):
-    return sum([(i-u[0])*(j-v[0]) for i, j in zip(u, v)])/(len(u)-1)
 
 
 def occupancy(grid, points, spacing=0.01):
@@ -763,72 +750,6 @@ def old_main(**options):
     return (molecules, protein, membrane, solvent, lipid, pbc.box)
 
 
-
-def write_gro(outfile, title, atoms, box):
-    """
-    Write a GRO file.
-
-    Parameters
-    ----------
-    outfile
-        The stream to write in.
-    title
-        The title of the GRO file. Must be a single line.
-    atoms
-        An instance of Structure containing the atoms to write.
-    box
-        The periodic box as a 3x3 matrix.
-    """
-    # Print the title
-    print(title, file=outfile)
-
-    # Print the number of atoms
-    print("{:5d}".format(len(atoms)), file=outfile)
-
-    # Print the atoms
-    atom_template = "{:5d}{:<5s}{:>5s}{:5d}{:8.3f}{:8.3f}{:8.3f}"
-    for idx, atname, resname, resid, x, y, z in atoms:
-        print(atom_template
-              .format(int(resid % 1e5), resname, atname, int(idx % 1e5),
-                      x, y, z),
-              file=outfile)
-
-    # Print the box
-    grobox = (box[0][0], box[1][1], box[2][2],
-              box[0][1], box[0][2], box[1][0],
-              box[1][2], box[2][0], box[2][1])
-    box_template = '{:10.5f}' * 9
-    print(box_template.format(*grobox), file=outfile)
-
-
-def write_pdb(outfile, title, atoms, box):
-    """
-    Write a PDB file.
-
-    Parameters
-    ----------
-    outfile
-        The stream to write in.
-    title
-        The title of the GRO file. Must be a single line.
-    atoms
-        An instance of Structure containing the atoms to write.
-    box
-        The periodic box as a 3x3 matrix.
-    """
-    # Print the title
-    print('TITLE ' + title, file=outfile)
-
-    # Print the box
-    print(pdbBoxString(box), file=outfile)
-
-    # Print the atoms
-    for idx, atname, resname, resid, x, y, z in atoms:
-        print(pdbline % (idx % 1e5, atname, resname, "", resid % 1e5, '',
-                         10*x, 10*y, 10*z, 0, 0, ''),
-              file=outfile)
-
-
 def write_summary(protein, membrane, solvent):
     charge  = protein.charge + membrane.charge
     plen = len(protein)
@@ -906,15 +827,6 @@ def system_title(membrane, protein, lipids):
     else:
         title = "Insanely solvated protein."
     return title
-
-
-def write_structure(output, title, atoms, box):
-    oStream = output and open(output, "w") or sys.stdout
-    with oStream:
-        if output.endswith(".gro"):
-            write_gro(oStream, title, atoms, box.tolist())
-        else:
-            write_pdb(oStream, title, atoms, box.tolist())
 
 
 def insane(**options):
