@@ -34,7 +34,6 @@ import numpy as np
 
 from simopt import opt_func
 
-from . import linalg
 from . import lipids
 from .pbc import PBC
 from .structure import *

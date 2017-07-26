@@ -3,7 +3,6 @@ from __future__ import print_function
 
 import numpy as np
 
-from . import linalg
 from .converters import *
 from ._data import SOLVENTS, CHARGES, APOLARS
 
@@ -23,22 +22,28 @@ pdbBoxLine  = "CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f P 1           1"
 pdbline = "ATOM  %5i  %-3s %4s%1s%4i%1s   %8.3f%8.3f%8.3f%6.2f%6.2f           %1s  "
 
 
+def angle(a, b):
+    p = (a*b).sum()
+    q = np.sqrt((a**2).sum()*(b**2).sum())
+    return np.arccos(np.clip(p/q, -1.0, 1.0))*180/np.pi 
+
+
 def pdbBoxString(box):
+    box = np.array(box)
+
     # Box vectors
     u, v, w  = box
 
     # Box vector lengths
-    nu, nv, nw = [np.sqrt(linalg.norm2(i)) for i in (u, v, w)]
+    nu, nv, nw = np.sqrt((box**2).sum(axis=1))
 
     # Box vector angles
-    alpha = nv*nw == 0 and 90 or np.arccos(linalg.cos_angle(v, w))/d2r
-    beta  = nu*nw == 0 and 90 or np.arccos(linalg.cos_angle(u, w))/d2r
-    gamma = nu*nv == 0 and 90 or np.arccos(linalg.cos_angle(u, v))/d2r
+    alpha = nv*nw == 0 and 90 or angle(v, w)
+    beta  = nu*nw == 0 and 90 or angle(u, w)
+    gamma = nu*nv == 0 and 90 or angle(u, v)
 
-    return pdbBoxLine % (10*linalg.norm(u),
-                         10*linalg.norm(v),
-                         10*linalg.norm(w),
-                         alpha, beta, gamma)
+    # Conversion from nm to A
+    return pdbBoxLine % (10*nu, 10*nv, 10*nw, alpha, beta, gamma)
 
 
 def groAtom(a):
@@ -185,76 +190,73 @@ class Structure(object):
 
     def orient(self, d, pw):
         # Determine grid size
-        mx, my, mz = self.fun(min)
-        rx, ry, rz = self.fun(lambda x: max(x)-min(x)+1e-8)
+        m = self.coord.min(axis=0)
+        r = self.coord.max(axis=0)-self.coord.min(axis=0)+1e-8
 
         # Number of grid cells
-        nx, ny, nz = int(rx/d+0.5), int(ry/d+0.5), int(rz/d+0.5)
+        n = (r/d + 0.5).astype('int')
+        nx, ny, nz = n
 
         # Initialize grids
-        atom     = [[[0 for i in range(nz+2)]
-                     for j in range(ny+2)] for k in range(nx+2)]
-        phobic   = [[[0 for i in range(nz+2)]
-                     for j in range(ny+2)] for k in range(nx+2)]
-        surface  = []
-        for i, (ix, iy, iz) in zip(self.atoms, self.coord):
-            if i[1] != "DUM":
-                jx, jy, jz = (int(nx*(ix-mx)/rx),
-                              int(ny*(iy-my)/ry),
-                              int(nz*(iz-mz)/rz))
-                atom[jx][jy][jz]   += 1
-                phobic[jx][jy][jz] += (i[1].strip() in APOLARS)
+        atom = np.zeros(n+2)
+        phobic = np.zeros(n+2)
+        binned = (n * (self.coord - m) / r).astype('int')
+        notdummy = np.array([ i[1] != "DUM" for i in self.atoms ])
+        apolar = np.array([ i[1].strip() in APOLARS for i in self.atoms ])
+        for i,j,k in binned[notdummy]:
+            atom[i,j,k] += 1
+        for i,j,k in binned[apolar]:
+            phobic[i,j,k] += 1
+        #atom = np.histogramdd(binned[notdummy], n+2)[0]
+
+        with np.errstate(divide='ignore', invalid='ignore'):
+            ratio = (2 * phobic / atom) ** pw
 
         # Determine average density
-        occupd = sum([bool(k) for i in atom for j in i for k in j])
-        avdens = float(sum([sum(j) for i in atom for j in i]))/occupd
-
+        occupd = atom.astype('bool').sum()
+        avdens = float(atom.sum())/occupd
+        threshold = 0.1*avdens
+        above = atom > threshold
+        surface  = []
         #cgofile  = open('density.cgo', "w")
         #cgofile.write('[\n')
-        for i in range(nx):
-            for j in range(ny):
-                for k in range(nz):
-                    if atom[i][j][k] > 0.1*avdens:
-                        # Check the neighbouring cells;
-                        # if one of them is not occupied, count cell as surface
-                        if not (atom[i-1][j][k] and atom[i+1][j][k] and
-                                atom[i][j-1][k] and atom[i][j+1][k] and
-                                atom[i][j][k-1] and atom[i][j][k+1]):
-                            sx, sy, sz = (mx+rx*(i+0.5)/nx,
-                                          my+ry*(j+0.5)/ny,
-                                          mz+rz*(k+0.5)/nz)
-                            sw       = (2.0*phobic[i][j][k]/atom[i][j][k])**pw
-                            surface.append((sx, sy, sz, sw))
-                            #cgofile.write("    7.0, %f, %f, %f, %f, \n"%(10*sx, 10*sy, 10*sz, 0.25*sw))
+        for i,j,k in zip(*np.where(atom > threshold)):
+            # Check the neighbouring cells;
+            # if one of them is not occupied, count cell as surface
+            if not (atom[i-1,j,k] and atom[i+1,j,k] and
+                    atom[i,j-1,k] and atom[i,j+1,k] and
+                    atom[i,j,k-1] and atom[i,j,k+1]):
+                sx, sy, sz = m + (r*(i,j,k)+0.5*r)/n
+                sw = ratio[i,j,k]
+                surface.append((sx, sy, sz, sw))
+                #cgofile.write("    7.0, %f, %f, %f, %f, \n"%(10*sx, 10*sy, 10*sz, 0.25*sw))
         #cgofile.write(']\n')
         #cgofile.close()
 
+        surface = np.array(surface)
         sx, sy, sz, w = zip(*surface)
         W             = 1.0/sum(w)
 
         # Weighted center of apolar region; has to go to (0, 0, 0)
-        sxm, sym, szm   = [sum(p)*W
-                         for p in zip(*[(m*i, m*j, m*k)
-                                        for m, i, j, k in zip(w, sx, sy, sz)])]
+        sxm, sym, szm = np.average(surface[:,:-1], axis=0, weights=surface[:,-1])
+        apolar_center = np.average(surface[:,:-1], axis=0, weights=surface[:,-1])
 
         # Place apolar center at origin
-        self.center = (-sxm, -sym, -szm)
-        sx, sy, sz    = zip(*[(i-sxm, j-sym, k-szm) for i, j, k in zip(sx, sy, sz)])
+        self.center = -apolar_center
 
         # Determine weighted deviations from centers
-        dx, dy, dz      = zip(*[(m*i, m*j, m*k) for m, i, j, k in zip(w, sx, sy, sz)])
+        dev = (surface[:,:-1] - apolar_center) * surface[:, -1, None]
 
         # Covariance matrix for surface
-        xx, yy, zz, xy, yz, zx = [sum(p)*W
-                             for p in zip(*[(i*i, j*j, k*k, i*j, j*k, k*i)
-                                            for i, j, k in zip(dx, dy, dz)])]
-
-        # PCA: u, v, w are a rotation matrix
-        (ux, uy, uz), (vx, vy, vz), (wx, wy, wz), r = linalg.mijn_eigen_sym_3x3(xx, yy, zz, xy, zx, yz)
+        val, vec = np.linalg.eig(np.dot(dev.T, dev))
+        vec = vec[:,val.argsort()[::-1]]
+        if (d - 0.2)**2 < 1e-6:
+            vec *= -1
+        else:
+            vec[:,1:] *= -1
 
         # Rotate the coordinates
-        self.coord = np.array([(ux*i+uy*j+uz*k, vx*i+vy*j+vz*k, wx*i+wy*j+wz*k)
-                               for i, j, k in self.coord])
+        self.coord = np.dot(self.coord, vec)
 
     def rotate(self, what):
             if what == "princ":
