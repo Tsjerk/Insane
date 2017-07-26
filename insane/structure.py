@@ -250,10 +250,6 @@ class Structure(object):
         # Covariance matrix for surface
         val, vec = np.linalg.eig(np.dot(dev.T, dev))
         vec = vec[:,val.argsort()[::-1]]
-        if (d - 0.2)**2 < 1e-6:
-            vec *= -1
-        else:
-            vec[:,1:] *= -1
 
         # Rotate the coordinates
         self.coord = np.dot(self.coord, vec)

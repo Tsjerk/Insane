@@ -8,5 +8,5 @@ Protein in INSANE! Membrane UpperLeaflet>POPC=1 LowerLeaflet>POPC=1
 [ molecules ]
 ; name  number
 Protein          1
-POPC            20
-POPC            31
+POPC            26
+POPC            19
