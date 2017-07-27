@@ -1,38 +1,44 @@
+branches:
+    only:
+        - master
 language: python
 python:
-    - "2.7"
-    - "3.4"
-    - "3.5"
-    - "3.6"
-    - "nightly"
-env:
-    matrix:
-        - BUILD="test"
-        - BUILD="package"
+    - '2.7'
+    - '3.4'
+    - '3.5'
+    - '3.6'
+    - nightly
 install:
-    - |
-        if [[ $BUILD == 'test' ]]; \
-        then \
-        git clone https://github.com/Tsjerk/simopt.git && pip install ./simopt; \
-        fi
-    - |
-        if [[ $BUILD == 'test' ]]; \
-        then \
-        pip install ./ ; \
-        fi
-    - |
-        if [[ $BUILD == 'test' ]]; \
-        then \
-        pip install nose coverage mock; \
-        fi
+    - git clone https://github.com/Tsjerk/simopt.git && pip install ./simopt
+    - pip install ./
+    - pip install nose coverage mock
 script:
     - |
-        if [[ $BUILD == 'test' ]]; \
-        then \
-        cd tests && python run_tests.py -v --with-coverage --cover-package=insane; \
-        fi
-    - |
-        if [[ $BUILD == 'package' ]]; \
-        then \
-        cd maintainers && ./zippackage.sh && ./insane -h; \
-        fi
+        cd tests \
+        && python run_tests.py -v --with-coverage --cover-package=insane
+jobs:
+    include:
+       - stage: package
+         python: '2.7'
+         install: skip
+         script: |
+                   cd maintainers \
+                   && ./zippackage.sh \
+                   && ./insane -h \
+                   && ./insane -l POPC -d 10 -o test.gro
+       - stage: package
+         python: '3.6'
+         install: skip
+         script: |
+                   cd maintainers \
+                   && ./zippackage.sh \
+                   && ./insane -h \
+                   && ./insane -l POPC -d 10 -o test.gro
+       - stage: deploy
+         install: skip
+         script: "./maintainers/travis_zip.sh"
+env:
+    global:
+        - secure: "Pgd71s57rus/TRUZVFrXoMde6JRARRSGu7tW/3V3laxOzOL9NJEUacF6yHHHHjFg9aNOFhdHogeR4Gaux3bBxEAQaxKC5n765uT2+9LEQw2d/L9jpGQmFj4174tGsZgkPrtNa+UcqoRehSwjXlh3s5Ju2eIfCxKOSMJa3lWWFy8bqUSTEJrKQOGwJuqIUXnOO8K5lPd/LJ8ikyUCn9PegpC60/A2qR1p52IBViXg2AxzOmsU43R3vY2FpBv5CcFog8fATNp2Waz6UNlt4oGaDNfyp/c9UV2Fi+pOHITFMlgLGSTFLEe1qUK1G58yRhAeA93Dcm4LaIgjnfKPr8+zPkEmPRL7ZGjzCqRKzb9JqSgAZQ9QIaWob7VykiPAXQfCIIJtPc32tLqdUDoePA7laDcdXOhnBYuhcNF378C+Y9Op65U7VwWfoqhWj63OQb+kjakI8bdnjfd9U4d0QiRCyutL181y5cAp5tN3nSWmobH5NIjIMHBGdPVSOWUcWe7aF2c8metOt65sRIOVku9QsWOTQy1UZgjTcHtpFMHlFoWhOIHhMiD66xlnJe1Cv78jNUfL3jSXUZIMU1LkKfi28X9C8JSi3Fw89YHvoGwxmUeE3VlJ53RqEMzzO6pOnfjmizz19vrGdf/jEQQ42ir35Sn1V/k40/4QMoV7GVpR6ek="
+        - GIT_CI_USER="Travis Deploy"
+        - GIT_CI_EMAIL="noemail@example.com"
