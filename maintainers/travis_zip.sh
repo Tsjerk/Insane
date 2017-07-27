@@ -27,7 +27,7 @@ mv insane insane.zip
 git init
 git config user.name "${GIT_CI_USER}"
 git config user.email "${GIT_CI_EMAIL}"
-git remote add origin "https://${GH_TOKEN}@github.com/jbarnoud/Insane.git"
+git remote add origin "https://${GH_TOKEN}@github.com/Tsjerk/Insane.git"
 git fetch origin package
 git checkout package
 
