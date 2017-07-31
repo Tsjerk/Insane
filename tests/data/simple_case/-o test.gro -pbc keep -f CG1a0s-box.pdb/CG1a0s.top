@@ -1,0 +1,12 @@
+#include "martini.itp"
+
+[ system ]
+; name
+Protein in INSANE! Membrane UpperLeaflet>POPC=0 LowerLeaflet>POPC=0
+
+
+[ molecules ]
+; name  number
+Protein          1
+POPC           512
+POPC           512

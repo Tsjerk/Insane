@@ -143,24 +143,6 @@ def _arguments_as_list(arguments):
     return arguments_list
 
 
-def _output_from_arguments(arguments, option='-o'):
-    """
-    Find the file name of the GRO output provided as argument to insane.
-
-    The file name is passed to insane via the '-o' argument. If the argument is
-    provided several times, then only the last one is considered.
-
-    This function reads the arguments provided as a list of arguments.
-    """
-    for i, argument in reversed(list(enumerate(arguments))):
-        if argument == option:
-            break
-    else:
-        raise ValueError('No output name is not provided to insane '
-                         'using the {} argument.'.format(option))
-    return arguments[i + 1]
-
-
 def _split_case(case):
     """
     Get the arguments and the input directory from a test case.
@@ -185,30 +167,10 @@ def _reference_path(arguments, alias=None):
     Get the path to the reference files for the simple test cases.
     """
     arg_list = _arguments_as_list(arguments)
-    out_struct = _output_from_arguments(arg_list, option='-o')
-    out_format = os.path.splitext(out_struct)[-1]
+
     simple_case_ref_data = os.path.join(DATA_DIR, 'simple_case')
     base_name = arguments if alias is None else alias
-    ref_gro = os.path.join(simple_case_ref_data, base_name + out_format)
-    try:
-        out_top = _output_from_arguments(arg_list, option='-p')
-    except ValueError:
-        ref_top = None
-    else:
-        ref_top = os.path.join(simple_case_ref_data, base_name + '.top')
-    ref_stdout = os.path.join(simple_case_ref_data, base_name + '.out')
-    ref_stderr = os.path.join(simple_case_ref_data, base_name + '.err')
-    return ref_gro, ref_top, ref_stdout, ref_stderr
-
-
-def _run_external(arguments):
-    command = [INSANE] + arguments
-    process = subprocess.Popen(command,
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE,
-                               env={'INSANE_SEED': INSANE_SEED})
-    out, err = process.communicate()
-    return out, err, process.returncode
+    return os.path.join(simple_case_ref_data, base_name)
 
 
 def _run_internal(arguments):
@@ -253,7 +215,7 @@ def compare(output, reference):
     out_file = utils._open_if_needed(output)
     ref_file = utils._open_if_needed(reference)
     with out_file, ref_file:
-        lines_zip = zip_longest(out_file, ref_file, fillvalue=None)
+        lines_zip = zip(out_file, ref_file)
         for out_line, ref_line in lines_zip:
             assert_equal(out_line, ref_line)
         extra_out = list(out_file)
@@ -262,9 +224,34 @@ def compare(output, reference):
         assert_equal(extra_ref, [])
 
 
-def run_and_compare(arguments, input_dir,
-                    ref_gro, ref_top,
-                    ref_stdout, ref_stderr, runner=_run_external):
+def compare_directories(directory, ref_directory, ignore=()):
+    extra_files = []
+    missing_files = []
+    for root, dirs, files in os.walk(directory):
+        for single_file in [f for f in files if f not in ignore]:
+            path = os.path.join(root, single_file)
+            rel_path = os.path.relpath(path, directory)
+            ref_path = os.path.join(ref_directory, rel_path)
+            if os.path.exists(ref_path):
+                if os.path.splitext(ref_path)[-1] == '.gro':
+                    utils.assert_gro_equal(path, ref_path)
+                compare(path, ref_path)
+            else:
+                extra_files.append(rel_path)
+    for root, dirs, files in os.walk(ref_directory):
+        for single_file in [f for f in files if f not in ignore]:
+            path = os.path.join(root, single_file)
+            rel_path = os.path.relpath(path, ref_directory)
+            ref_path = os.path.join(directory, rel_path)
+            if not os.path.exists(ref_path):
+                missing_files.append(rel_path)
+    assert not bool(extra_files), ("The following files are unexpected: {}"
+                                   .format(extra_files))
+    assert not bool(missing_files), ("The following files are missing: {}"
+                                     .format(missing_files))
+
+
+def run_and_compare(arguments, input_dir, ref_dir, runner):
     """
     Run insane and compare its output against a reference
     """
@@ -274,50 +261,18 @@ def run_and_compare(arguments, input_dir,
     # converted to a list.
     arguments = _arguments_as_list(arguments)
 
-    # The name of the output gro file must be provided to insane for insane to
-    # work. Since we also need that file name, let's get it from insane's
-    # arguments.
-    gro_output = _output_from_arguments(arguments, option='-o')
-    if ref_top is not None:
-        top_output = _output_from_arguments(arguments, option='-p')
+    ref_stdout = os.path.join(ref_dir, 'stdout')
+    ref_stderr = os.path.join(ref_dir, 'stderr')
 
     # We want insane to run in a temporary directory. This allows to keep the
     # file system clean, and it avoids mixing output of different tests.
     with utils.tempdir():
         out, err, returncode = run_insane(arguments, input_dir, runner=runner)
         assert not returncode
-        assert os.path.exists(gro_output)
-        if os.path.splitext(gro_output)[-1] == '.gro':
-            utils.assert_gro_equal(gro_output, ref_gro)
-        else:
-            compare(gro_output, ref_gro)
         compare(utils.ContextStringIO(out), ref_stdout)
         compare(utils.ContextStringIO(err), ref_stderr)
-        if ref_top is not None:
-            compare(top_output, ref_top)
-
-
-def _test_simple_cases():
-    """
-    This function generates test functions for nosetests. These test functions
-    execute insane with the argument listed in SIMPLE_TEST_CASES.
-    """
-    for case in SIMPLE_TEST_CASES:
-        case_args, input_dir, alias = _split_case(case)
-        ref_gro, ref_top, ref_stdout, ref_stderr = _reference_path(case_args, alias)
-        # The test generator could yield run and compare directly. Bt, then,
-        # the verbose display of nosetests gets crowded with the very long
-        # names of the reference file, that are very redundant. Using a partial
-        # function allows to have only the arguments for insane displayed.
-        _test_case = functools.partial(
-            run_and_compare,
-            ref_gro=ref_gro,
-            ref_top=ref_top,
-            ref_stdout=ref_stdout,
-            ref_stderr=ref_stderr,
-            runner=_run_external)
-        _test_case.__doc__ = 'insane ' + case_args
-        yield (_test_case, case_args, input_dir)
+        compare_directories('./', ref_dir,
+                            ignore=('stderr', 'stdout', 'testlog'))
 
 
 def test_simple_cases_internal():
@@ -327,19 +282,15 @@ def test_simple_cases_internal():
     """
     for case in SIMPLE_TEST_CASES:
         case_args, input_dir, alias = _split_case(case)
-        ref_gro, ref_top, ref_stdout, ref_stderr = _reference_path(case_args, alias)
+        ref_dir = _reference_path(case_args, alias)
         # The test generator could yield run and compare directly. Bt, then,
         # the verbose display of nosetests gets crowded with the very long
         # names of the reference file, that are very redundant. Using a partial
         # function allows to have only the arguments for insane displayed.
         _test_case = functools.partial(
             run_and_compare,
-            ref_gro=ref_gro,
-            ref_top=ref_top,
-            ref_stdout=ref_stdout,
-            ref_stderr=ref_stderr,
+            ref_dir=ref_dir,
             runner=_run_internal)
-        _test_case.__doc__ = 'insane ' + case_args
         yield (_test_case, case_args, input_dir)
 
 class TestGroTester(object):
@@ -503,20 +454,22 @@ def generate_simple_case_references():
     """
     Run insane to generate reference files for the simple regression tests.
 
-    Run insane with the arguments listed in SIMPLE_TEST_CASES. The output GRO
-    file, the standard output, and the standard error are stored in the
+    Run insane with the arguments listed in SIMPLE_TEST_CASES. The output
+    files, the standard output, and the standard error are stored in the
     DATA_DIR/simple_case directory.
     """
     for case in SIMPLE_TEST_CASES:
         case_args, input_dir, alias = _split_case(case)
         arguments = _arguments_as_list(case_args)
-        out_gro = _output_from_arguments(arguments, option='-o')
-        try:
-            out_top = _output_from_arguments(arguments, option='-p')
-        except ValueError:
-            out_top = None
-        ref_gro, ref_top, ref_stdout, ref_stderr = _reference_path(case_args, alias)
-        with utils.tempdir():
+        ref_dir = _reference_path(case_args, alias)
+        ref_stdout = os.path.join(ref_dir, 'stdout')
+        ref_stderr = os.path.join(ref_dir, 'stderr')
+
+        if os.path.exists(ref_dir):
+            shutil.rmtree(ref_dir)
+        os.mkdir(ref_dir)
+
+        with utils.in_directory(ref_dir):
             print(INSANE + ' ' + ' '.join(arguments))
             out, err, _ = run_insane(arguments, input_dir)
             with open(ref_stdout, 'w') as outfile:
@@ -525,9 +478,6 @@ def generate_simple_case_references():
             with open(ref_stderr, 'w') as outfile:
                 for line in err:
                     print(line, file=outfile, end='')
-            shutil.copy2(out_gro, ref_gro)
-            if out_top is not None:
-                shutil.copy2(out_top, ref_top)
 
 
 def clean_simple_case_references():
