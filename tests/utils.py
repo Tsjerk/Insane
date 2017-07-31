@@ -64,7 +64,7 @@ class ContextStringIO(StringIO):
 
     StringIO can not completely pass as a file, because it is not usable as a
     context manager in a 'with' statement. This class adds the context manager
-    hability to StringIO. It does nothing when the context manager is either
+    ability to StringIO. It does nothing when the context manager is either
     entered or exited, but it can be used in a 'with' statement.
     """
     def __enter__(self):
@@ -81,6 +81,16 @@ class ContextStringIO(StringIO):
 
 
 @contextlib.contextmanager
+def in_directory(dirpath):
+    return_dir = os.getcwd()
+    try:
+        os.chdir(dirpath)
+        yield dirpath
+    finally:
+        os.chdir(return_dir)
+
+
+@contextlib.contextmanager
 def tempdir():
     """
     Context manager that moves in a temporary directory.
@@ -94,13 +104,11 @@ def tempdir():
         # We are back to the initial working directory.
         # The temporary does not exist anymore.
     """
-    return_dir = os.getcwd()
     dirpath = tempfile.mkdtemp()
     try:
-        os.chdir(dirpath)
-        yield dirpath
+        with in_directory(dirpath):
+            yield dirpath
     finally:
-        os.chdir(return_dir)
         shutil.rmtree(dirpath)
 
 
