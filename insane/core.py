@@ -586,6 +586,7 @@ def setup_membrane(pbc, protein, lipid, options):
     else:
         resi = 0
 
+    inshift = options["indist"] / 2
     for leaflet, leaf_lip, lipd, lipdx, lipdy in [leaf_up, leaf_lo]:
         for lipid, pos in leaf_lip:
             # Increase the residue number by one
@@ -595,7 +596,7 @@ def setup_membrane(pbc, protein, lipid, options):
             at, ax, ay, az = zip(*liplist[lipid].build(diam=lipd))
             # The z-coordinates are spaced at 0.3 nm,
             # starting with the first bead at 0.15 nm
-            az = [ leaflet*(0.5+(i-min(az)))*options["beaddist"] for i in az ]
+            az = [ leaflet*(inshift + (i-min(az)))*options["beaddist"] for i in az ]
             xx = np.array((ax, ay)).T
 
             # Set the random rotation for this lipid

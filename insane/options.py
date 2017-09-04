@@ -55,6 +55,8 @@ OPTIONS = Options([
     """,
         (0, "-l",    "lower",     molspec,     1,        None, MULTI, "Lipid type and relative abundance (NAME[:#])"),
         (0, "-u",    "upper",     molspec,     1,        None, MULTI, "Lipid type and relative abundance (NAME[:#])"),
+#        (1, "-i",    "inner",     molspec,     1,        None, MULTI, "Molecule type and relative abundance for inter-leaflet space"),
+        (1, "-di",   "indist",    float,       1,         1.0,     0, "Size for inter-leaflet space (nm)"),
         (1, "-a",    "area",      float,       1,        0.60,     0, "Area per lipid (nm*nm)"),
         (1, "-au",   "uparea",    float,       1,        None,     0, "Area per lipid (nm*nm) for upper layer"),
         (1, "-asym", "asymmetry", int,         1,        None,     0, "Membrane asymmetry (number of lipids)"),
