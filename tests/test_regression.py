@@ -95,6 +95,8 @@ SIMPLE_TEST_CASES = [
     ('-o test.gro -f CG1a0s.pdb -p CG1a0s.top -l POPC -box 20,30,40', '1a0s'),
     ('-o test.gro -f CG1a0s.pdb -p CG1a0s.top -l POPC -box 20,30,40 -d 3',
      '1a0s'),
+    ('-o test.pdb -f CG1a0s.pdb -p CG1a0s.top -l POPC -box 20,30,40 -d 3',
+     '1a0s'),
     ('-o test.gro -f CG1a0s.pdb -p CG1a0s.top -l POPC -box 2,3,4 -d 10',
      '1a0s'),
     ('-o test.gro -box 10,15,20 -l LOLO -alname LOLO '
@@ -110,6 +112,7 @@ SIMPLE_TEST_CASES = [
     '-o test.gro -box 25,15,10',
     '-o test.gro -box 25,15,10,0,0,5,0,5,5',
     '-o test.gro -box 25,20,15,90,60,60',
+    '-o bilayer.pdb -x 15 -y 15 -z 10 -l DOPC:0.5 -l DOPS:0.5 -sol W',
 ]
 
 # Add test cases for all PBC options.
