@@ -19,7 +19,7 @@ def pdbAtom(a):
 
 # Reformatting of lines in structure file
 pdbBoxLine  = "CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f P 1           1"
-pdbline = "ATOM  %5i  %-3s %4s%1s%4i%1s   %8.3f%8.3f%8.3f%6.2f%6.2f           %1s  "
+pdbline = "ATOM  %5i %-4s %4s%1s%4i%1s   %8.3f%8.3f%8.3f%6.2f%6.2f           %1s  "
 
 
 def angle(a, b):
@@ -378,8 +378,8 @@ def write_pdb(outfile, title, atoms, box):
 
     # Print the atoms
     for idx, atname, resname, resid, x, y, z in atoms:
-        print(pdbline % (idx % 1e5, atname, resname, "", resid % 1e5, '',
-                         10*x, 10*y, 10*z, 0, 0, ''),
+        print(pdbline % (idx % 1e5, atname[:4], resname[:3], "",
+                         resid % 1e4, '', 10*x, 10*y, 10*z, 0, 0, ''),
               file=outfile)
 
 
