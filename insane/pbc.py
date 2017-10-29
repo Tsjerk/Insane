@@ -12,6 +12,10 @@ class PBC(object):
     def __init__(self, shape=None, box=None, xyz=None, distance=None, membrane=None, protein=None, disc=None, hole=None):
         self.box = None
 
+        # Validate the shape.
+        if shape not in ('cubic', 'rectangular', 'square', 'hexagona', 'optimal'):
+            raise PBCException('"{}" is not a knon PBC shape.'.format(shape))
+
         if box:
             #print("Setting box from given box definition. Neglecting all other PBC options!")
             self.box = np.array(box).reshape((3,3))
