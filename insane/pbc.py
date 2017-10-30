@@ -13,8 +13,8 @@ class PBC(object):
         self.box = None
 
         # Validate the shape.
-        if shape not in ('cubic', 'rectangular', 'square', 'hexagona', 'optimal'):
-            raise PBCException('"{}" is not a knon PBC shape.'.format(shape))
+        if shape not in ('cubic', 'rectangular', 'square', 'hexagonal', 'optimal'):
+            raise PBCException('"{}" is not a known PBC shape.'.format(shape))
 
         if box:
             #print("Setting box from given box definition. Neglecting all other PBC options!")
