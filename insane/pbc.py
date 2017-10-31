@@ -14,7 +14,7 @@ class PBC(object):
 
         # Validate the shape.
         if shape not in ('cubic', 'rectangular', 'square',
-                         'hexagonal', 'optimal', 'keep'):
+                         'hexagonal', 'optimal', 'keep', None):
             raise PBCException('"{}" is not a known PBC shape.'.format(shape))
 
         if box:
