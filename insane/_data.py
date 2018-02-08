@@ -82,6 +82,9 @@ SOLVENTS = {
                  ("HW41", (-a + b, a, -a + b)),
                  ("HW42", (-a - b, a, -a - b)),
                  ("VZ", (0, 0, 0))),
+    "GMY":      (("B1", (-0.11, 0,   0)),
+                 ("B2", ( 0.05, 0.16, 0)),
+                 ("B3", ( 0.05, -0.16, 0))),
     "GLUC":     (("B1", (-0.11, 0,   0)),
                  ("B2", ( 0.05, 0.16, 0)),
                  ("B3", ( 0.05, -0.16, 0))),
@@ -186,7 +189,7 @@ SOLVENTS = {
     }
 
 # Update the solvents dictionary with single atom ones
-for solvent in ["W", "NA", "CL", "Mg", "K", "BUT"]:
+for solvent in ["W", "WN", "NA", "CL", "Mg", "K", "BUT"]:
     SOLVENTS[solvent] = ((solvent, (0, 0, 0)), )
 
 # Apolar amino acids nd stuff for orienting proteins in membrane
