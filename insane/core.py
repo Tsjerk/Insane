@@ -66,14 +66,6 @@ def pointsOnSphere(n):
     return np.array([_point((2.*k+1)/n-1, k*2.3999632297286531) for k in range(n)])
 
 
-def occupancy(grid, points, spacing=0.01):
-    """Return a vector with the occupancy of each grid point for 
-    given array of points"""
-    distances = ((grid[:,None,:] - points[None,:,:])**2).sum(axis=2)
-    occupied = (distances < spacing).sum(axis=1)
-    return occupied
-
-
 def determine_molecule_numbers(total, molecules, absolute, relative):
     """Determine molecule numbers for given total, 
     absolute and relative numbers""" 

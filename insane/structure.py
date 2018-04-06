@@ -7,6 +7,14 @@ from .converters import *
 from ._data import SOLVENTS, CHARGES, APOLARS
 
 
+def occupancy(grid, points, spacing=0.01):
+    """Return a vector with the occupancy of each grid point for 
+    given array of points"""
+    distances = ((grid[:,None,:] - points[None,:,:])**2).sum(axis=2)
+    occupied = (distances < spacing).sum(axis=1)
+    return occupied
+
+
 def isPDBAtom(l):
     return l.startswith("ATOM") or l.startswith("HETATM")
 
