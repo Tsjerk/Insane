@@ -204,6 +204,19 @@ OOPG  GL0  ES1 ES2 ES3 C1A D2A C3A C4A  -   -  C1B D2B C3B C4B   -   - C1C C2C C
 OPPG  GL0  ES1 ES2 ES3 C1A D2A C3A C4A  -   -  C1B C2B C3B C4B   -   - C1C C2C C3C C4C  -   -
 P3TG  GL0  ES1 ES2 ES3 C1A C2A C3A C4A  -   -  C1B C2B C3B C4B   -   - C1C C2C C3C C4C  -   -
 
+[ retinylesters ]
+;
+;   7--8--9-10-11
+;  /
+; 6--5--4--3-2
+;           \|
+;            1
+       0   0   0   0   0  0.5  1   1   1   1   1
+       1   0   0   0   0   0   0   0   0   0   0
+       1   1   2   3   4   5   4   3   2   1   0
+;      1   2   3   4   5   6   7   8   9  10  11
+REYP  S1  S2  S3  D4  D5  O6  C7  C8  C9 C10   -
+REYO  S1  S2  S3  D4  D5  O6  C7  C8  C9 C10   -
 
 
 [ cardiolipins ]
