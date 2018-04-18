@@ -175,6 +175,9 @@ class Structure(object):
 
     def areaxy(self, lowerbound=-np.inf, upperbound=np.inf, spacing=0.1):
         mask = (self.coord[:,2] > lowerbound) & (self.coord[:,2] < upperbound)
+        if not mask.sum():
+            # No cross section with membrane
+            return 0
         points = self.coord[mask, :2]
         # The magic number factor 1.1 is not critical at all
         # Just a number to set a margin to the bounding box and 
