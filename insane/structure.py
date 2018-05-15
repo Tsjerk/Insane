@@ -396,9 +396,11 @@ def write_pdb(outfile, title, atoms, box):
 
 def write_structure(output, title, atoms, box):
     oStream = output and open(output, "w") or sys.stdout
+    # The title is always truncated to 80 characters to avoid 
+    # Gromacs (or other programs) choking on them.
     with oStream:
         if output.endswith(".gro"):
-            write_gro(oStream, title, atoms, box.tolist())
+            write_gro(oStream, title[:80], atoms, box.tolist())
         else:
-            write_pdb(oStream, title, atoms, box.tolist())
+            write_pdb(oStream, title[:80], atoms, box.tolist())
 
