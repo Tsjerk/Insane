@@ -65,6 +65,8 @@ OPTIONS = Options([
         (2, "-rand", "randkick",  float,       1,         0.1,     0, "Random kick size (maximum atom displacement)"),
         (2, "-norot","norotate",  bool,        0,        None,     0, "Do not rotate lipids in plane"),
         (2, "-bd",   "beaddist",  float,       1,         0.3,     0, "Bead distance unit for scaling z-coordinates (nm)"),
+        (2, "-ld",   "lipdensity",int,         1,          20,     0, "Point density for occupancy determining sphere"),
+        (2, "-lr",   "lipradius", float,       1,        0.33,     0, "Radius for occupancy determining sphere"),
         """
     Protein related options.
     """,
@@ -76,6 +78,8 @@ OPTIONS = Options([
         (2, "-fudge",  "fudge",       float,       1,         0.1, 0, "Fudge factor for allowing lipid-protein overlap"),
         (1, "-ring",   "inside",      bool,        0,        None, 0, "Put lipids inside the protein"),
         (1, "-dm",     "memshift",    float,       1,           0, 0, "Shift protein with respect to membrane"),
+        (2, "-pd",     "protdensity", int,         1,          20, 0, "Point density for occupancy determining sphere"),
+        (2, "-pr",     "protradius",  float,       1,           0, 0, "Radius for occupancy determining sphere"),
         """
     Solvent related options.
     """,

@@ -158,7 +158,12 @@ def setup_solvent(pbc, protein, membrane, options):
 
     nx, ny, nz = int(1+d*pbc.x), int(1+d*pbc.y), int(1+d*pbc.z)
     dx, dy, dz = pbc.x/nx, pbc.y/ny, pbc.z/nz
-    excl, hz  = int(nz*options["solexcl"]/pbc.z), int(0.5*nz)
+
+    # Exclusion range for solvent
+    excl = int(nz*options["solexcl"]/pbc.z)
+
+    # Layer index at middle of box
+    hz = int(0.5*nz) 
 
     zshift   = 0
     if membrane:
@@ -173,7 +178,7 @@ def setup_solvent(pbc, protein, membrane, options):
 
     # Flag all cells occupied by protein or membrane
     for coord in (protein+membrane).coord:
-        for x, y, z in coord + 0.33*pointsOnSphere(20):
+        for x, y, z in coord + options["lipradius"] * pointsOnSphere(options["lipdensity"]):
             if z >= pbc.z:
                 x -= pbc.box[2,0]
                 y -= pbc.box[2,1]
@@ -384,16 +389,20 @@ def setup_membrane(pbc, protein, lipid, options):
     # If there is a protein, mark the corresponding cells as occupied
     if protein:
         # Extract the parts of the protein that are in either leaflet
-        mem_mask_up = (0 < protein.coord[:,2]) & (protein.coord[:,2] < 2.4)
-        mem_mask_lo = (0 > protein.coord[:,2]) & (protein.coord[:,2] > -2.4)
-        prot_up = protein.coord[mem_mask_up, :2]
-        prot_lo = protein.coord[mem_mask_lo, :2]
+        sphere = options["protradius"] * pointsOnSphere(options["protdensity"])
 
         # Calculate number density per cell
+        mem_mask_lo = (0 > protein.coord[:,2]) & (protein.coord[:,2] > -2.4)
+        prot_lo = protein.coord[mem_mask_lo, :]
         for i in prot_lo:
-            grid_lo[ int(lo_lipids_x*i[0]/pbc.rx)%lo_lipids_x ][ int(lo_lipids_y*i[1]/pbc.ry)%lo_lipids_y ] += 1
+            for x, y, z in i + sphere:
+                grid_lo[ int(lo_lipids_x*x/pbc.rx)%lo_lipids_x ][ int(lo_lipids_y*y/pbc.ry)%lo_lipids_y ] += 1
+
+        mem_mask_up = (0 < protein.coord[:,2]) & (protein.coord[:,2] < 2.4)
+        prot_up = protein.coord[mem_mask_up, :]
         for i in prot_up:
-            grid_up[ int(up_lipids_x*i[0]/pbc.rx)%up_lipids_x ][ int(up_lipids_y*i[1]/pbc.ry)%up_lipids_y ] += 1
+            for x, y, z in i + sphere:
+                grid_up[ int(up_lipids_x*x/pbc.rx)%up_lipids_x ][ int(up_lipids_y*y/pbc.ry)%up_lipids_y ] += 1
 
         # Determine which cells to consider occupied, given the fudge factor
         # The array is changed to boolean type here
