@@ -318,7 +318,7 @@ class Structure(object):
         ## 2. Shift of protein relative to the membrane center
         zshift = kwargs["memshift"]
         if not kwargs["center"]:
-            zshift -= shift[2]
+            zshift += shift[2]
 
         # Now we center the system in the rectangular
         # brick corresponding to the unit cell
