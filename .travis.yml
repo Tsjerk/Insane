@@ -7,6 +7,8 @@ python:
     - '3.4'
     - '3.5'
     - '3.6'
+    - '3.7'
+    - '3.8'
     - nightly
 install:
     - git clone https://github.com/Tsjerk/simopt.git && pip install ./simopt
@@ -29,7 +31,7 @@ jobs:
                    && ./insane -h \
                    && ./insane -l POPC -d 10 -o test.gro
        - stage: package
-         python: '3.6'
+         python: '3.8'
          install: skip
          script: |
                    cd maintainers \
