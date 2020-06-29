@@ -26,11 +26,11 @@ Insane can be installed either as a single-file program, or as a python module.
 
 ### Install insane as a single-file program
 
-Insane depends on python 2.7 and on the numpy python library. Make sure you
+Insane depends on python and on the numpy python library. Make sure you
 have these two requirements installed:
 
 ```bash
-python2.7 -c 'import numpy'
+python -c 'import numpy'
 ```
 
 If this command line outputs an error message, you need to instal either python
@@ -48,17 +48,18 @@ Insane is available on [pypi](https://pypi.python.org/pypi/insane/1.0rc1) and
 can be installed using pip. To install insane for the current user, run
 
 ```bash
-pip2 install --user insane
+pip install --user insane
 ```
 
-Pip installs the insane in `~/.local/lib/python2.7/site-packages`. Check that the
+Pip installs the insane in `~/.local/lib/python<version>/site-packages`,
+where `<version>` is the version of python. Check that the
 directory exists and that it is in your `PYTHONPATH`. The insane program is
 installed in `~/.local/bin`, make sure this directory is in your `PATH`.
 
 To install insane system wide, run
 
 ```bash
-sudo pip2 install insane
+sudo pip install insane
 ```
 
 We recommend the use of python virtual environments. Read more about them on
