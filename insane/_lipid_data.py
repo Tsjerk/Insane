@@ -109,7 +109,7 @@ lipidsa.update({      # 1   2   3   4   5   6   7   8   9  10  11  12  13  14  1
 #  6-2-1-4-8--10-11-12-13-14-15
 #    |/    |
 #  7-3     9--16-17-18-19-20-21
-moltype = "PIPLIPIDS"
+moltype = "INOSITOLLIPIDS"
 lipidsx[moltype] = (   .5,  .5,   0,   0,   1, .5,  0,  0,   .5,   0,   0,   0,   0,   0,   0,   1,   1,   1,   1,   1,   1)
 lipidsy[moltype] = (    0,   0,   0,   0,   0,  0,  0,  0,    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0)
 lipidsz[moltype] = (    8,   9,   9,   7,  10, 10, 10,  6,    6,   5,   4,   3,   2,   1,   0,   5,   4,   3,   2,   1,   0)
@@ -141,10 +141,10 @@ lipidsa.update({      # 1     2    3    4    5   6   7   8    9    10    11    1
 #   | 4 /   |
 #   |  /    |
 # 7-2       10-16-17-18-19-20 # chain A
-moltype = "INOSITOLLIPIDS"
+moltype = "INOSITIDES"
 # From L. Borges-Araujo, P.C.T. Souza, F. Fernandes and M.N. Melo, Improved
 # parameterization of phosphatidylinositide lipid head-groups for the Martini 3
-# coarse grain force field doi:10.26434/chemrxiv.14759991
+# coarse grain force field doi:10.26434/chemrxiv.14759991. Added by ojeda-e 2020.07.06
 lipidsx[moltype] = (     .5,  .5,   0,  0.75, 0,    1,  .5,   0,    0,   .5,   0,   0,   0,   0,   0,    1,   1,   1,   1,   1,   1)
 lipidsy[moltype] = (      0,   0,   0,  0.25, 0,    0,   0,   0,    0,    0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0)
 lipidsz[moltype] = (      8,   9,   9,  8.5,  7,   10,  10,  10,    6,    6,   5,   4,   3,   2,   1,    5,   4,   3,   2,   1,   0)
