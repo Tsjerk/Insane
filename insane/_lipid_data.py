@@ -123,7 +123,7 @@ lipidsa.update({      # 1     2    3    4    5   6   7   8    9    10    11    1
     "LPPI": (moltype, " C1   C2   C3   PO4   -   -   -  GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B   -    -    - "),
     "LOPI": (moltype, " C1   C2   C3   PO4   -   -   -  GL1  GL2  C1A  D2A  C3A  C4A   -    -   C1B  C2B  C3B   -    -    - "),
     "YPPI": (moltype, " C1   C2   C3   PO4   -   -   -  GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  D2B  C3B   -    -    - "),
-    "POPI": (moltype, " C1   C2   C3   PO4   -   -   -  GL1  GL2  C1A  D2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - "),
+    # "POPI": (moltype, " C1   C2   C3   PO4   -   -   -  GL1  GL2  C1A  D2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - "), --> Replace by 2021 22 bead below
     "PIPI": (moltype, " C1   C2   C3   PO4   -   -   -  GL1  GL2  C1A  D2A  D3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - "),
     "PAPI": (moltype, " C1   C2   C3   PO4   -   -   -  GL1  GL2  D1A  D2A  D3A  D4A  C5A   -   C1B  C2B  C3B  C4B   -    - "),
     "PUPI": (moltype, " C1   C2   C3   PO4   -   -   -  GL1  GL2  D1A  D2A  D3A  D4A  D5A   -   C1B  C2B  C3B  C4B   -    - "),
@@ -133,6 +133,47 @@ lipidsa.update({      # 1     2    3    4    5   6   7   8    9    10    11    1
 ## Templates using the old lipid names and definitions
   "PI.o"  : (moltype, " C1   C2   C3    CP   -   -   -  GL1  GL2  C1A  C2A  C3A  C4A   -    -   CU1  CU2  CU3  CU4  CU5   - "),
   "PI34.o": (moltype, " C1   C2   C3    CP PO1 PO2   -  GL1  GL2  C1A  C2A  C3A  C4A   -    -   CU1  CU2  CU3  CU4  CU5   - "),
+})
+
+# 8 6
+#  \|
+#   3 - 1-5-9-11-12-13-14-15 # chain B
+#   | 4 /   |
+#   |  /    |
+# 7-2       10-16-17-18-19-20 # chain A
+moltype = "INOSITIDES"
+# From L. Borges-Araujo, P.C.T. Souza, F. Fernandes and M.N. Melo, Improved
+# parameterization of phosphatidylinositide lipid head-groups for the Martini 3
+# coarse grain force field doi:10.26434/chemrxiv.14759991. Added by ojeda-e 2020.07.06
+lipidsx[moltype] = (     .5,  .5,   0,  0.75, 0,    1,  .5,   0,    0,   .5,   0,   0,   0,   0,   0,    1,   1,   1,   1,   1,   1)
+lipidsy[moltype] = (      0,   0,   0,  0.25, 0,    0,   0,   0,    0,    0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0)
+lipidsz[moltype] = (      8,   9,   9,  8.5,  7,   10,  10,  10,    6,    6,   5,   4,   3,   2,   1,    5,   4,   3,   2,   1,   0)
+lipidsa.update({        #  1   2    3    4    5     6     7    8    9    10   11   12   13   14   15    16   17   18   19   20   21
+  "SAPI"    : (moltype, " C1   C2   C3   C4   PO4   -    -     -   GL1  GL2  D1A  D2A  D3A  D4A  C5A   C1B  C2B  C3B  C4B   -    - "),
+  "SAP1_3"  : (moltype, " C1   C2   C3   C4   PO4   P3   -     -   GL1  GL2  D1A  D2A  D3A  D4A  C5A   C1B  C2B  C3B  C4B   -    - "),
+  "SAP1_4"  : (moltype, " C1   C2   C3   C4   PO4   -    -    P4   GL1  GL2  D1A  D2A  D3A  D4A  C5A   C1B  C2B  C3B  C4B   -    - "),
+  "SAP1_5"  : (moltype, " C1   C2   C3   C4   PO4   -    P5    -   GL1  GL2  D1A  D2A  D3A  D4A  C5A   C1B  C2B  C3B  C4B   -    - "),
+  "SAP2_34" : (moltype, " C1   C2   C3   C4   PO4   P3   -    P4   GL1  GL2  D1A  D2A  D3A  D4A  C5A   C1B  C2B  C3B  C4B   -    - "),
+  "SAP2_35" : (moltype, " C1   C2   C3   C4   PO4   P3   P5    -   GL1  GL2  D1A  D2A  D3A  D4A  C5A   C1B  C2B  C3B  C4B   -    - "),
+  "SAP2_45" : (moltype, " C1   C2   C3   C4   PO4   -    P5   P4   GL1  GL2  D1A  D2A  D3A  D4A  C5A   C1B  C2B  C3B  C4B   -    - "),
+  "SAP3_345": (moltype, " C1   C2   C3   C4   PO4   P3   P5   P4   GL1  GL2  D1A  D2A  D3A  D4A  C5A   C1B  C2B  C3B  C4B   -    - "),
+  "POPI"    : (moltype, " C1   C2   C3   C4   PO4   -    -    -    GL1  GL2  C1A  D2A  C3A  C4A   -    C1B  C2B  C3B  C4B   -    - "),
+  "POP1_3"  : (moltype, " C1   C2   C3   C4   PO4   P3   -    -    GL1  GL2  C1A  D2A  C3A  C4A   -    C1B  C2B  C3B  C4B   -    - "),
+  "POP1_4"  : (moltype, " C1   C2   C3   C4   PO4   -    -    P4   GL1  GL2  C1A  D2A  C3A  C4A   -    C1B  C2B  C3B  C4B   -    - "),
+  "POP1_5"  : (moltype, " C1   C2   C3   C4   PO4   -    P5   -    GL1  GL2  C1A  D2A  C3A  C4A   -    C1B  C2B  C3B  C4B   -    - "),
+  "POP2_34" : (moltype, " C1   C2   C3   C4   PO4   P3   -    P4   GL1  GL2  C1A  D2A  C3A  C4A   -    C1B  C2B  C3B  C4B   -    - "),
+  "POP2_35" : (moltype, " C1   C2   C3   C4   PO4   P3   P5   -    GL1  GL2  C1A  D2A  C3A  C4A   -    C1B  C2B  C3B  C4B   -    - "),
+  "POP2_45" : (moltype, " C1   C2   C3   C4   PO4   -    P5   P4   GL1  GL2  C1A  D2A  C3A  C4A   -    C1B  C2B  C3B  C4B   -    - "),
+  "POP3_345": (moltype, " C1   C2   C3   C4   PO4   P3   P5   P4   GL1  GL2  C1A  D2A  C3A  C4A   -    C1B  C2B  C3B  C4B   -    - "),
+  "INO"     : (moltype, " C1   C2   C3   C4    -    -    -    -     -    -    -    -    -    -    -     -    -    -    -    -    - "),
+  "INO1_1"  : (moltype, " C1   C2   C3   C4    P1   -    -    -     -    -    -    -    -    -    -     -    -    -    -    -    - "),
+  "INO2_13" : (moltype, " C1   C2   C3   C4    P1   P3   -    -     -    -    -    -    -    -    -     -    -    -    -    -    - "),
+  "INO2_14" : (moltype, " C1   C2   C3   C4    P1   P3   -    P4    -    -    -    -    -    -    -     -    -    -    -    -    - "),
+  "INO2_15" : (moltype, " C1   C2   C3   C4    P1   -    P5   -     -    -    -    -    -    -    -     -    -    -    -    -    - "),
+  "INO3_134": (moltype, " C1   C2   C3   C4    P1   P3   -    P4    -    -    -    -    -    -    -     -    -    -    -    -    - "),
+  "INO3_135": (moltype, " C1   C2   C3   C4    P1   P3   P5   -     -    -    -    -    -    -    -     -    -    -    -    -    - "),
+  "INO3_145": (moltype, " C1   C2   C3   C4    P1   -    P5   P4    -    -    -    -    -    -    -     -    -    -    -    -    - "),
+  "INO4_1345": (moltype, " C1   C2   C3   C4   PO4  P3   P5   P4    -    -    -    -    -    -    -     -    -    -    -    -    - ")
 })
 
 
