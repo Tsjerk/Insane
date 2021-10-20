@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # INSert membrANE
 # A simple, versatile tool for building coarse-grained simulation systems
 # Copyright (C) 2017  Tsjerk A. Wassenaar and contributors
@@ -17,8 +17,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA  02110-1301, USA.
-
-from __future__ import print_function
 
 import copy
 from collections import namedtuple

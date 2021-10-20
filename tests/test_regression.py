@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # INSert membrANE
 # A simple, versatile tool for building coarse-grained simulation systems
 # Copyright (C) 2017  Tsjerk A. Wassenaar and contributors
@@ -32,8 +32,6 @@ If ran as a script, this generate the reference files expected by the tests. If
 ran usinf pytest or nosetest, this executes insane with a series of arguments
 and compares the output to the reference.
 """
-
-from __future__ import print_function
 
 import contextlib
 import functools

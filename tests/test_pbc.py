@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # INSert membrANE
 # A simple, versatile tool for building coarse-grained simulation systems
 # Copyright (C) 2017  Tsjerk A. Wassenaar and contributors

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from __future__ import print_function, absolute_import
 from setuptools import setup
@@ -32,8 +32,7 @@ setup(
 
         'License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)',
 
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3'
     ],
 
     install_requires=['numpy', 'simopt'],
