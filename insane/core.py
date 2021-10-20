@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # INSert membrANE
 # A simple, versatile tool for building coarse-grained simulation systems
@@ -23,8 +23,6 @@ INSANE: A versatile tool for building membranes and/or solvent with proteins.
 
 ... Someone ought to write a more extensive docstring here...
 """
-
-from __future__ import print_function
 
 import os
 import sys
@@ -214,7 +212,7 @@ def setup_solvent(pbc, protein, membrane, options):
     # (like when mixing a 1M solution of this with a 1M solution of that
 
     # First get names and relative numbers for each solvent
-    solnames, solabs, solnums = zip(*solv)
+    solnames, solabs, solnums = list(zip(*solv))
     solnames, solnums = list(solnames), list(solnums)
     totS       = float(sum(solnums))
 
@@ -291,7 +289,7 @@ def setup_solvent(pbc, protein, membrane, options):
             solcoord.append((x, y, z))
     sol.coord = solcoord
 
-    return sol, zip(solnames, num_sol)
+    return sol, list(zip(solnames, num_sol))
 
 
 def setup_membrane(pbc, protein, lipid, options):
