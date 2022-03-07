@@ -8,7 +8,7 @@ aimed at the [Martini force field](http://cgmartini.nl) but can be used for
 other models. It can write PDB or [gromacs][] files.
 
 Using insane, you can build a system containing a transmembrane protein
-included in a lipid bilayers, with water and ions with the following command
+included in a lipid bilayer, with water and ions with the following command
 line:
 
 ```bash
@@ -77,7 +77,7 @@ insane -l POPC -d 10 -dz 7 -sol W -o bilayer.gro -p topol.top
 
 The `-l` argument tells insane to include the given lipid. The number of lipids
 to include is determined from the area per lipid and the size of the box; the
-default area per lipid in 0.6 nm².
+default area per lipid is 0.6 nm².
 
 With `-d` and `-dz`, we specify the dimensions of the box. Here we create
 a hexagonal prism box where images are separated by 10 nm in the XY plane, and
@@ -91,7 +91,7 @@ box, and the solvent diameter (0.5 nm per default).
 The `-o` and `-p` arguments specify the output of the program. With `-o
 bilayer.gro`, insane will write the system structure in a [GRO
 file](http://manual.gromacs.org/current/online/gro.html) usable with
-[gromacs][]. Insane can also write PDB files if the output file as the '.pdb'
+[gromacs][]. Insane can also write PDB files if the output file has the '.pdb'
 file extension. With `-p topol.top`, insane will write a template TOP file to
 be used with [gromacs][]. If the `-p` argument is omitted, insane writes the
 content of the system on the standard output in a form that can be appended at
@@ -107,9 +107,9 @@ cholesterol.
 ```bash
 insane \
     -o bilayer.gro -p topol.top \
-    -x 20 -x 20 -z 10 \
+    -x 20 -y 20 -z 10 \
     -l DPPC:4 -l DIPC:3 -l CHOL:3 \
-    -sol W:90 -sol W:10
+    -sol W:90 -sol WF:10
 ```
 
 The periodic box can be defined in multiple ways. Here we build an orthorhombic
@@ -135,14 +135,14 @@ insane -o system.gro -p topol.top -f protein.pdb -d 7 -sol W -salt 0
 Solutes, including proteins, can be read from a GRO or a PDB file provided with
 the `-f` argument.
 
-With the `-d 7` argument, insane build the periodic box such that the distance
+With the `-d 7` argument, insane builds the periodic box such that the distance
 between two periodic images is greater than 7 nm. By default, in the absence of
-a membrane, insane build a rhombic dodecahedral box. Setting the periodic box
+a membrane, insane builds a rhombic dodecahedral box. Setting the periodic box
 with `-box`, or setting the box geometry with `-pbc`, overwrite that default.
 
 If the `-salt` argument is set, insane will add ions to the system. With
-`-salt` is set to 0, insane will add enough chloride or sodium ions to
-neutralize the system charge. Is `-salt` is set to any positive value, it is
+`-salt` set to 0, insane will add enough chloride or sodium ions to
+neutralize the system charge. If `-salt` is set to any positive value, it is
 read as the concentration of ions in molar.
 
 ### Insert a protein in a membrane
