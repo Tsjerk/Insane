@@ -5,7 +5,7 @@ from setuptools import setup
 
 # Read the version from a file to be sure it is consistent with the version
 # in the package.
-with open('insane/VERSION.txt') as infile:
+with open('VERSION.txt') as infile:
     version = infile.readline().strip()
 
 setup(
@@ -35,7 +35,7 @@ setup(
         'Programming Language :: Python :: 3'
     ],
 
-    install_requires=['numpy', 'simopt'],
+    install_requires=['numpy', 'simopt>=0.4.0'],
 
     tests_requires=['nose'],
 
