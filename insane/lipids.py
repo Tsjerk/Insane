@@ -16,7 +16,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-import collections
+from collections.abc import MutableMapping
 import math
 import os
 
@@ -157,7 +157,7 @@ class Lipid:
         self.charge = float(charge)
 
 
-class Lipid_List(collections.MutableMapping):
+class Lipid_List(MutableMapping):
     """Container class for lipid definitions"""
 
     def __init__(self):
