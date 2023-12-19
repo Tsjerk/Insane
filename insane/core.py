@@ -580,8 +580,9 @@ def setup_membrane(pbc, protein, lipid, options):
     liplist = lipids.get_lipids()
     # Then add lipids from file
     liplist.add_from_files(options["molfile"])
-    # Last, add lipids from command line
-    liplist.add_from_def(options["lipnames"], options["lipheads"], options["liplinks"],
+    # Last, add lipids from command line, note first update the names with ff tag if needed 
+    usrnames = [usrname if '.' in usrname else options["forcefield"]+'.'+usrname for usrname in options["lipnames"]]
+    liplist.add_from_def(usrnames, options["lipheads"], options["liplinks"],
                          options["liptails"], options["lipcharge"])
     # Add lipid charges to global CHARGE index 
     for key in liplist:

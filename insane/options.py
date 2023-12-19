@@ -94,9 +94,9 @@ OPTIONS = Options([
         (0, "-salt",   "salt",        str,         1,        None,     0, "Salt concentration"),
         (1, "-charge", "charge",      str,         1,      "auto",     0, "Charge of system. Set to auto to infer from residue names"),
         """
-    Define additional lipid types (same format as in lipid-martini-itp-v01.py)
+    Define additional lipid types (same format as in lipid-martini-itp-v01.py and lipid-itp-generator-Martini3.py)
     """,
-        (1, "-alname",   "lipnames",  str,  1,  None, MULTI, "Additional lipid name, x4 letter"),
+        (1, "-alname",   "lipnames",  str,  1,  None, MULTI, "Additional lipid name, x3-4 letter"),
         (1, "-alhead",   "lipheads",  str,  1,  None, MULTI, "Additional lipid head specification string"),
         (1, "-allink",   "liplinks",  str,  1,  None, MULTI, "Additional lipid linker specification string"),
         (1, "-altail",   "liptails",  str,  1,  None, MULTI, "Additional lipid tail specification string"),
