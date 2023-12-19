@@ -358,7 +358,8 @@ M2.MMA   0   -   -   -  C1A C2A C3A C4A C5A M1A C1B C2B C3B C4B  -   -   -   -  
              0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
              0   0   0   0   0   0  5.3 4.5 3.9 3.3  3 2.6  1.4  0   0   0   0   0
 ;            1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18
-M3.CHOL  0   -   -   -   -   -   -  ROH  R1  R2 R3  R4  R5  R6  R7  C1  C2   -   - 
+M3.CHOL  0   -   -   -   -   -   -  ROH  R1  R2 R3  R4  R5  R6  C1  C2   -   -   -
+M3d.CHOL 0   -   -   -   -   -   -  ROH  R1  R2 R3  R4  R5  R6  R7  C1  C2   -   - 
 M2.CHOL  0   -   -   -   -   -   -  ROH  R1  R2 R3  R4  R5  C1  C2   -   -   -   - 
 M2.ERGO  0   -   -   -   -   -   -  ROH  R1  R2 R3  R4  R5  C1  C2   -   -   -   - 
 
