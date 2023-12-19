@@ -67,6 +67,7 @@ OPTIONS = Options([
         (2, "-bd",   "beaddist",  float,       1,         0.3,     0, "Bead distance unit for scaling z-coordinates (nm)"),
         (2, "-ld",   "lipdensity",int,         1,          20,     0, "Point density for occupancy determining sphere"),
         (2, "-lr",   "lipradius", float,       1,        0.33,     0, "Radius for occupancy determining sphere"),
+        (1, "-ff",   "forcefield",str,         1,        "M3",     0, "Force field name e.g. M3 (for Martini 3), M2 (for Martini 2)"),        
         """
     Protein related options.
     """,

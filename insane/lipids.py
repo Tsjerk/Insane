@@ -243,8 +243,10 @@ def read_lipids(lipfile):
         else:
             splitted = line.split()
             name = splitted.pop(0)
+            charge = splitted.pop(0)
             lipids[name] = Lipid(
                 name=name, 
+                charge=charge, 
                 beads=splitted, 
                 template=zip(x, y, z)
             )
