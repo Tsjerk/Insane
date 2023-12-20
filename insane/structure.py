@@ -126,8 +126,9 @@ class Structure(object):
         atom_enumeration = enumerate(zip(self.atoms, self.coord), start=1)
         for idx, (atom, (x, y, z)) in atom_enumeration:
             atname, resname, resid = atom[:3]
-            if resname.endswith('.o'):
-                resname = resname[:-2]
+            if '.' in resname:
+                # Remove any -ff tags from molecules - WARNING no name can contain . as used as separator
+                resname = resname.split('.')[1]
             yield idx, atname, resname, resid, x, y, z
 
     @property

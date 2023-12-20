@@ -28,19 +28,23 @@ __all__ = ['Lipid', 'Lipid_List', 'get_lipids']
 # Lipid data file
 LIPID_FILE = 'lipids.dat'
 
-# Define supported lipid head beads. One letter name mapped to atom name
+# Define supported lipid head beads. Name mapped to atom name
 HEADBEADS = {
-"C":  "NC3", # NC3 = Choline
+    "C":  "NC3", # NC3 = Choline
     "E":  "NH3", # NH3 = Ethanolamine
     "G":  "GL0", # GL0 = Glycerol
     "S":  "CNO", # CNO = Serine
     "P":  "PO4", # PO4 = Phosphate
-    }
+    "PS1":"PS1", # PS1 is bead one of two bead PS represents a COO group
+    "PS2":"PS2", # PS2 is bead two of two bead PS represents a NH3 group
+    "COH":"COH", # COH = Cappding bead for top of diacylglycerols and ceramides
+}
 
-# Define supported lipid link beads. One letter name mapped to atom name
+# Define supported lipid link beads. Name mapped to atom name
 LINKBEADS = {
     "G":  "GL",  # Glycerol
     "A":  "AM",  # Amide (Ceramide/Sphingomyelin)
+    "O":  "OH",  # Amide (Ceramide/Sphingomyelin), in Martini 3 old AM1 is called OH1 
 }
 
 
@@ -83,9 +87,10 @@ class Lipid:
                 self.charge = float(val[0])
             elif what.endswith("name") and not self.name:
                 self.name = val[0]
-        if self.charge is None:
-            # Infer charge from head groups
-            self.charge = sum([headgroup_charges[bead] for bead in self.head])
+        # Not been impleneted yet 
+        #if self.charge is None:
+        #    # Infer charge from head groups
+        #    self.charge = sum([headgroup_charges[bead] for bead in self.head])
 
     def build(self, **kwargs):
         """Build/return a list of [(bead, x, y, z), ...]"""
@@ -243,8 +248,10 @@ def read_lipids(lipfile):
         else:
             splitted = line.split()
             name = splitted.pop(0)
+            charge = splitted.pop(0)
             lipids[name] = Lipid(
                 name=name, 
+                charge=charge, 
                 beads=splitted, 
                 template=zip(x, y, z)
             )

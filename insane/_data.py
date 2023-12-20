@@ -26,8 +26,7 @@ __all__ = ['CHARGES', 'SOLVENTS', 'APOLARS']
 
 # Lists for automatic charge determination
 CHARGES = {
-    "ARG":1, "LYS":1, "HIH": 1, "ASP":-1, "GLU":-1,
-    "DOPG":-1, "POPG":-1, "DOPS":-1, "POPS":-1, "DSSQ":-1
+    "ARG":1, "LYS":1, "HIH": 1, "ASP":-1, "GLU":-1
 }
 
 a, b  = np.sqrt(2) / 20, np.sqrt(2) / 60
