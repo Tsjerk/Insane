@@ -1,3 +1,14 @@
+; Lipid templates:
+;   Each prototopologie/template block defines a named class of lipids with [ name ]
+;     Where the first three lines are x,y,z coordinates for all the beads in the template
+;     followed by a list of lipids. 
+;   Each lipid line contains a lipid name, lipid charge and string with lipid bead names
+;   The lipid names are <FF>.<lipid name> and can be specified directly e.g. -l M3.POPC 
+;     or if not specified e.g. -l POPC the FF in -ff is used (default M3 for Martini 3) giving M3.POPC 
+;   Charge is best guess to help with counterion placement but should always be checked or total 
+;     charge adjusted as needed for current force field used. 
+;
+
 
 [ diacylglycerol ]
 ;
@@ -7,73 +18,117 @@
 ;  \| |/  |
 ;   2 5   8-15-16-17-18-19-20
 ;
-        0  .5   0   0  .5   0   0  .5   0   0   0   0   0   0   1   1   1   1   1   1
-        0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
-       10   9   9   8   8   7   6   6   5   4   3   2   1   0   5   4   3   2   1   0
-;       1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20
-DTPC    -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A  -   -   -   -  C1B C2B  -   -   -   - 
-DLPC    -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A C3A  -   -   -  C1B C2B C3B  -   -   - 
-DPPC    -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  C1B C2B C3B C4B  -   - 
-DBPC    -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A C3A C4A C5A  -  C1B C2B C3B C4B C5B  - 
-POPC    -   -   -  NC3  -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B C2B C3B C4B  -   - 
-DOPC    -   -   -  NC3  -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B D2B C3B C4B  -   - 
-DAPC    -   -   -  NC3  -  PO4 GL1 GL2 D1A D2A D3A D4A C5A  -  D1B D2B D3B D4B C5B  - 
-DIPC    -   -   -  NC3  -  PO4 GL1 GL2 C1A D2A D3A C4A  -   -  C1B D2B D3B C4B  -   - 
-DGPC    -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A D3A C4A C5A  -  C1B C2B D3B C4B C5B  - 
-DNPC    -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A C3A D4A C5A C6A C1B C2B C3B D4B C5B C6B
-DTPE    -   -   -  NH3  -  PO4 GL1 GL2 C1A C2A  -   -   -   -  C1B C2B  -   -   -   - 
-DLPE    -   -   -  NH3  -  PO4 GL1 GL2 C1A C2A C3A  -   -   -  C1B C2B C3B  -   -   - 
-DPPE    -   -   -  NH3  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  C1B C2B C3B C4B  -   - 
-DBPE    -   -   -  NH3  -  PO4 GL1 GL2 C1A C2A C3A C4A C5A  -  C1B C2B C3B C4B C5B  - 
-POPE    -   -   -  NH3  -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B C2B C3B C4B  -   - 
-DOPE    -   -   -  NH3  -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B D2B C3B C4B  -   - 
-POPG    -   -   -  GL0  -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B C2B C3B C4B  -   - 
-DOPG    -   -   -  GL0  -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B D2B C3B C4B  -   - 
-POPS    -   -   -  CNO  -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B C2B C3B C4B  -   - 
-DOPS    -   -   -  CNO  -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B D2B C3B C4B  -   - 
-DPSM    -   -   -  NC3  -  PO4 AM1 AM2 T1A C2A C3A  -   -   -  C1B C2B C3B C4B  -   - 
-DBSM    -   -   -  NC3  -  PO4 AM1 AM2 T1A C2A C3A C4A  -   -  C1B C2B C3B C4B C5B  - 
-BNSM    -   -   -  NC3  -  PO4 AM1 AM2 T1A C2A C3A C4A  -   -  C1B C2B C3B C4B C5B C6B
-; PG for thylakoid membrane
-OPPG    -   -   -  GL0  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  C1B D2B C3B C4B  -   - 
-; PG for thylakoid membrane of spinach (PPT with a trans-unsaturated bond at sn1 and a 
-; triple-unsaturated bond at sn2 and PPG with a transunsaturated bond at sn1 and a 
-; palmitoyl tail at sn2
-JPPG    -   -   -  GL0  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  D1B C2B C3B C4B  -   - 
-JFPG    -   -   -  GL0  -  PO4 GL1 GL2 C1A D2A D3A D4A  -   -  D1B C2B C3B C4B  -   - 
-; Monoacylglycerol
-GMO     -   -   -   -   -   -  GL1 GL2 C1A C2A D3A C4A C5A  -   -   -   -   -   -   - 
-; Templates using the old lipid names and definitions
-DHPC.o  -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A  -   -   -   -  C1B C2B  -   -   -   - 
-DMPC.o  -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A C3A  -   -   -  C1B C2B C3B  -   -   - 
-DSPC.o  -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A C3A C4A C5A  -  C1B C2B C3B C4B C5B  - 
-POPC.o  -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  C1B C2B D3B C4B C5B  - 
-DOPC.o  -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A D3A C4A C5A  -  C1B C2B D3B C4B C5B  - 
-DUPC.o  -   -   -  NC3  -  PO4 GL1 GL2 C1A D2A D3A C4A  -   -  C1B D2B D3B C4B  -   - 
-DEPC.o  -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A C3A D4A C5A C6A C1B C2B C3B D4B C5B C6B
-DHPE.o  -   -   -  NH3  -  PO4 GL1 GL2 C1A C2A  -   -   -   -  C1B C2B  -   -   -   - 
-DLPE.o  -   -   -  NH3  -  PO4 GL1 GL2 C1A C2A C3A  -   -   -  C1B C2B C3B  -   -   - 
-DMPE.o  -   -   -  NH3  -  PO4 GL1 GL2 C1A C2A C3A  -   -   -  C1B C2B C3B  -   -   - 
-DSPE.o  -   -   -  NH3  -  PO4 GL1 GL2 C1A C2A C3A C4A C5A  -  C1B C2B C3B C4B C5B  - 
-POPE.o  -   -   -  NH3  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  C1B C2B D3B C4B C5B  - 
-DOPE.o  -   -   -  NH3  -  PO4 GL1 GL2 C1A C2A D3A C4A C5A  -  C1B C2B D3B C4B C5B  - 
-PPCS.o  -   -   -  NC3  -  PO4 AM1 AM2 C1A C2A C3A C4A  -   -  D1B C2B C3B C4B  -   - 
-DOPG.o  -   -   -  GL0  -  PO4 GL1 GL2 C1A C2A D3A C4A C5A  -  C1B C2B D3B C4B C5B  - 
-POPG.o  -   -   -  GL0  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  C1B C2B D3B C4B C5B  - 
-DOPS.o  -   -   -  CNO  -  PO4 GL1 GL2 C1A C2A D3A C4A C5A  -  C1B C2B D3B C4B C5B  - 
-POPS.o  -   -   -  CNO  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  C1B C2B D3B C4B C5B  - 
-CPG.o   -   -   -  GL0  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  C1B C2B D3B C4B  -   - 
-PPG.o   -   -   -  GL0  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  D1B C2B C3B C4B  -   - 
-PPT.o   -   -   -  GL0  -  PO4 GL1 GL2 C1A D2A D3A D4A  -   -  D1B C2B C3B C4B  -   - 
-DSMG.o  -   -   -  C6   C4 C1  GL1 GL2 C1A C2A C3A C4A C5A  -  C1B C2B C3B C4B C5B  - 
-DSDG.o C61 C41 C11 C62 C42 C12 GL1 GL2 C1A C2A C3A C4A C5A  -  C1B C2B C3B C4B C5B  - 
-DSSQ.o  -   -   S6 C6   C4 C1  GL1 GL2 C1A C2A C3A C4A C5A  -  C1B C2B C3B C4B C5B  - 
+           0  .5   0   0  .5   0   0  .5   0   0   0   0   0   0   1   1   1   1   1   1
+           0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
+          10   9   9   8   8   7   6   6   5   4   3   2   1   0   5   4   3   2   1   0
+;          1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20
+; Martini 3 types
+M3.DUPC   0   -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A C3A  -   -   -  C1B C2B C3B  -   -   - 
+M3.DMPC   0   -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A C3A  -   -   -  C1B C2B C3B  -   -   - 
+M3.DPPC   0   -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  C1B C2B C3B C4B  -   - 
+M3.DSPC   0   -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  C1B C2B C3B C4B  -   - 
+M3.DKPC   0   -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A C3A C4A C5A  -  C1B C2B C3B C4B C5B  - 
+M3.DBPC   0   -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A C3A C4A C5A  -  C1B C2B C3B C4B C5B  - 
+M3.POPC   0   -   -   -  NC3  -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B C2B C3B C4B  -   - 
+M3.SOPC   0   -   -   -  NC3  -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B C2B C3B C4B  -   - 
+M3.PLPC   0   -   -   -  NC3  -  PO4 GL1 GL2 C1A D2A D3A C4A  -   -  C1B C2B C3B C4B  -   - 
+M3.DOPC   0   -   -   -  NC3  -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B D2B C3B C4B  -   - 
+M3.PAPC   0   -   -   -  NC3  -  PO4 GL1 GL2 C1A D2A D3A D4A C5A  -  C1B C2B C3B C4B  -   - 
+M3.PDPC   0   -   -   -  NC3  -  PO4 GL1 GL2 D1A D2A D3A D4A D5A  -  C1B C2B C3B C4B  -   - 
+M3.SDPC   0   -   -   -  NC3  -  PO4 GL1 GL2 D1A D2A D3A D4A D5A  -  C1B C2B C3B C4B  -   - 
+M3.DLPE   0   -   -   -  NH3  -  PO4 GL1 GL2 C1A D2A D3A C4A  -   -  C1B D2B D3B C4B  -   - 
+M3.DUPE   0   -   -   -  NH3  -  PO4 GL1 GL2 C1A C2A C3A  -   -   -  C1B C2B C3B  -   -   - 
+M3.DMPE   0   -   -   -  NH3  -  PO4 GL1 GL2 C1A C2A C3A  -   -   -  C1B C2B C3B  -   -   - 
+M3.POPE   0   -   -   -  NH3  -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B C2B C3B C4B  -   - 
+M3.SOPE   0   -   -   -  NH3  -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B C2B C3B C4B  -   - 
+M3.PAPE   0   -   -   -  NH3  -  PO4 GL1 GL2 C1A D2A D3A D4A C5A  -  C1B C2B C3B C4B  -   - 
+M3.DUPG  -1   -   -   -  GL0  -  PO4 GL1 GL2 C1A C2A C3A  -   -   -  C1B C2B C3B  -   -   - 
+M3.DMPG  -1   -   -   -  GL0  -  PO4 GL1 GL2 C1A C2A C3A  -   -   -  C1B C2B C3B  -   -   - 
+M3.DPPG  -1   -   -   -  GL0  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  C1B C2B C3B C4B  -   - 
+M3.DSPG  -1   -   -   -  GL0  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  C1B C2B C3B C4B  -   - 
+M3.POPG  -1   -   -   -  GL0  -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B C2B C3B C4B  -   - 
+M3.SOPG  -1   -   -   -  GL0  -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B C2B C3B C4B  -   - 
+M3.DOPG  -1   -   -   -  GL0  -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B D2B C3B C4B  -   - 
+M3.POPS  -1   -   -   -  CNO  -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B C2B C3B C4B  -   - 
+M3.DOPS  -1   -   -   -  CNO  -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B D2B C3B C4B  -   - 
+M3.PAPS  -1   -   -   -  CNO  -  PO4 GL1 GL2 C1A D2A D3A D4A C5A  -  C1B C2B C3B C4B  -   - 
+M3.POPA  -1   -   -   -   -   -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B C2B C3B C4B  -   - 
+M3.PSM    0   -   -   -  NC3  -  PO4 OH1 AM2 T1A C2A C3A C4A  -   -  C1B C2B C3B C4B  -   - 
+M3.SSM    0   -   -   -  NC3  -  PO4 OH1 AM2 T1A C2A C3A C4A  -   -  C1B C2B C3B C4B  -   - 
+M3.ASM    0   -   -   -  NC3  -  PO4 OH1 AM2 T1A C2A C3A C4A  -   -  C1B C2B C3B C4B C5B  - 
+M3.BSM    0   -   -   -  NC3  -  PO4 OH1 AM2 T1A C2A C3A C4A  -   -  C1B C2B C3B C4B C5B  - 
+M3.LSM    0   -   -   -  NC3  -  PO4 OH1 AM2 T1A C2A C3A C4A  -   -  C1B C2B C3B C4B C5B C6B
+M3.OSM    0   -   -   -  NC3  -  PO4 OH1 AM2 T1A C2A C3A C4A  -   -  C1B D2B C3B C4B  -   - 
+M3.NSM    0   -   -   -  NC3  -  PO4 OH1 AM2 T1A C2A C3A C4A  -   -  C1B C2B C3B D4B C5B C6B
+;   Diglyceride
+M3.DODG   0   -   -   -   -   -  COH GL1 GL2 C1A D2A C3A C4A  -   -  C1B D2B C3B C4B  -   - 
+;   Other alt. use lipids, e.g. POPX is same as POPC 
+M3.POPX   0   -   -   -  NC3  -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B C2B C3B C4B  -   - 
+; Martini 2 types
+M2.DTPC   0   -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A  -   -   -   -  C1B C2B  -   -   -   - 
+M2.DLPC   0   -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A C3A  -   -   -  C1B C2B C3B  -   -   - 
+M2.DPPC   0   -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  C1B C2B C3B C4B  -   - 
+M2.DBPC   0   -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A C3A C4A C5A  -  C1B C2B C3B C4B C5B  - 
+M2.POPC   0   -   -   -  NC3  -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B C2B C3B C4B  -   - 
+M2.DOPC   0   -   -   -  NC3  -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B D2B C3B C4B  -   - 
+M2.DAPC   0   -   -   -  NC3  -  PO4 GL1 GL2 D1A D2A D3A D4A C5A  -  D1B D2B D3B D4B C5B  - 
+M2.DIPC   0   -   -   -  NC3  -  PO4 GL1 GL2 C1A D2A D3A C4A  -   -  C1B D2B D3B C4B  -   - 
+M2.DGPC   0   -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A D3A C4A C5A  -  C1B C2B D3B C4B C5B  - 
+M2.DNPC   0   -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A C3A D4A C5A C6A C1B C2B C3B D4B C5B C6B
+M2.DTPE   0   -   -   -  NH3  -  PO4 GL1 GL2 C1A C2A  -   -   -   -  C1B C2B  -   -   -   - 
+M2.DLPE   0   -   -   -  NH3  -  PO4 GL1 GL2 C1A C2A C3A  -   -   -  C1B C2B C3B  -   -   - 
+M2.DPPE   0   -   -   -  NH3  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  C1B C2B C3B C4B  -   - 
+M2.DBPE   0   -   -   -  NH3  -  PO4 GL1 GL2 C1A C2A C3A C4A C5A  -  C1B C2B C3B C4B C5B  - 
+M2.POPE   0   -   -   -  NH3  -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B C2B C3B C4B  -   - 
+M2.DOPE   0   -   -   -  NH3  -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B D2B C3B C4B  -   - 
+M2.POPG  -1   -   -   -  GL0  -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B C2B C3B C4B  -   - 
+M2.DOPG  -1   -   -   -  GL0  -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B D2B C3B C4B  -   - 
+M2.POPS  -1   -   -   -  CNO  -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B C2B C3B C4B  -   - 
+M2.DOPS  -1   -   -   -  CNO  -  PO4 GL1 GL2 C1A D2A C3A C4A  -   -  C1B D2B C3B C4B  -   - 
+M2.DPSM   0   -   -   -  NC3  -  PO4 AM1 AM2 T1A C2A C3A  -   -   -  C1B C2B C3B C4B  -   - 
+M2.DBSM   0   -   -   -  NC3  -  PO4 AM1 AM2 T1A C2A C3A C4A  -   -  C1B C2B C3B C4B C5B  - 
+M2.BNSM   0   -   -   -  NC3  -  PO4 AM1 AM2 T1A C2A C3A C4A  -   -  C1B C2B C3B C4B C5B C6B
+;   PG for thylakoid membrane
+M2.OPPG  -1   -   -   -  GL0  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  C1B D2B C3B C4B  -   - 
+;   PG for thylakoid membrane of spinach, PPT with a trans-unsaturated bond at sn1 and a 
+;   triple-unsaturated bond at sn2 and PPG with a transunsaturated bond at sn1 and a 
+;   palmitoyl tail at sn2
+M2.JPPG  -1   -   -   -  GL0  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  D1B C2B C3B C4B  -   - 
+M2.JFPG  -1   -   -   -  GL0  -  PO4 GL1 GL2 C1A D2A D3A D4A  -   -  D1B C2B C3B C4B  -   - 
+;   Monoacylglycerol
+M2.GMO    0   -   -   -   -   -   -  GL1 GL2 C1A C2A D3A C4A C5A  -   -   -   -   -   -   - 
+; Templates using the old Martini 2 lipid names and definitions
+M2o.DHPC  0   -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A  -   -   -   -  C1B C2B  -   -   -   - 
+M2o.DMPC  0   -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A C3A  -   -   -  C1B C2B C3B  -   -   - 
+M2o.DSPC  0   -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A C3A C4A C5A  -  C1B C2B C3B C4B C5B  - 
+M2o.POPC  0   -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  C1B C2B D3B C4B C5B  - 
+M2o.DOPC  0   -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A D3A C4A C5A  -  C1B C2B D3B C4B C5B  - 
+M2o.DUPC  0   -   -   -  NC3  -  PO4 GL1 GL2 C1A D2A D3A C4A  -   -  C1B D2B D3B C4B  -   - 
+M2o.DEPC  0   -   -   -  NC3  -  PO4 GL1 GL2 C1A C2A C3A D4A C5A C6A C1B C2B C3B D4B C5B C6B
+M2o.DHPE  0   -   -   -  NH3  -  PO4 GL1 GL2 C1A C2A  -   -   -   -  C1B C2B  -   -   -   - 
+M2o.DLPE  0   -   -   -  NH3  -  PO4 GL1 GL2 C1A C2A C3A  -   -   -  C1B C2B C3B  -   -   - 
+M2o.DMPE  0   -   -   -  NH3  -  PO4 GL1 GL2 C1A C2A C3A  -   -   -  C1B C2B C3B  -   -   - 
+M2o.DSPE  0   -   -   -  NH3  -  PO4 GL1 GL2 C1A C2A C3A C4A C5A  -  C1B C2B C3B C4B C5B  - 
+M2o.POPE  0   -   -   -  NH3  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  C1B C2B D3B C4B C5B  - 
+M2o.DOPE  0   -   -   -  NH3  -  PO4 GL1 GL2 C1A C2A D3A C4A C5A  -  C1B C2B D3B C4B C5B  - 
+M2o.PPCS  0   -   -   -  NC3  -  PO4 AM1 AM2 C1A C2A C3A C4A  -   -  D1B C2B C3B C4B  -   - 
+M2o.DOPG  0   -   -   -  GL0  -  PO4 GL1 GL2 C1A C2A D3A C4A C5A  -  C1B C2B D3B C4B C5B  - 
+M2o.POPG  0   -   -   -  GL0  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  C1B C2B D3B C4B C5B  - 
+M2o.DOPS  0   -   -   -  CNO  -  PO4 GL1 GL2 C1A C2A D3A C4A C5A  -  C1B C2B D3B C4B C5B  - 
+M2o.POPS  0   -   -   -  CNO  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  C1B C2B D3B C4B C5B  - 
+M2o.CPG   0   -   -   -  GL0  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  C1B C2B D3B C4B  -   - 
+M2o.PPG   0   -   -   -  GL0  -  PO4 GL1 GL2 C1A C2A C3A C4A  -   -  D1B C2B C3B C4B  -   - 
+M2o.PPT   0   -   -   -  GL0  -  PO4 GL1 GL2 C1A D2A D3A D4A  -   -  D1B C2B C3B C4B  -   - 
+M2o.DSMG  0   -   -   -  C6   C4 C1  GL1 GL2 C1A C2A C3A C4A C5A  -  C1B C2B C3B C4B C5B  - 
+M2o.DSDG  0  C61 C41 C11 C62 C42 C12 GL1 GL2 C1A C2A C3A C4A C5A  -  C1B C2B C3B C4B C5B  - 
+M2o.DSSQ -1   -   -   S6 C6   C4 C1  GL1 GL2 C1A C2A C3A C4A C5A  -  C1B C2B C3B C4B C5B  - 
 
 
 [ inositollipids ]
-; HII fix for PI templates and new templates PIs with different tails PO-PIP1(3 and POPIP2(4 5
-; Prototopology for phosphatidylinositol type lipids 5 6 7 are potential phosphates (PIP1 PIP2 and PIP3
-; 1 2 3 - is the inositol and 4 is the phosphate that links to the tail part.
+; Template for phosphatidylinositol type lipids 
+;  1 2 3 4, is the inositol 
+;  5, is the phosphate that links to the tail part.
+;  6 7 8 ,are potential phosphates 
 ;
 ;  6
 ;   \
@@ -86,46 +141,57 @@ DSSQ.o  -   -   S6 C6   C4 C1  GL1 GL2 C1A C2A C3A C4A C5A  -  C1B C2B C3B C4B C
           8    9    9  .5   7   10  10  10   6    6    5    4    3    2    1    0    5    4    3    2    1    0
 ;         1    2    3   4   5    6   7   8    9   10   11   12   13   14   15   16   17   18   19   20   21  22
 ; Martini 3 types
-POPI     C1   C2   C3  C4  PO4   -   -   -  GL1  GL2  C1A  D2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    -
-POPI3    C1   C2   C3  C4  PO4  P3   -   -  GL1  GL2  C1A  D2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    -
-POPI4    C1   C2   C3  C4  PO4   -  P4   -  GL1  GL2  C1A  D2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    -
-POPI5    C1   C2   C3  C4  PO4   -   -  P5  GL1  GL2  C1A  D2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    -
-POPI34   C1   C2   C3  C4  PO4  P3  P4   -  GL1  GL2  C1A  D2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    -
-POPI35   C1   C2   C3  C4  PO4  P3   -  P5  GL1  GL2  C1A  D2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    -
-POPI45   C1   C2   C3  C4  PO4   -  P4  P5  GL1  GL2  C1A  D2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    -
-POPI345  C1   C2   C3  C4  PO4  P3  P4  P5  GL1  GL2  C1A  D2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    -
-SAPI     C1   C2   C3  C4  PO4   -   -   -  GL1  GL2  D1A  D2A  D3A  D4A  C5A   -   C1B  C2B  C3B  C4B   -    -
-SAPI3    C1   C2   C3  C4  PO4  P3   -   -  GL1  GL2  D1A  D2A  D3A  D4A  C5A   -   C1B  C2B  C3B  C4B   -    -
-SAPI4    C1   C2   C3  C4  PO4   -  P4   -  GL1  GL2  D1A  D2A  D3A  D4A  C5A   -   C1B  C2B  C3B  C4B   -    -
-SAPI5    C1   C2   C3  C4  PO4   -   -  P5  GL1  GL2  D1A  D2A  D3A  D4A  C5A   -   C1B  C2B  C3B  C4B   -    -
-SAPI34   C1   C2   C3  C4  PO4  P3  P4   -  GL1  GL2  D1A  D2A  D3A  D4A  C5A   -   C1B  C2B  C3B  C4B   -    -
-SAPI35   C1   C2   C3  C4  PO4  P3   -  P5  GL1  GL2  D1A  D2A  D3A  D4A  C5A   -   C1B  C2B  C3B  C4B   -    -
-SAPI45   C1   C2   C3  C4  PO4   -  P4  P5  GL1  GL2  D1A  D2A  D3A  D4A  C5A   -   C1B  C2B  C3B  C4B   -    -
-SAPI345  C1   C2   C3  C4  PO4  P3  P4  P5  GL1  GL2  D1A  D2A  D3A  D4A  C5A   -   C1B  C2B  C3B  C4B   -    -
+;   Note, to keep four letter lipids names (two letters tails and two letters headgroup) the following convection is used:
+;    PI -> PI - Phosphatidylinositol 
+;    P1 -> PI(3)P      - Phosphatidylinositol 3-phosphate
+;    P4 -> PI(4)P      - Phosphatidylinositol 4-phosphate
+;    P5 -> PI(5)P      - Phosphatidylinositol 5-phosphate
+;    P2 -> PI(3,4)P2   - Phosphatidylinositol 3,4-bisphosphate,
+;    P7 -> PI(3,5)P2   - Phosphatidylinositol 3,5-bisphosphate
+;    P6 -> PI(4,5)P2   - Phosphatidylinositol 4,5-bisphosphate
+;    P3 -> PI(3,4,5)P3 - Phosphatidylinositol 3,4,5-trisphosphate
+M3.POPI    -1   C1   C2   C3  C4  PO4   -   -   -  GL1  GL2  C1A  D2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    -
+M3.SAPI    -1   C1   C2   C3  C4  PO4   -   -   -  GL1  GL2  C1A  D2A  D3A  D4A  C5A   -   C1B  C2B  C3B  C4B   -    -
+M3.PLPI    -1   C1   C2   C3  C4  PO4   -   -   -  GL1  GL2  C1A  D2A  D3A  C4A   -    -   C1B  C2B  C3B  C4B   -    -
+M3.SDPI    -1   C1   C2   C3  C4  PO4   -   -   -  GL1  GL2  D1A  D2A  D3A  D4A  D5A   -   C1B  C2B  C3B  C4B   -    -
+M3.POP1    -3   C1   C2   C3  C4  PO4  P3   -   -  GL1  GL2  C1A  D2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    -
+M3.SAP1    -3   C1   C2   C3  C4  PO4  P3   -   -  GL1  GL2  C1A  D2A  D3A  D4A  C5A   -   C1B  C2B  C3B  C4B   -    -
+M3.POP4    -3   C1   C2   C3  C4  PO4   -  P4   -  GL1  GL2  C1A  D2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    -
+M3.SAP4    -3   C1   C2   C3  C4  PO4   -  P4   -  GL1  GL2  C1A  D2A  D3A  D4A  C5A   -   C1B  C2B  C3B  C4B   -    -
+M3.POP5    -3   C1   C2   C3  C4  PO4   -   -  P5  GL1  GL2  C1A  D2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    -
+M3.SAP5    -3   C1   C2   C3  C4  PO4   -   -  P5  GL1  GL2  C1A  D2A  D3A  D4A  C5A   -   C1B  C2B  C3B  C4B   -    -
+M3.POP2    -4   C1   C2   C3  C4  PO4  P3  P4   -  GL1  GL2  C1A  D2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    -
+M3.SAP2    -4   C1   C2   C3  C4  PO4  P3  P4   -  GL1  GL2  C1A  D2A  D3A  D4A  C5A   -   C1B  C2B  C3B  C4B   -    -
+M3.POP7    -4   C1   C2   C3  C4  PO4  P3   -  P5  GL1  GL2  C1A  D2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    -
+M3.SAP7    -4   C1   C2   C3  C4  PO4  P3   -  P5  GL1  GL2  C1A  D2A  D3A  D4A  C5A   -   C1B  C2B  C3B  C4B   -    -
+M3.POP6    -4   C1   C2   C3  C4  PO4   -  P4  P5  GL1  GL2  C1A  D2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    -
+M3.SAP6    -4   C1   C2   C3  C4  PO4   -  P4  P5  GL1  GL2  C1A  D2A  D3A  D4A  C5A   -   C1B  C2B  C3B  C4B   -    -
+M3.POP3    -5   C1   C2   C3  C4  PO4  P3  P4  P5  GL1  GL2  C1A  D2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    -
+M3.SAP3    -5   C1   C2   C3  C4  PO4  P3  P4  P5  GL1  GL2  C1A  D2A  D3A  D4A  C5A   -   C1B  C2B  C3B  C4B   -    -
 ; Martini 2 types:
-OPI.2    C1   C2   C3   -  PO4   -   -   -  GL1  GL2   -    -    -    -    -    -   C1B  D2B  C3B  C4B   -    - 
-PPI.2    C1   C2   C3   -  PO4   -   -   -  GL1  GL2   -    -    -    -    -    -   C1B  C2B  C3B  C4B   -    - 
-DLPI.2   C1   C2   C3   -  PO4   -   -   -  GL1  GL2  C1A  C2A  C3A   -    -    -   C1B  C2B  C3B   -    -    - 
-DPPI.2   C1   C2   C3   -  PO4   -   -   -  GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - 
-DOPI.2   C1   C2   C3   -  PO4   -   -   -  GL1  GL2  C1A  D2A  C3A  C4A   -    -   C1B  D2B  C3B  C4B   -    - 
-TPPI.2   C1   C2   C3   -  PO4   -   -   -  GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  C2B   -    -    -    - 
-LPPI.2   C1   C2   C3   -  PO4   -   -   -  GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B   -    -    - 
-LOPI.2   C1   C2   C3   -  PO4   -   -   -  GL1  GL2  C1A  D2A  C3A  C4A   -    -   C1B  C2B  C3B   -    -    - 
-YPPI.2   C1   C2   C3   -  PO4   -   -   -  GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  D2B  C3B   -    -    - 
-POPI.2   C1   C2   C3   -  PO4   -   -   -  GL1  GL2  C1A  D2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - 
-PIPI.2   C1   C2   C3   -  PO4   -   -   -  GL1  GL2  C1A  D2A  D3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - 
-PAPI.2   C1   C2   C3   -  PO4   -   -   -  GL1  GL2  D1A  D2A  D3A  D4A  C5A   -   C1B  C2B  C3B  C4B   -    - 
-PUPI.2   C1   C2   C3   -  PO4   -   -   -  GL1  GL2  D1A  D2A  D3A  D4A  D5A   -   C1B  C2B  C3B  C4B   -    - 
-POP1.2   C1   C2   C3   -  PO4  P1   -   -  GL1  GL2  C1A  C2A  D3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - 
-POP2.2   C1   C2   C3   -  PO4  P1  P2   -  GL1  GL2  C1A  C2A  D3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - 
-POP3.2   C1   C2   C3   -  PO4  P1  P2  P3  GL1  GL2  C1A  C2A  D3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - 
+M2.OPI     -1   C1   C2   C3   -  PO4   -   -   -  GL1  GL2   -    -    -    -    -    -   C1B  D2B  C3B  C4B   -    - 
+M2.PPI     -1   C1   C2   C3   -  PO4   -   -   -  GL1  GL2   -    -    -    -    -    -   C1B  C2B  C3B  C4B   -    - 
+M2.DLPI    -1   C1   C2   C3   -  PO4   -   -   -  GL1  GL2  C1A  C2A  C3A   -    -    -   C1B  C2B  C3B   -    -    - 
+M2.DPPI    -1   C1   C2   C3   -  PO4   -   -   -  GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - 
+M2.DOPI    -1   C1   C2   C3   -  PO4   -   -   -  GL1  GL2  C1A  D2A  C3A  C4A   -    -   C1B  D2B  C3B  C4B   -    - 
+M2.TPPI    -1   C1   C2   C3   -  PO4   -   -   -  GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  C2B   -    -    -    - 
+M2.LPPI    -1   C1   C2   C3   -  PO4   -   -   -  GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B   -    -    - 
+M2.LOPI    -1   C1   C2   C3   -  PO4   -   -   -  GL1  GL2  C1A  D2A  C3A  C4A   -    -   C1B  C2B  C3B   -    -    - 
+M2.YPPI    -1   C1   C2   C3   -  PO4   -   -   -  GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  D2B  C3B   -    -    - 
+M2.POPI    -1   C1   C2   C3   -  PO4   -   -   -  GL1  GL2  C1A  D2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - 
+M2.PIPI    -1   C1   C2   C3   -  PO4   -   -   -  GL1  GL2  C1A  D2A  D3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - 
+M2.PAPI    -1   C1   C2   C3   -  PO4   -   -   -  GL1  GL2  D1A  D2A  D3A  D4A  C5A   -   C1B  C2B  C3B  C4B   -    - 
+M2.PUPI    -1   C1   C2   C3   -  PO4   -   -   -  GL1  GL2  D1A  D2A  D3A  D4A  D5A   -   C1B  C2B  C3B  C4B   -    - 
+M2.POP1    -3   C1   C2   C3   -  PO4  P1   -   -  GL1  GL2  C1A  C2A  D3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - 
+M2.POP2    -5   C1   C2   C3   -  PO4  P1  P2   -  GL1  GL2  C1A  C2A  D3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - 
+M2.POP3    -7   C1   C2   C3   -  PO4  P1  P2  P3  GL1  GL2  C1A  C2A  D3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - 
 ; Templates using the old lipid names and definitions
-PI.o     C1   C2   C3   -  CP    -   -   -  GL1  GL2  C1A  C2A  C3A  C4A   -    -   CU1  CU2  CU3  CU4  CU5   - 
-PI34.o   C1   C2   C3   -  CP   PO1 PO2  -  GL1  GL2  C1A  C2A  C3A  C4A   -    -   CU1  CU2  CU3  CU4  CU5   - 
+M2o.PI     -1   C1   C2   C3   -  CP    -   -   -  GL1  GL2  C1A  C2A  C3A  C4A   -    -   CU1  CU2  CU3  CU4  CU5   - 
+M2o.PI34   -5   C1   C2   C3   -  CP   PO1 PO2  -  GL1  GL2  C1A  C2A  C3A  C4A   -    -   CU1  CU2  CU3  CU4  CU5   - 
 
 
 [ IPC ]
-; Prototopology for IPC yeast lipid: MIP2C2OH MIPC2OH IPC2OH - Added by HII 2016.01.13
+; Prototopology for IPC yeast lipid: MIP2C2OH MIPC2OH IPC2OH
 ;
 ; 3-1-4-7-6
 ; |/     \|
@@ -139,11 +205,11 @@ PI34.o   C1   C2   C3   -  CP   PO1 PO2  -  GL1  GL2  C1A  C2A  C3A  C4A   -    
        0    0    0    0    0    0    0   0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0
       12   13   13   11    9    9   10   8    9    8    7    6    6    5    4    3    2    1    0    5    4    3    2    1    0
 ;      1    2    3    4    5    6    7   8    9   10   11   12   13   14   15   16   17   18   19   20   21   22   23   24   25
-PXI2  H31  H32  H33  H3P  H21  H22  H23 H11  H12  H13  PO4  AM1  AM2  O1A  C2A  C3A   -    -    -   C1B  C2B  C3B  C4B  C5B  C6B
-BXI2  H31  H32  H33  H3P  H21  H22  H23 H11  H12  H13  PO4  AM1  AM2  O1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B  C5B  C6B
-PXI1   -    -    -    -   H21  H22  H23 H11  H12  H13  PO4  AM1  AM2  O1A  C2A  C3A   -    -    -   C1B  C2B  C3B  C4B  C5B  C6B
-PXI0   -    -    -    -    -    -    -  H11  H12  H13  PO4  AM1  AM2  O1A  C2A  C3A   -    -    -   C1B  C2B  C3B  C4B  C5B  C6B
-
+; Martini 2 types:
+M2.PXI2   0  H31  H32  H33  H3P  H21  H22  H23 H11  H12  H13  PO4  AM1  AM2  O1A  C2A  C3A   -    -    -   C1B  C2B  C3B  C4B  C5B  C6B
+M2.BXI2   0  H31  H32  H33  H3P  H21  H22  H23 H11  H12  H13  PO4  AM1  AM2  O1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B  C5B  C6B
+M2.PXI1   0   -    -    -    -   H21  H22  H23 H11  H12  H13  PO4  AM1  AM2  O1A  C2A  C3A   -    -    -   C1B  C2B  C3B  C4B  C5B  C6B
+M2.PXI0   0   -    -    -    -    -    -    -  H11  H12  H13  PO4  AM1  AM2  O1A  C2A  C3A   -    -    -   C1B  C2B  C3B  C4B  C5B  C6B
 
 [ glycolipids ]
 ; Prototopology for longer and branched glycosil and ceramide based glycolipids
@@ -160,47 +226,47 @@ PXI0   -    -    -    -    -    -    -  H11  H12  H13  PO4  AM1  AM2  O1A  C2A  
         0    0    0    0    0   0   0   0   0     0     0     0    .5     1    1     1     1    0    0    0    0    0    0    0    0    0    0    0    0    0    0
         7    8    8    9   10  10  11  12  12    13    14    14    11    10   11     9    12    6    6    5    4    3    2    1    0    5    4    3    2    1    0
 ;       1    2    3    4    5   6   7   8   9    10    11    12    13    14   15    16    17   18   19   20   21   22   23   24   25   26   27   28   29   30   31
-DPG1   GM1  GM2  GM3  GM4  GM5 GM6 GM7 GM8 GM9  GM10  GM11  GM12  GM13  GM14 GM15  GM16  GM17  AM1  AM2  T1A  C2A  C3A   -    -    -   C1B  C2B  C3B  C4B   -    - 
-DBG1   GM1  GM2  GM3  GM4  GM5 GM6 GM7 GM8 GM9  GM10  GM11  GM12  GM13  GM14 GM15  GM16  GM17  AM1  AM2  T1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B  C5B   - 
-DXG1   GM1  GM2  GM3  GM4  GM5 GM6 GM7 GM8 GM9  GM10  GM11  GM12  GM13  GM14 GM15  GM16  GM17  AM1  AM2  T1A  C2A  C3A  C4A  C5A   -   C1B  C2B  C3B  C4B  C5B  C6B
-PNG1   GM1  GM2  GM3  GM4  GM5 GM6 GM7 GM8 GM9  GM10  GM11  GM12  GM13  GM14 GM15  GM16  GM17  AM1  AM2  T1A  C2A  C3A   -    -    -   C1B  C2B  C3B  D4B  C5B  C6B
-XNG1   GM1  GM2  GM3  GM4  GM5 GM6 GM7 GM8 GM9  GM10  GM11  GM12  GM13  GM14 GM15  GM16  GM17  AM1  AM2  T1A  C2A  C3A  C4A  C5A   -   C1B  C2B  C3B  D4B  C5B  C6B
-DPG3   GM1  GM2  GM3  GM4  GM5 GM6  -   -   -    -     -     -    GM13  GM14 GM15  GM16  GM17  AM1  AM2  T1A  C2A  C3A   -    -    -   C1B  C2B  C3B  C4B   -    - 
-DXG3   GM1  GM2  GM3  GM4  GM5 GM6  -   -   -    -     -     -    GM13  GM14 GM15  GM16  GM17  AM1  AM2  T1A  C2A  C3A  C4A  C5A   -   C1B  C2B  C3B  C4B  C5B  C6B
-PNG3   GM1  GM2  GM3  GM4  GM5 GM6  -   -   -    -     -     -    GM13  GM14 GM15  GM16  GM17  AM1  AM2  T1A  C2A  C3A   -    -    -   C1B  C2B  C3B  D4B  C5B  C6B
-XNG3   GM1  GM2  GM3  GM4  GM5 GM6  -   -   -    -     -     -    GM13  GM14 GM15  GM16  GM17  AM1  AM2  T1A  C2A  C3A  C4A  C5A   -   C1B  C2B  C3B  D4B  C5B  C6B
-DPCE    -    -    -    -    -   -   -   -   -     -     -     -     -     -    -     -     -   AM1  AM2  T1A  C2A  C3A   -    -    -   C1B  C2B  C3B  C4B   -    - 
-DPGS   C1   C2   C3    -    -   -   -   -   -     -     -     -     -     -    -     -     -   AM1  AM2  T1A  C2A  C3A   -    -    -   C1B  C2B  C3B  C4B   -    - 
-DPMG   C1   C2   C3    -    -   -   -   -   -     -     -     -     -     -    -     -     -   GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - 
-DPSG   S1   C1   C2   C3    -   -   -   -   -     -     -     -     -     -    -     -     -   GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - 
-DPGG  GB2  GB3  GB1  GA1  GA2 GA3   -   -   -     -     -     -     -     -    -     -     -   GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - 
+; Martini 2 types:
+M2.DPG1  -1   GM1  GM2  GM3  GM4  GM5 GM6 GM7 GM8 GM9  GM10  GM11  GM12  GM13  GM14 GM15  GM16  GM17  AM1  AM2  T1A  C2A  C3A   -    -    -   C1B  C2B  C3B  C4B   -    - 
+M2.DBG1  -1   GM1  GM2  GM3  GM4  GM5 GM6 GM7 GM8 GM9  GM10  GM11  GM12  GM13  GM14 GM15  GM16  GM17  AM1  AM2  T1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B  C5B   - 
+M2.DXG1  -1   GM1  GM2  GM3  GM4  GM5 GM6 GM7 GM8 GM9  GM10  GM11  GM12  GM13  GM14 GM15  GM16  GM17  AM1  AM2  T1A  C2A  C3A  C4A  C5A   -   C1B  C2B  C3B  C4B  C5B  C6B
+M2.PNG1  -1   GM1  GM2  GM3  GM4  GM5 GM6 GM7 GM8 GM9  GM10  GM11  GM12  GM13  GM14 GM15  GM16  GM17  AM1  AM2  T1A  C2A  C3A   -    -    -   C1B  C2B  C3B  D4B  C5B  C6B
+M2.XNG1  -1   GM1  GM2  GM3  GM4  GM5 GM6 GM7 GM8 GM9  GM10  GM11  GM12  GM13  GM14 GM15  GM16  GM17  AM1  AM2  T1A  C2A  C3A  C4A  C5A   -   C1B  C2B  C3B  D4B  C5B  C6B
+M2.DPG3  -1   GM1  GM2  GM3  GM4  GM5 GM6  -   -   -    -     -     -    GM13  GM14 GM15  GM16  GM17  AM1  AM2  T1A  C2A  C3A   -    -    -   C1B  C2B  C3B  C4B   -    - 
+M2.DXG3  -1   GM1  GM2  GM3  GM4  GM5 GM6  -   -   -    -     -     -    GM13  GM14 GM15  GM16  GM17  AM1  AM2  T1A  C2A  C3A  C4A  C5A   -   C1B  C2B  C3B  C4B  C5B  C6B
+M2.PNG3  -1   GM1  GM2  GM3  GM4  GM5 GM6  -   -   -    -     -     -    GM13  GM14 GM15  GM16  GM17  AM1  AM2  T1A  C2A  C3A   -    -    -   C1B  C2B  C3B  D4B  C5B  C6B
+M2.XNG3  -1   GM1  GM2  GM3  GM4  GM5 GM6  -   -   -    -     -     -    GM13  GM14 GM15  GM16  GM17  AM1  AM2  T1A  C2A  C3A  C4A  C5A   -   C1B  C2B  C3B  D4B  C5B  C6B
+M2.DPCE   0    -    -    -    -    -   -   -   -   -     -     -     -     -     -    -     -     -   AM1  AM2  T1A  C2A  C3A   -    -    -   C1B  C2B  C3B  C4B   -    - 
+M2.DPGS   0   C1   C2   C3    -    -   -   -   -   -     -     -     -     -     -    -     -     -   AM1  AM2  T1A  C2A  C3A   -    -    -   C1B  C2B  C3B  C4B   -    - 
+M2.DPMG   0   C1   C2   C3    -    -   -   -   -   -     -     -     -     -     -    -     -     -   GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - 
+M2.DPSG   0   S1   C1   C2   C3    -   -   -   -   -     -     -     -     -     -    -     -     -   GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - 
+M2.DPGG   0  GB2  GB3  GB1  GA1  GA2 GA3   -   -   -     -     -     -     -     -    -     -     -   GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - 
 ; lipids for thylakoid membrane of cyanobacteria: oleoyl tail at sn1 and palmiotyl chain at sn2. SQDG no double bonds
-OPMG   C1   C2   C3    -    -   -   -   -   -     -     -     -     -     -    -     -     -   GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  D2B  C3B  C4B   -    - 
-OPSG   S1   C1   C2   C3    -   -   -   -   -     -     -     -     -     -    -     -     -   GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  D2B  C3B  C4B   -    - 
-OPGG  GB2  GB3  GB1   GA1  GA2 GA3  -   -   -     -     -     -     -     -    -     -     -   GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  D2B  C3B  C4B   -    - 
+M2.OPMG   0  C1   C2   C3    -    -   -   -   -   -     -     -     -     -     -    -     -     -   GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  D2B  C3B  C4B   -    - 
+M2.OPSG   0  S1   C1   C2   C3    -   -   -   -   -     -     -     -     -     -    -     -     -   GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  D2B  C3B  C4B   -    - 
+M2.OPGG   0 GB2  GB3  GB1   GA1  GA2 GA3  -   -   -     -     -     -     -     -    -     -     -   GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  D2B  C3B  C4B   -    - 
 ; lipids for thylakoid membrane of spinach: for the *T both chains are triple unsaturated and the *G have a triple unsaturated chain at sn1 and a palmitoyl chain at sn2.
-FPMG   C1   C2   C3    -    -   -   -   -   -     -     -     -     -     -    -     -     -   GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  D2B  D3B  D4B   -    - 
-DFMG   C1   C2   C3    -    -   -   -   -   -     -     -     -     -     -    -     -     -   GL1  GL2  C1A  D2A  D3A  D4A   -    -   C1B  D2B  D3B  D4B   -    - 
-FPSG   S1   C1   C2   C3    -   -   -   -   -     -     -     -     -     -    -     -     -   GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  D2B  D3B  D4B   -    - 
-FPGG   GB2  GB3  GB1  GA1  GA2 GA3  -   -   -     -     -     -     -     -    -     -     -   GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  D2B  D3B  D4B   -    - 
-DFGG   GB2  GB3  GB1  GA1  GA2 GA3  -   -   -     -     -     -     -     -    -     -     -   GL1  GL2  C1A  D2A  D3A  D4A   -    -   C1B  D2B  D3B  D4B   -    - 
-; Templates using the old lipid names and definitions
-GM1.o  GM1  GM2  GM3  GM4  GM5 GM6 GM7 GM8 GM9  GM10  GM11  GM12  GM13  GM14 GM15  GM16  GM17  AM1  AM2  C1A  C2A  C3A  C4A  C5A   -   C1B  C2B  C3B  C4B   -    - 
-DGDG.o GB2  GB3  GB1  GA1  GA2 GA3  -   -   -     -     -     -     -     -    -     -     -   GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - 
-MGDG.o C1   C2   C3    -    -   -   -   -   -     -     -     -     -     -    -     -     -   GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - 
-SQDG.o S1   C1   C2   C3    -   -   -   -   -     -     -     -     -     -    -     -     -   GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - 
-CER.o   -    -    -    -    -   -   -   -   -     -     -     -     -     -    -     -     -   AM1  AM2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - 
-GCER.o C1   C2   C3    -    -   -   -   -   -     -     -     -     -     -    -     -     -   AM1  AM2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - 
-DPPI.o C1   C2   C3    -   CP   -   -   -   -     -     -     -     -     -    -     -     -   GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - 
-
+M2.FPMG   0  C1   C2   C3    -    -   -   -   -   -     -     -     -     -     -    -     -     -   GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  D2B  D3B  D4B   -    - 
+M2.DFMG   0  C1   C2   C3    -    -   -   -   -   -     -     -     -     -     -    -     -     -   GL1  GL2  C1A  D2A  D3A  D4A   -    -   C1B  D2B  D3B  D4B   -    - 
+M2.FPSG   0  S1   C1   C2   C3    -   -   -   -   -     -     -     -     -     -    -     -     -   GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  D2B  D3B  D4B   -    - 
+M2.FPGG   0  GB2  GB3  GB1  GA1  GA2 GA3  -   -   -     -     -     -     -     -    -     -     -   GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  D2B  D3B  D4B   -    - 
+M2.DFGG   0  GB2  GB3  GB1  GA1  GA2 GA3  -   -   -     -     -     -     -     -    -     -     -   GL1  GL2  C1A  D2A  D3A  D4A   -    -   C1B  D2B  D3B  D4B   -    - 
+; Templates using the old Martini 2 lipid names and definitions
+M2o.GM1  -1  GM1  GM2  GM3  GM4  GM5 GM6 GM7 GM8 GM9  GM10  GM11  GM12  GM13  GM14 GM15  GM16  GM17  AM1  AM2  C1A  C2A  C3A  C4A  C5A   -   C1B  C2B  C3B  C4B   -    - 
+M2o.DGDG  0  GB2  GB3  GB1  GA1  GA2 GA3  -   -   -     -     -     -     -     -    -     -     -   GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - 
+M2o.MGDG  0  C1   C2   C3    -    -   -   -   -   -     -     -     -     -     -    -     -     -   GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - 
+M2o.SQDG  0  S1   C1   C2   C3    -   -   -   -   -     -     -     -     -     -    -     -     -   GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - 
+M2o.CER   0   -    -    -    -    -   -   -   -   -     -     -     -     -     -    -     -     -   AM1  AM2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - 
+M2o.GCER  0  C1   C2   C3    -    -   -   -   -   -     -     -     -     -     -    -     -     -   AM1  AM2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - 
+M2o.DPPI -1  C1   C2   C3    -   CP   -   -   -   -     -     -     -     -     -    -     -     -   GL1  GL2  C1A  C2A  C3A  C4A   -    -   C1B  C2B  C3B  C4B   -    - 
 
 
 [ quinones ]
-       0   .5    0    0    0    0    0    0    0     0    0     0
-       0    0    0    0    0    0    0    0    0     0    0     0
-       6    7    7   5.5   5   4.5   4   3.5  2.5    2  1.5     1
-;      1    2    3    4    5    6    7    8    9    10   11    12
-PLQ  PLQ3 PLQ2 PLQ1 PLQ4 PLQ5 PLQ6 PLQ7 PLQ8 PLQ9 PLQ10 PLQ11 PLQ12
+             0   .5    0    0    0    0    0    0    0     0     0     0
+             0    0    0    0    0    0    0    0    0     0     0     0
+             6    7    7   5.5   5   4.5   4   3.5  2.5    2   1.5     1
+;            1    2    3    4    5    6    7    8    9    10    11    12
+M2.PLQ  0   PLQ3 PLQ2 PLQ1 PLQ4 PLQ5 PLQ6 PLQ7 PLQ8 PLQ9 PLQ10 PLQ11 PLQ12
 
 
 [ triacylglycerols ]
@@ -212,15 +278,16 @@ PLQ  PLQ3 PLQ2 PLQ1 PLQ4 PLQ5 PLQ6 PLQ7 PLQ8 PLQ9 PLQ10 PLQ11 PLQ12
 ;   2--5--6--7--8--9-10
 ;
 ; 1-4 is the glycerol moiety
-       0    1   0   0   1   1   1   1   1   1   0   0   0   0   0   0   0   0   0   0   0   0
-       0    0   0   1   0   0   0   0   0   0   0   0   0   0   0   0   1   1   1   1   1   1
-       7    6   6   6   5   4   3   2   1   0   5   4   3   2   1   0   5   4   3   2   1   0
-;      1    2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20  21  22
-TOG   GL0  ES1 ES2 ES3 C1A D2A C3A C4A  -   -  C1B D2B C3B C4B   -   - C1C D2C C3C C4C  -   -
-O3TG  GL0  ES1 ES2 ES3 C1A D2A C3A C4A  -   -  C1B D2B C3B C4B   -   - C1C D2C C3C C4C  -   -
-OOPG  GL0  ES1 ES2 ES3 C1A D2A C3A C4A  -   -  C1B D2B C3B C4B   -   - C1C C2C C3C C4C  -   -
-OPPG  GL0  ES1 ES2 ES3 C1A D2A C3A C4A  -   -  C1B C2B C3B C4B   -   - C1C C2C C3C C4C  -   -
-P3TG  GL0  ES1 ES2 ES3 C1A C2A C3A C4A  -   -  C1B C2B C3B C4B   -   - C1C C2C C3C C4C  -   -
+              0    1   0   0   1   1   1   1   1   1   0   0   0   0   0   0   0   0   0   0   0   0
+              0    0   0   1   0   0   0   0   0   0   0   0   0   0   0   0   1   1   1   1   1   1
+              7    6   6   6   5   4   3   2   1   0   5   4   3   2   1   0   5   4   3   2   1   0
+;             1    2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20  21  22
+M2.TOG   0   GL0  ES1 ES2 ES3 C1A D2A C3A C4A  -   -  C1B D2B C3B C4B   -   - C1C D2C C3C C4C  -   -
+M2.O3TG  0   GL0  ES1 ES2 ES3 C1A D2A C3A C4A  -   -  C1B D2B C3B C4B   -   - C1C D2C C3C C4C  -   -
+M2.OOPG  0   GL0  ES1 ES2 ES3 C1A D2A C3A C4A  -   -  C1B D2B C3B C4B   -   - C1C C2C C3C C4C  -   -
+M2.OPPG  0   GL0  ES1 ES2 ES3 C1A D2A C3A C4A  -   -  C1B C2B C3B C4B   -   - C1C C2C C3C C4C  -   -
+M2.P3TG  0   GL0  ES1 ES2 ES3 C1A C2A C3A C4A  -   -  C1B C2B C3B C4B   -   - C1C C2C C3C C4C  -   -
+
 
 [ retinylesters ]
 ;
@@ -229,12 +296,12 @@ P3TG  GL0  ES1 ES2 ES3 C1A C2A C3A C4A  -   -  C1B C2B C3B C4B   -   - C1C C2C C
 ; 6--5--4--3-2
 ;           \|
 ;            1
-       0   0   0   0   0  0.5  1   1   1   1   1
-       1   0   0   0   0   0   0   0   0   0   0
-       1   1   2   3   4   5   4   3   2   1   0
-;      1   2   3   4   5   6   7   8   9  10  11
-REYP  S1  S2  S3  D4  D5  O6  C7  C8  C9 C10   -
-REYO  S1  S2  S3  D4  D5  O6  C7  C8  C9 C10   -
+             0   0   0   0   0  0.5  1   1   1   1    1
+             1   0   0   0   0   0   0   0   0   0    0
+             1   1   2   3   4   5   4   3   2   1    0
+;            1   2   3   4   5   6   7   8   9  10   11
+M2.REYP  0   S1  S2  S3  D4  D5  O6  C7  C8  C9 C10   -
+M2.REYO  0   S1  S2  S3  D4  D5  O6  C7  C8  C9 C10   -
 
 
 [ cardiolipins ]
@@ -249,22 +316,21 @@ REYO  S1  S2  S3  D4  D5  O6  C7  C8  C9 C10   -
 ;       |
 ;      19-26-27-28-29-30-31
 ;
-       0.5   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   1   1   1   1   1   1   1   1   1   1   1   1   1   1   1
-        1    0   0   1   0   0   0   0   0   0   1   1   1   1   1   1   0   0   1   0   0   0   0   0   0   1   1   1   1   1   1
-        8    7   6   6   5   4   3   2   1   0   5   4   3   2   1   0   7   6   6   5   4   3   2   1   0   5   4   3   2   1   0
-;       1    2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20  21  22  23  24  25  26  27  28  29  30  31
+               0.5   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   1   1   1   1   1   1   1   1   1   1   1   1   1   1   1
+                1    0   0   1   0   0   0   0   0   0   1   1   1   1   1   1   0   0   1   0   0   0   0   0   0   1   1   1   1   1   1
+                8    7   6   6   5   4   3   2   1   0   5   4   3   2   1   0   7   6   6   5   4   3   2   1   0   5   4   3   2   1   0
+;               1    2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20  21  22  23  24  25  26  27  28  29  30  31
+; Warning not the same names is in .itp
+M2.CDL0   0    GL5 PO41 GL1 GL2 C1A C2A D3A C4A C5A   - C1B C2B D3B C4B C5B  - PO42 GL3 GL4 C1C C2C D3C C4C C5C  -  C1D C2D D3D C4D C5D  - 
 ; Warning next not the same names is in .itp
-CDL0   GL5 PO41 GL1 GL2 C1A C2A D3A C4A C5A   - C1B C2B D3B C4B C5B  - PO42 GL3 GL4 C1C C2C D3C C4C C5C  -  C1D C2D D3D C4D C5D  - 
+M2.CDL1  -1    GL5 PO41 GL1 GL2 C1A C2A D3A C4A C5A   - C1B C2B D3B C4B C5B  - PO42 GL3 GL4 C1C C2C D3C C4C C5C  -  C1D C2D D3D C4D C5D  - 
 ; Warning next not the same names is in .itp
-CDL1   GL5 PO41 GL1 GL2 C1A C2A D3A C4A C5A   - C1B C2B D3B C4B C5B  - PO42 GL3 GL4 C1C C2C D3C C4C C5C  -  C1D C2D D3D C4D C5D  - 
-; Warning next not the same names is in .itp
-CDL2   GL5 PO41 GL1 GL2 C1A C2A D3A C4A C5A   - C1B C2B D3B C4B C5B  - PO42 GL3 GL4 C1C C2C D3C C4C C5C  -  C1D C2D D3D C4D C5D  - 
-CL4P   GL5 PO41 GL1 GL2 C1A C2A C3A C4A C5A   - C1B C2B C3B C4B C5B  - PO42 GL3 GL4 C1C C2C C3C C4C C5C  -  C1D C2D C3D C4D C5D  -
-CL4M   GL5 PO41 GL1 GL2 C1A C2A C3A   -   -   - C1B C2B C3B   -   -  - PO42 GL3 GL4 C1C C2C C3C  -   -   -  C1D C2D C3D  -   -   -
-; Templates using the old lipid names and definitions
-CL4.o  GL5 PO41 GL1 GL2 C1A C2A D3A C4A C5A   - C1B C2B D3B C4B C5B  - PO42 GL3 GL4 C1C C2C D3C C4C C5C  -  C1D C2D D3D C4D C5D  -
-CL4O.o GL5 PO41 GL1 GL2 C1A C2A D3A C4A C5A   - C1B C2B D3B C4B C5B  - PO42 GL3 GL4 C1C C2C D3C C4C C5C  -  C1D C2D D3D C4D C5D  -
-
+M2.CDL2  -2    GL5 PO41 GL1 GL2 C1A C2A D3A C4A C5A   - C1B C2B D3B C4B C5B  - PO42 GL3 GL4 C1C C2C D3C C4C C5C  -  C1D C2D D3D C4D C5D  - 
+M2.CL4P   0    GL5 PO41 GL1 GL2 C1A C2A C3A C4A C5A   - C1B C2B C3B C4B C5B  - PO42 GL3 GL4 C1C C2C C3C C4C C5C  -  C1D C2D C3D C4D C5D  -
+M2.CL4M   0    GL5 PO41 GL1 GL2 C1A C2A C3A   -   -   - C1B C2B C3B   -   -  - PO42 GL3 GL4 C1C C2C C3C  -   -   -  C1D C2D C3D  -   -   -
+; Templates using the old Martini 2 lipid names and definitions
+M2o.CL4   0   GL5 PO41 GL1 GL2 C1A C2A D3A C4A C5A   - C1B C2B D3B C4B C5B  - PO42 GL3 GL4 C1C C2C D3C C4C C5C  -  C1D C2D D3D C4D C5D  -
+M2o.CL4O  0   GL5 PO41 GL1 GL2 C1A C2A D3A C4A C5A   - C1B C2B D3B C4B C5B  - PO42 GL3 GL4 C1C C2C D3C C4C C5C  -  C1D C2D D3D C4D C5D  -
 
 
 [ mycolic ]
@@ -277,41 +343,41 @@ CL4O.o GL5 PO41 GL1 GL2 C1A C2A D3A C4A C5A   - C1B C2B D3B C4B C5B  - PO42 GL3 
 ;                     /
 ; 32-31-30-29-28-27-25-26
 ;
-        0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   1   1   1   1   1   1   1   1   1   1   1   1   1   1   1   1
-        0   0   0   0   0   0   0   0   1   1   1   1   1   1   1   1   1   1   1   1   1   1   1   1   0   0   0   0   0   0   0   0
-        7   6   5   4   3   2   1   0   0   1   2   3   4   5   6   7   7   6   5   4   3   2   1   0   1   0   2   3   4   5   6   7
-;       1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20  21  22  23  24  25  26  27  28  29  30  31  32
-AMA:    -   -   -  C1A C2A C3A C4A C5A M1A C1B C2B C3B C4B  -   -   -   -   -  M1B C1C C2C C3C  -   -  COH OOH C1D C2D C3D C4D C5D C6D
-AMA.w:  -   -   -  C1A C2A C3A C4A C5A M1A C1B C2B C3B C4B  -   -   -   -   -  M1B C1C C2C C3C  -   -  COH OOH C1D C2D C3D C4D C5D C6D
-KMA:    -   -   -  C1A C2A C3A C4A C5A M1A C1B C2B C3B C4B  -   -   -   -   -  M1B C1C C2C C3C  -   -  COH OOH C1D C2D C3D C4D C5D C6D
-MMA:    -   -   -  C1A C2A C3A C4A C5A M1A C1B C2B C3B C4B  -   -   -   -   -  M1B C1C C2C C3C  -   -  COH OOH C1D C2D C3D C4D C5D C6D
-
+             0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   1   1   1   1   1   1   1   1   1   1   1   1   1   1   1   1
+             0   0   0   0   0   0   0   0   1   1   1   1   1   1   1   1   1   1   1   1   1   1   1   1   0   0   0   0   0   0   0   0
+             7   6   5   4   3   2   1   0   0   1   2   3   4   5   6   7   7   6   5   4   3   2   1   0   1   0   2   3   4   5   6   7
+;            1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20  21  22  23  24  25  26  27  28  29  30  31  32
+M2.AMA   0   -   -   -  C1A C2A C3A C4A C5A M1A C1B C2B C3B C4B  -   -   -   -   -  M1B C1C C2C C3C  -   -  COH OOH C1D C2D C3D C4D C5D C6D
+M2w.AMA  0   -   -   -  C1A C2A C3A C4A C5A M1A C1B C2B C3B C4B  -   -   -   -   -  M1B C1C C2C C3C  -   -  COH OOH C1D C2D C3D C4D C5D C6D
+M2.KMA   0   -   -   -  C1A C2A C3A C4A C5A M1A C1B C2B C3B C4B  -   -   -   -   -  M1B C1C C2C C3C  -   -  COH OOH C1D C2D C3D C4D C5D C6D
+M2.MMA   0   -   -   -  C1A C2A C3A C4A C5A M1A C1B C2B C3B C4B  -   -   -   -   -  M1B C1C C2C C3C  -   -  COH OOH C1D C2D C3D C4D C5D C6D
 
 
 [ sterols ]
-      0   0   0   0   0   0   0   0   1   0   1   0   0   0   0   0   0   0
-      0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
-      0   0   0   0   0   0  5.3 4.5 3.9 3.3  3 2.6  1.4  0   0   0   0   0
-;     1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18
-CHOL  -   -   -   -   -   -  ROH R1  R2  R3  R4  R5  C1  C2   -   -   -   - 
-ERGO  -   -   -   -   -   -  ROH R1  R2  R3  R4  R5  C1  C2   -   -   -   - 
-
+             0   0   0   0   0   0   0   0   1   0   1   0   0   0   0   0   0   0
+             0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
+             0   0   0   0   0   0  5.3 4.5 3.9 3.3  3 2.6  1.4  0   0   0   0   0
+;            1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18
+M3.CHOL  0   -   -   -   -   -   -  ROH  R1  R2 R3  R4  R5  R6  C1  C2   -   -   -
+M3d.CHOL 0   -   -   -   -   -   -  ROH  R1  R2 R3  R4  R5  R6  R7  C1  C2   -   - 
+M2.CHOL  0   -   -   -   -   -   -  ROH  R1  R2 R3  R4  R5  C1  C2   -   -   -   - 
+M2.ERGO  0   -   -   -   -   -   -  ROH  R1  R2 R3  R4  R5  C1  C2   -   -   -   - 
 
 
 [ hopanoids ]
-      0   0   0   0  0.5 -0.5 0   0  0.5 0.5  0   0   0   0   0   0   0   0
-      0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
-      0   0   0   0  0.5 1.4 2.6  3  3.3 3.9 4.5 5.0 5.5 6.0  0   0   0   0
-;     1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18
-HOPR  -   -   -  R1  R2  R3  R4  R5  R6  R7  R8   -   -   -   -   -   -   - 
-HHOP  -   -   -  R1  R2  R3  R4  R5  R6  R7  R8  C1   -   -   -   -   -   - 
-HDPT  -   -   -  R1  R2  R3  R4  R5  R6  R7  R8  C1   -   -   -   -   -   - 
-HBHT  -   -   -  R1  R2  R3  R4  R5  R6  R7  R8  C1  C2  C3   -   -   -   - 
+             0   0   0   0  0.5 -0.5 0   0  0.5 0.5  0   0   0   0   0   0   0   0
+             0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
+             0   0   0   0  0.5 1.4 2.6  3  3.3 3.9 4.5 5.0 5.5 6.0  0   0   0   0
+;            1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18
+M2.HOPR  0   -   -   -  R1  R2  R3  R4  R5  R6  R7  R8   -   -   -   -   -   -   - 
+M2.HHOP  0   -   -   -  R1  R2  R3  R4  R5  R6  R7  R8  C1   -   -   -   -   -   - 
+M2.HDPT  0   -   -   -  R1  R2  R3  R4  R5  R6  R7  R8  C1   -   -   -   -   -   - 
+M2.HBHT  0   -   -   -  R1  R2  R3  R4  R5  R6  R7  R8  C1  C2  C3   -   -   -   - 
 
 
 [ hexaperihexabenzocoronene ]
-2.5 3.3 1.8 4.0 2.5 3.3 1.8 4.0 1.1 2.5 3.3 4.7 1.8 4.0 2.5 3.3 1.8 4.0 2.5 3.3 4.0 4.8 4.0 1.8 1.1 1.8 1.0 0.5  0.2  0.0 4.8 5.3  5.6  5.8 1.4 0.9 0.6 4.4 4.9 5.2
-0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0  0.0  0.0 0.0 0.0  0.0  0.0 0.0 0.0 0.0 0.0 0.0 0.0
-3.6 3.6 4.0 4.0 4.4 4.4 4.8 4.8 5.2 5.2 5.2 5.2 5.6 5.6 6.0 6.0 6.4 6.4 6.8 6.8 7.2 7.6 8.1 7.2 7.6 8.1 8.5 9.4 10.3 11.3 8.5 9.4 10.3 11.3 2.7 1.4 0.0 2.7 1.4 0.0
-; 1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20  21  22  23  24  25  26  27  28   29   30  31  32   33   34  35  36  37  38  39  40
-HPHC  HC01 HC02 HC03 HC04 HC05 HC06 HC07 HC08 HC09 HC10 HC11 HC12 HC13 HC14 HC15 HC16 HC17 HC18 HC19 HC20 Ph1R Ph2R Ph3R Ph4L Ph5L Ph6L EG1L EG2L  EG3L  EG4L EG1R EG2R  EG3R  EG4R AT1L AT2L AT3L AT1R AT2R AT3R
+            2.5 3.3 1.8 4.0 2.5 3.3 1.8 4.0 1.1 2.5 3.3 4.7 1.8 4.0 2.5 3.3 1.8 4.0 2.5 3.3 4.0 4.8 4.0 1.8 1.1 1.8 1.0 0.5  0.2  0.0 4.8 5.3  5.6  5.8 1.4 0.9 0.6 4.4 4.9 5.2
+            0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0  0.0  0.0 0.0 0.0  0.0  0.0 0.0 0.0 0.0 0.0 0.0 0.0
+            3.6 3.6 4.0 4.0 4.4 4.4 4.8 4.8 5.2 5.2 5.2 5.2 5.6 5.6 6.0 6.0 6.4 6.4 6.8 6.8 7.2 7.6 8.1 7.2 7.6 8.1 8.5 9.4 10.3 11.3 8.5 9.4 10.3 11.3 2.7 1.4 0.0 2.7 1.4 0.0
+;            1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20  21  22  23  24  25  26  27  28   29   30  31  32   33   34  35  36  37  38  39  40
+M2.HPHC  0  HC01 HC02 HC03 HC04 HC05 HC06 HC07 HC08 HC09 HC10 HC11 HC12 HC13 HC14 HC15 HC16 HC17 HC18 HC19 HC20 Ph1R Ph2R Ph3R Ph4L Ph5L Ph6L EG1L EG2L  EG3L  EG4L EG1R EG2R  EG3R  EG4R AT1L AT2L AT3L AT1R AT2R AT3R

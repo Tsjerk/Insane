@@ -246,13 +246,13 @@ def setup_solvent(pbc, protein, membrane, options):
 
     # Add salt to solnames and num_sol
     if nna:
-        solnames.append("NA+")
+        solnames.append("NA")
         num_sol.append(nna)
-        solv.append("NA+")
+        solv.append("NA")
     if ncl:
-        solnames.append("CL-")
+        solnames.append("CL")
         num_sol.append(ncl)
-        solv.append("CL-")
+        solv.append("CL")
 
 
     # Names and grid positions for solvent molecules
@@ -303,6 +303,10 @@ def setup_membrane(pbc, protein, lipid, options):
 
     if not any((absL, relL, absU, relU)):
         return membrane, molecules
+
+    # Update lipids name - add force field name to all lipids without 
+    lipL = [lip if '.' in lip else options["forcefield"]+'.'+lip for lip in lipL]
+    lipU = [lip if '.' in lip else options["forcefield"]+'.'+lip for lip in lipU]
 
     lo_lipd = np.sqrt(options["area"])
     up_lipd = np.sqrt(options["uparea"])
@@ -576,9 +580,14 @@ def setup_membrane(pbc, protein, lipid, options):
     liplist = lipids.get_lipids()
     # Then add lipids from file
     liplist.add_from_files(options["molfile"])
-    # Last, add lipids from command line
-    liplist.add_from_def(options["lipnames"], options["lipheads"], options["liplinks"],
+    # Last, add lipids from command line, note first update the names with ff tag if needed 
+    usrnames = [usrname if '.' in usrname else options["forcefield"]+'.'+usrname for usrname in options["lipnames"]]
+    liplist.add_from_def(usrnames, options["lipheads"], options["liplinks"],
                          options["liptails"], options["lipcharge"])
+    # Add lipid charges to global CHARGE index 
+    for key in liplist:
+        if liplist[key].charge != "0":
+            CHARGES[key] = int(liplist[key].charge)
 
     if protein:
         resi = protein.atoms[-1][2]
@@ -592,7 +601,11 @@ def setup_membrane(pbc, protein, lipid, options):
             resi += 1
 
             # Fetch the atom list with x, y, z coordinates
-            at, ax, ay, az = zip(*liplist[lipid].build(diam=lipd))
+            try:
+                at, ax, ay, az = zip(*liplist[lipid].build(diam=lipd))
+            except KeyError as e:
+                print(f"ERROR lipid name {e.args[0]} not found in database check lipids.dat, included mol files or specified definition strings")
+                raise e 
             # The z-coordinates are spaced at 0.3 nm,
             # starting with the first bead at 0.15 nm
             az = [ leaflet*(inshift + (i-min(az)))*options["beaddist"] for i in az ]
@@ -789,8 +802,9 @@ def write_top(outpath, molecules, title):
     """
     topmolecules = []
     for i in molecules:
-        if i[0].endswith('.o'):
-            topmolecules.append(tuple([i[0][:-2]]+list(i[1:])))
+        if '.' in i[0]:
+            # Remove any -ff tags from molecules - WARNING no name can contain . as used as separator
+            topmolecules.append(tuple([i[0].split('.')[1]]+list(i[1:])))
         else:
             topmolecules.append(i)
 

@@ -26,7 +26,7 @@ Insane can be installed either as a single-file program, or as a python module.
 
 ### Install insane as a single-file program
 
-Insane depends on python and on the numpy python library. Make sure you
+Insane depends on python (either version 2 or 3) and on the numpy python library. Make sure you
 have these two requirements installed:
 
 ```bash
@@ -168,12 +168,20 @@ using `-sol PW`.
 With the `-pbc` option we set the shape of the periodic box to a prism with
 a hexagonal base.
 
+### Changing templates 
+
+Templates for both Martini 2 and 3 molecules are predefined within insane, use the `-ff M2` or `-ff M3` to switch between them. Specific template versions can also be specified directly in the lipid name e.g. use `-l M3.POPC` instead of `-l POPC`. 
+
+Definitions of lipid templates are stored in the insane/lipids.dat file and can be viewed and edited there. 
+
 ## Get help
 
 Get the list of all the arguments by running `insane -h`.
 
 You can get additional help in the ["Tools" section of the Martini
 forum](http://cgmartini.nl/index.php/component/kunena/9-tools).
+
+As well as access tutorials using insane in [Martini 2 membrane tutorials](http://www.cgmartini.nl/index.php/tutorials-general-introduction-gmx5/bilayers-gmx5) and [Martini 3 membrane tutorials](https://doi.org/10.1016/bs.mie.2024.03.010).
 
 ## Contribute
 
