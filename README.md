@@ -1,4 +1,4 @@
-# Insane - A simple, versatile tool for building coarse-grained simulation systems
+# Insane - A simple, versatile tool for building coarse-grained simulation systems - adding streamlit support 
 
 [![Build Status](https://travis-ci.org/Tsjerk/Insane.svg?branch=master)](https://travis-ci.org/Tsjerk/Insane)
 
