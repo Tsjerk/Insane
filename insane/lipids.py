@@ -109,7 +109,7 @@ class Lipid:
                     beads.extend([LINKBEADS[n] + str(i + 1)
                                   for i, n in enumerate(self.link)])
                     for i, t in enumerate(self.tail):
-                        beads.extend([n + chr(65 + i) + str(j + 1)
+                        beads.extend([n + str(j + 1) + chr(65 + i)
                                       for j, n in enumerate(t)])
 
                 taillength = max([0]+[len(i) for i in self.tail])
