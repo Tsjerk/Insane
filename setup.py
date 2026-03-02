@@ -35,7 +35,7 @@ setup(
         'Programming Language :: Python :: 3'
     ],
 
-    install_requires=['numpy', 'simopt>=0.4.0'],
+    install_requires=['numpy', 'simopt>=0.4.0', 'setuptools<82'],
 
     tests_requires=['nose'],
 
