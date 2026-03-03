@@ -578,6 +578,9 @@ def setup_membrane(pbc, protein, lipid, options):
     ## ==> LIPID  BOOKKEEPING:
     # Read lipids defined in insane
     liplist = lipids.get_lipids()
+    # Add any lipid definitions from the files provided through the `-dat` option.
+    for file in options["lipids"]:
+        liplist = lipids.add_lipids(file, lipids=liplist)
     # Then add lipids from file
     liplist.add_from_files(options["molfile"])
     # Last, add lipids from command line, note first update the names with ff tag if needed 

@@ -227,12 +227,29 @@ class Lipid_List(MutableMapping):
                                charge=charge)
 
 
-def read_lipids(lipfile):
-    lipids = Lipid_List()
+def read_lipids(lipfile, lipids = None):
+    """
+    Return a :class:`~Lipid_List` of lipid definitions read from a ``lipids.dat``‑style file.
+
+    Parameters
+    ----------
+    lipfile
+        An iterable yielding lines of the file.
+    lipids
+        Optional :class:`~Lipid_List` to which the parsed lipids will be added.
+        If ``None`` a new :class:`~Lipid_List` is created.
+
+    Returns
+    -------
+    Lipid_List
+        The populated :class:`~Lipid_List`.
+    """
+    if lipids is None:
+        lipids = Lipid_List()
     x, y, z = None, None, None
     for line in lipfile:
         stripped = line.strip()
-        if (not stripped) or stripped.startswith((';','#')):
+        if not stripped or stripped.startswith((';','#')):
             # Comment or empty line
             continue
         elif stripped.startswith('['):
@@ -250,15 +267,26 @@ def read_lipids(lipfile):
             name = splitted.pop(0)
             charge = splitted.pop(0)
             lipids[name] = Lipid(
-                name=name, 
-                charge=charge, 
-                beads=splitted, 
-                template=zip(x, y, z)
+                name=name,
+                charge=charge,
+                beads=splitted,
+                template=zip(x, y, z),
             )
     return lipids
 
 
 def get_lipids():
+    """Return the built‑in lipids defined in ``lipids.dat``."""
     lipid_stream = utils.iter_resource(LIPID_FILE)
     lipids = read_lipids(lipid_stream)
+    return lipids
+
+
+def add_lipids(path, lipids):
+    """
+    Add lipids defined in the file at ``path`` to the given :class:`~Lipid_List` and return the
+    updated list.
+    """
+    with open(path, "r") as file:
+        lipids = read_lipids(file, lipids=lipids)
     return lipids

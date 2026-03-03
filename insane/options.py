@@ -25,9 +25,10 @@ OPTIONS = Options([
         """
     Input/output related options
     """,
-        (0, "-f", "solute",      str,         1,        None, MULTI, "Input GRO or PDB file 1: Solute (e.g. Protein)"),
-        (0, "-o", "output",      str,         1,        None,    MA, "Output GRO file: Membrane with Protein"),
-        (0, "-p", "topology",    str,         1,        None,     0, "Optional rudimentary topology file"),
+        (0, "-f",   "solute",    str,         1,        None, MULTI, "Input GRO or PDB file 1: Solute (e.g. Protein)"),
+        (0, "-o",   "output",    str,         1,        None,    MA, "Output GRO file: Membrane with Protein"),
+        (0, "-p",   "topology",  str,         1,        None,     0, "Optional rudimentary topology file"),
+        (0, "-dat", "lipids",    str,         1,        None, MULTI, "Optional additional lipids.dat files (can be given multiple times)"),
         """
     Periodic boundary conditions
     If -d is given, set up PBC according to -pbc such that no periodic
