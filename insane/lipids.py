@@ -64,7 +64,12 @@ class Lipid:
         self.area      = kwargs.get("area")
         self.diam      = kwargs.get("diam", math.sqrt(kwargs.get("area", 0)))
         self.coords    = None
-        self.source      = kwargs.get("source")
+        if "source" in kwargs:
+            source = kwargs["source"]
+            self.source = source
+        else:
+            # If no source is provided, we don't want any note in the topology line.
+            self.source = False 
         if kwargs.get("string"):
             self.parse(kwargs["string"])
 
