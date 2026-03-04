@@ -64,6 +64,12 @@ class Lipid:
         self.area      = kwargs.get("area")
         self.diam      = kwargs.get("diam", math.sqrt(kwargs.get("area", 0)))
         self.coords    = None
+        if "source" in kwargs:
+            source = kwargs["source"]
+            self.source = source
+        else:
+            # If no source is provided, we don't want any note in the topology line.
+            self.source = False 
         if kwargs.get("string"):
             self.parse(kwargs["string"])
 
@@ -87,7 +93,7 @@ class Lipid:
                 self.charge = float(val[0])
             elif what.endswith("name") and not self.name:
                 self.name = val[0]
-        # Not been impleneted yet 
+        # Not been impleneted yet
         #if self.charge is None:
         #    # Infer charge from head groups
         #    self.charge = sum([headgroup_charges[bead] for bead in self.head])
@@ -227,12 +233,31 @@ class Lipid_List(MutableMapping):
                                charge=charge)
 
 
-def read_lipids(lipfile):
-    lipids = Lipid_List()
+def read_lipids(lipfile, path = None, lipids = None):
+    """
+    Return a :class:`~Lipid_List` of lipid definitions read from a ``lipids.dat``‑style file.
+
+    Parameters
+    ----------
+    lipfile
+        An iterable yielding lines of the file.
+    path
+        Optional source path, used to trace the origin of lipid parameters.
+    lipids
+        Optional :class:`~Lipid_List` to which the parsed lipids will be added.
+        If ``None`` a new :class:`~Lipid_List` is created.
+
+    Returns
+    -------
+    Lipid_List
+        The populated :class:`~Lipid_List`.
+    """
+    if lipids is None:
+        lipids = Lipid_List()
     x, y, z = None, None, None
     for line in lipfile:
         stripped = line.strip()
-        if (not stripped) or stripped.startswith((';','#')):
+        if not stripped or stripped.startswith((';','#')):
             # Comment or empty line
             continue
         elif stripped.startswith('['):
@@ -250,15 +275,27 @@ def read_lipids(lipfile):
             name = splitted.pop(0)
             charge = splitted.pop(0)
             lipids[name] = Lipid(
-                name=name, 
-                charge=charge, 
-                beads=splitted, 
-                template=zip(x, y, z)
+                name=name,
+                charge=charge,
+                beads=splitted,
+                template=zip(x, y, z),
+                source=path,
             )
     return lipids
 
 
 def get_lipids():
+    """Return the built‑in lipids defined in ``lipids.dat``."""
     lipid_stream = utils.iter_resource(LIPID_FILE)
-    lipids = read_lipids(lipid_stream)
+    lipids = read_lipids(lipid_stream, path=None)
+    return lipids
+
+
+def add_lipids(path, lipids):
+    """
+    Add lipids defined in the file at ``path`` to the given :class:`~Lipid_List` and return the
+    updated list.
+    """
+    with open(path, "r") as file:
+        lipids = read_lipids(file, path=path, lipids=lipids)
     return lipids
