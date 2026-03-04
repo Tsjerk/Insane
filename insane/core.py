@@ -302,7 +302,7 @@ def setup_membrane(pbc, protein, lipid, options):
     nabsL, nabsU = sum(absL), sum(absU)
 
     if not any((absL, relL, absU, relU)):
-        return membrane, molecules
+        return membrane, molecules, lipids.Lipid_List()
 
     # Update lipids name - add force field name to all lipids without 
     lipL = [lip if '.' in lip else options["forcefield"]+'.'+lip for lip in lipL]
