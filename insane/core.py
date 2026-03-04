@@ -638,7 +638,7 @@ def setup_membrane(pbc, protein, lipid, options):
     membrane.coord = memcoords
     membrane.atoms = mematoms
 
-    return membrane, molecules
+    return membrane, molecules, liplist
 
 
 @opt_func(OPTIONS)
@@ -740,7 +740,7 @@ def old_main(**options):
     ## 2. Lipids
 
     lipid = ((lipL, absL, relL), (lipU, absU, relU))
-    membrane, added = setup_membrane(pbc, protein, lipid, options)
+    membrane, added, liplist = setup_membrane(pbc, protein, lipid, options)
     molecules.extend(added)
 
     if added:
@@ -762,7 +762,7 @@ def old_main(**options):
     solvent, added = setup_solvent(pbc, protein, membrane, options)
     molecules.extend(added)
 
-    return (molecules, protein, membrane, solvent, lipid, pbc.box)
+    return (molecules, protein, membrane, solvent, lipid, pbc.box, liplist)
 
 
 def write_summary(protein, membrane, solvent):
@@ -784,14 +784,39 @@ def write_summary(protein, membrane, solvent):
           file=sys.stderr)
 
 
-def write_top(outpath, molecules, title):
+class Molecule:
+    __slots__ = ('name', 'count', 'source')
+
+    def __init__(self, name: str, count: int, source: str | None | bool = False):
+        self.name = name
+        self.count = count
+        self.source = source
+
+    def topology_note(self) -> str | None:
+        """Return an optional note to be appended to the ``Molecule``'s topology line."""
+        if self.source is False:
+            return None
+        if self.source is None:
+            return f"Defined in the packaged '{lipids.LIPID_FILE}'."
+        return f"Defined in '{self.source}'."
+
+    def topology_line(self) -> str:
+        """Return this ``Molecule``'s topology line with optional note."""
+        line = f"{self.name:<10} {self.count:>7}"
+        note = self.topology_note()
+        if note is not None:
+            line += f" ; {note}"
+        return line
+
+
+def write_top(outpath, molecules, title, liplist):
     """
     Write a basic TOP file.
 
-    The topology is written in *outpath*. If *outpath* is en empty string, or
+    The topology is written in *outpath*. If *outpath* is an empty string, or
     anything for which ``bool(outpath) == False``, the topology is written on
-    the standard error, and the header is omitted, and only what has been buit
-    by Insane id displayed (e.g. Proteins are excluded).
+    the standard error, and the header is omitted, and only what has been
+    built by Insane id displayed (e.g. Proteins are excluded).
 
     Parameters
     ----------
@@ -802,14 +827,26 @@ def write_top(outpath, molecules, title):
         List of molecules with the number of them.
     title
         Title of the system.
+    liplist
+        Dictionary of lipid definitions.
     """
     topmolecules = []
     for i in molecules:
-        if '.' in i[0]:
-            # Remove any -ff tags from molecules - WARNING no name can contain . as used as separator
-            topmolecules.append(tuple([i[0].split('.')[1]]+list(i[1:])))
+        full_name, count = i[0], i[1]
+        if '.' in full_name:
+            # Remove any -ff tags from molecules.
+            # WARNING: No name can contain '.' as it is used as a separator.
+            name = full_name.split('.')[1]
         else:
-            topmolecules.append(i)
+            name = full_name
+        # If the molecule is a lipid, we give it a None | str source, otherwise it is left False.
+        # None indicates the lipid is defined in the packaged `lipids.dat` file (LIPID_FILE).
+        # If the lipid definition originates from a file passed with the `-dat` flag, its path is
+        # stored as a str.
+        source = False
+        if full_name in liplist:
+            source = liplist[full_name].source
+        topmolecules.append(Molecule(name, count, source))
 
     if outpath:
         # Write a rudimentary topology file
@@ -821,15 +858,14 @@ def write_top(outpath, molecules, title):
             print('\n', file=top)
             print('[ molecules ]', file=top)
             print('; name  number', file=top)
-            print("\n".join("%-10s %7d"%i for i in topmolecules), file=top)
+            print("\n".join(m.topology_line() for m in topmolecules), file=top)
     else:
-        # Here we only include molecules that have beed added by insane.
-        # This is usually concatenated at the end of an existint top file.
-        # As the existing file usually contain the proteins already, we do not
+        # Here we only include molecules that have been added by insane.
+        # This is usually concatenated at the end of an existing top file.
+        # As the existing file usually contains the proteins already, we do not
         # include them here.
-        added_molecules = (molecule for molecule in topmolecules
-                           if molecule[0] != 'Protein')
-        print("\n".join("%-10s %7d"%i for i in added_molecules), file=sys.stderr)
+        added_molecules = (m for m in topmolecules if m.name != "Protein")
+        print("\n".join(m.topology_line() for m in added_molecules), file=sys.stderr)
 
 
 def system_title(membrane, protein, lipids):

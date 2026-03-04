@@ -34,7 +34,8 @@ def test_absolute_lipid_only():
          membrane,
          solvent,
          lipids,
-         box) = insane.core.old_main(lower=[('DOPC', 72, 0)],
+         box, 
+         _liplist) = insane.core.old_main(lower=[('DOPC', 72, 0)],
                                      output='plop.gro', zdistance=15)
     npo4 = len([atom for atom in membrane.atoms if atom[0] == 'PO4'])
     assert_equal(npo4, 72 * 2)
@@ -51,7 +52,8 @@ def test_absolute_lipid_assym():
          membrane,
          solvent,
          lipids,
-         box) = insane.core.old_main(lower=[('DOPC', 72, 0)],
+         box, 
+         _liplist) = insane.core.old_main(lower=[('DOPC', 72, 0)],
                                      upper=[('POPC', 89, 0)],
                                      output='plop.gro', zdistance=15)
     npo4 = len([atom for atom in membrane.atoms if atom[0] == 'PO4'])
@@ -69,7 +71,8 @@ def test_absolute_lipid_multi():
          membrane,
          solvent,
          lipids,
-         box) = insane.core.old_main(lower=[('DOPC', 72, 0), ('POPC', 89, 0)],
+         box, 
+         _liplist) = insane.core.old_main(lower=[('DOPC', 72, 0), ('POPC', 89, 0)],
                                      output='plop.gro', zdistance=15)
     npo4 = len([atom for atom in membrane.atoms if atom[0] == 'PO4'])
     assert_equal(npo4, (72 + 89) * 2)
