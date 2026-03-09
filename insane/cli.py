@@ -62,7 +62,8 @@ def main(argv):
      membrane,
      solvent,
      lipids,
-     box) = core.old_main(**options)
+     box,
+     liplist) = core.old_main(**options)
 
     title = core.system_title(membrane, protein, lipids)
     atoms = protein + membrane + solvent
@@ -74,7 +75,7 @@ def main(argv):
         atoms=atoms,
         box=box,
     )
-    core.write_top(options['topology'], molecules, title)
+    core.write_top(options['topology'], molecules, title, liplist)
 
     return 0
 

@@ -172,7 +172,16 @@ a hexagonal base.
 
 Templates for both Martini 2 and 3 molecules are predefined within insane, use the `-ff M2` or `-ff M3` to switch between them. Specific template versions can also be specified directly in the lipid name e.g. use `-l M3.POPC` instead of `-l POPC`. 
 
-Definitions of lipid templates are stored in the insane/lipids.dat file and can be viewed and edited there. 
+The default definitions of lipid templates are stored in the insane/lipids.dat file and can be viewed and edited there.
+
+A custom `lipids.dat` file can be appended using the `-dat` option. For example, if you have a custom lipids file called `custom.dat` that defines the special lipid `ABCD`, you can use it as follows.
+
+```bash
+insane \
+    -o system.gro \
+    -dat custom.dat \
+    -l ABCD -d 10
+```
 
 ## Get help
 
