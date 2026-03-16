@@ -33,7 +33,7 @@ have these two requirements installed:
 python -c 'import numpy'
 ```
 
-If this command line outputs an error message, you need to instal either python
+If this command line outputs an error message, you need to install either python
 or numpy.
 
 Download the [latest version of
