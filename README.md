@@ -57,7 +57,7 @@ box, and the solvent diameter (0.5 nm per default).
 The `-o` and `-p` arguments specify the output of the program. With `-o
 bilayer.gro`, insane will write the system structure in a [GRO
 file](http://manual.gromacs.org/current/online/gro.html) usable with
-[gromacs][]. Insane can also write PDB files if the output file has the '.pdb'
+[gromacs][]. Insane can also write PDB files if the output file has the `.pdb`
 file extension. With `-p topol.top`, insane will write a template TOP file to
 be used with gromacs. If the `-p` argument is omitted, insane writes the
 content of the system on the standard output in a form that can be appended at
@@ -110,7 +110,7 @@ with `-box`, or setting the box geometry with `-pbc`, overwrite that default.
 If the `-salt` argument is set, insane will add ions to the system. With
 `-salt` set to 0, insane will add enough chloride or sodium ions to
 neutralize the system charge. If `-salt` is set to any positive value, it is
-read as the concentration of ions in molar.
+read as the molar concentration of ions.
 
 ### Insert a protein in a membrane
 
