@@ -186,18 +186,23 @@ insane \
 
 If the additional lipids file contains names that already exist, the previous definitions will be overwritten.
 
-## Get help
+## Learn
 
-Get the list of all the arguments by running `insane -h`.
+Get usage information by running `insane -h`.
 
-You can get additional help in the ["Tools" section of the Martini
-forum](http://cgmartini.nl/index.php/component/kunena/9-tools).
+A number of tutorials using insane are available, including:
 
-As well as access tutorials using insane in [Martini 2 membrane tutorials](http://www.cgmartini.nl/index.php/tutorials-general-introduction-gmx5/bilayers-gmx5) and [Martini 3 membrane tutorials](https://doi.org/10.1016/bs.mie.2024.03.010).
+- Hands-on Martini 3 tutorial: [**Lipid bilayers: Complex mixtures**](https://cgmartini.nl/docs/tutorials/Martini3/LipidsII/)
+- Book chapter: [**Building complex membranes with Martini 3**](https://doi.org/10.1016/bs.mie.2024.03.010)
+
+  > Ozturk, T. N., König, M., Carpenter, T. S., Pedersen, K. B., Wassenaar, T. A., Ingólfsson, H. I.,
+  > & Marrink, S. J. (2024). Building complex membranes with Martini 3. In _Methods in Enzymology_
+  > (Vol. 701, pp. 237-285). Academic Press.
+  > <https://doi.org/10.1016/bs.mie.2024.03.010>
 
 ## Contribute
 
 Insane is hosted on [Github](https://github.com/Tsjerk/Insane). Please, report
-there any [issue](https://github.com/Tsjerk/Insane/issues) you encounter.
+any [issue](https://github.com/Tsjerk/Insane/issues) you encounter.
 
 [gromacs]: http://www.gromacs.org
