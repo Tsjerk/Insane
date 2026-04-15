@@ -92,8 +92,8 @@ composed of 90% of regular Martini water and 10% Martini anti-freeze water.
 
 Insane can setup protein systems. Here we create a box of solvent around
 a protein. Note that insane does not prepare the protein itself. Use
-[martinize](http://cgmartini.nl/index.php/tools2/proteins-and-bilayers) to
-coarse grain a protein structure.
+[martinize2](https://github.com/marrink-lab/vermouth-martinize) to prepare a
+coarse grain protein structure.
 
 ```bash
 insane -o system.gro -p topol.top -f protein.pdb -d 7 -sol W -salt 0
