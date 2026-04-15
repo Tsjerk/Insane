@@ -130,6 +130,7 @@ coarse grain a protein structure.
 ```bash
 insane -o system.gro -p topol.top -f protein.pdb -d 7 -sol W -salt 0
 ```
+
 Solutes, including proteins, can be read from a GRO or a PDB file provided with
 the `-f` argument.
 
@@ -166,9 +167,9 @@ using `-sol PW`.
 With the `-pbc` option we set the shape of the periodic box to a prism with
 a hexagonal base.
 
-### Changing templates 
+### Changing templates
 
-Templates for both Martini 2 and 3 molecules are predefined within insane, use the `-ff M2` or `-ff M3` to switch between them. Specific template versions can also be specified directly in the lipid name e.g. use `-l M3.POPC` instead of `-l POPC`. 
+Templates for both Martini 2 and 3 molecules are predefined within insane, use the `-ff M2` or `-ff M3` to switch between them. Specific template versions can also be specified directly in the lipid name e.g. use `-l M3.POPC` instead of `-l POPC`.
 
 #### Custom lipid definitions
 
