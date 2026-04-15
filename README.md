@@ -91,7 +91,7 @@ bilayer.gro`, insane will write the system structure in a [GRO
 file](http://manual.gromacs.org/current/online/gro.html) usable with
 [gromacs][]. Insane can also write PDB files if the output file has the '.pdb'
 file extension. With `-p topol.top`, insane will write a template TOP file to
-be used with [gromacs][]. If the `-p` argument is omitted, insane writes the
+be used with gromacs. If the `-p` argument is omitted, insane writes the
 content of the system on the standard output in a form that can be appended at
 the end of an existing TOP file.
 
