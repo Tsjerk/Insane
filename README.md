@@ -20,28 +20,16 @@ insane \
 
 ## Installation
 
-### Install insane as a python module
-
-Insane is available on [pypi](https://pypi.python.org/pypi/insane/1.0rc1) and
-can be installed using pip. To install insane for the current user, run
+Insane is available on [pypi](https://pypi.python.org/pypi/insane) and
+can be installed using `pip`.
 
 ```bash
-pip install --user insane
+pip install insane
 ```
 
-Pip installs the insane in `~/.local/lib/python<version>/site-packages`,
-where `<version>` is the version of python. Check that the
-directory exists and that it is in your `PYTHONPATH`. The insane program is
-installed in `~/.local/bin`, make sure this directory is in your `PATH`.
-
-To install insane system wide, run
-
-```bash
-sudo pip install insane
-```
-
-We recommend the use of python virtual environments. Read more about them on
-the [MDAnalysis website](http://www.mdanalysis.org/2017/04/07/environments/).
+We recommend the use of python _virtual environments_. The documentation for
+[`venv`](https://docs.python.org/3/library/venv.html) is quite helpful, but many other methods for
+using virtual environments are available.
 
 ## Quick start
 
