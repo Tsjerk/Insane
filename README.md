@@ -131,15 +131,50 @@ box along the Z axis with the `-center` argument.
 With the `-pbc` option we set the shape of the periodic box to a prism with
 a hexagonal base.
 
-### Changing templates
+### Solvent mixtures
 
-Templates for both Martini 2 and 3 molecules are predefined within insane, use the `-ff M2` or `-ff M3` to switch between them. Specific template versions can also be specified directly in the lipid name e.g. use `-l M3.POPC` instead of `-l POPC`.
+In the same way multiple lipids can be provided to set up complex lipid
+bilayers, mixtures of solvent beads can be made.
 
-#### Custom lipid definitions
+This is particularly useful when building a Martini 2 system, which requires
+solvation using normal (W) and anti-freeze waters (WF).
 
-The default definitions of lipid templates are stored in the `insane/lipids.dat` file.
+```bash
+insane \
+    -o system.gro -p topol.top \
+    -ff M2 \
+    -d 10 -l POPC \
+    -f protein.gro -center \
+    -sol W:90 -sol WF:10
+```
 
-A custom `lipids.dat` file can be added using the `-dat` option. For example, if you have a custom lipids file called `custom.dat` that defines the special lipid `ABCD`, you can use it as follows.
+This will set up a bilayer around a membrane protein and solvate the system with
+90% normal waters, and with 10% anti-freeze waters.
+
+Also note that the Martini 2 force field was selected using the `-ff M2` option.
+
+### Selecting the lipid template force field
+
+By default, insane will set up a Martini 3 system. This means that it draws from
+Martini 3 lipid definitions. To change this, the `-ff M2` option can be used to
+select Martini 2 lipids.
+
+Lipids in lipids data files (e.g., `lipids.dat`) are prefixed by `M2.` or `M3.`
+to indicate the force field version. To select a lipid with a particular force
+field prefix directly, you can provide its fully specified name, which will
+override the prefix given by the `-ff` option. For example, `M2.CHOL`,
+`M3.CHOL`, and `M3d.CHOL` all refer to different cholesterol topologies. When
+using `-ff M3` (the default value), you need to use the `M3d` prefix explicitly
+to select that variant: `-l M3d.CHOL`.
+
+### Adding custom lipid definitions
+
+The default definitions of lipid templates are stored in the `insane/lipids.dat`
+file.
+
+A custom `lipids.dat` file can be added using the `-dat` option. For example, if
+you have a custom lipids file called `custom.dat` that defines the special lipid
+`ABCD`, you can use it as follows.
 
 ```bash
 insane \
