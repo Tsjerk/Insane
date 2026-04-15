@@ -55,13 +55,14 @@ include Martini water. The total amount is defined from the free volume of the
 box, and the solvent diameter (0.5 nm per default).
 
 The `-o` and `-p` arguments specify the output of the program. With `-o
-bilayer.gro`, insane will write the system structure in a [GRO
-file](http://manual.gromacs.org/current/online/gro.html) usable with
-[gromacs][]. Insane can also write PDB files if the output file has the `.pdb`
-file extension. With `-p topol.top`, insane will write a template TOP file to
-be used with gromacs. If the `-p` argument is omitted, insane writes the
+bilayer.gro`, insane will write the system structure in a [GRO file][] usable
+with [gromacs][]. Insane can also write PDB files if the output file has the
+`.pdb` file extension. With `-p topol.top`, insane will write a template TOP
+file to be used with gromacs. If the `-p` argument is omitted, insane writes the
 content of the system on the standard output in a form that can be appended at
 the end of an existing TOP file.
+
+[GRO file]: https://manual.gromacs.org/current/reference-manual/file-formats.html#gro
 
 ### Create a more complex bilayer
 
