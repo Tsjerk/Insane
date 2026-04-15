@@ -22,8 +22,6 @@ setup(
     license='GPLv2',
 
     classifiers=[
-        'Development Status :: 4 - Beta',
-
         # Indicate who your project is intended for
         'Intended Audience :: Science/Research',
         'Intended Audience :: Developers',
