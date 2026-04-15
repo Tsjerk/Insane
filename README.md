@@ -1,7 +1,5 @@
 # Insane - A simple, versatile tool for building coarse-grained simulation systems
 
-[![Build Status](https://travis-ci.org/Tsjerk/Insane.svg?branch=master)](https://travis-ci.org/Tsjerk/Insane)
-
 Insane (INSert membrANE) is a versatile tool to build coarse-grained simulation
 systems containing solutes, lipid bilayers, and/or solvents. It is initially
 aimed at the [Martini force field](http://cgmartini.nl) but can be used for
