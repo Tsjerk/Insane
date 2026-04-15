@@ -183,7 +183,12 @@ insane \
     -l ABCD -d 10
 ```
 
-If the additional lipids file contains names that already exist, the previous definitions will be overwritten.
+If the additional lipids file contains names that already exist, the previous
+definitions will be overwritten.
+
+In previous versions, the `lipids.dat` file in the insane package path had to be
+edited to add or change lipid template definitions. The `-dat` flag makes this
+process much more convenient and flexible.
 
 ## Learn
 
