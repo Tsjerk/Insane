@@ -13,8 +13,8 @@ line:
 insane \
     -f cg1a0s.pdb \
     -l POPC \
-    -sol W:90 -sol WF:10 \
-    -salt 0.8 \
+    -sol W \
+    -salt 0.15 \
     -o system.gro -p topol.top
 ```
 
@@ -107,7 +107,7 @@ insane \
     -o bilayer.gro -p topol.top \
     -x 20 -y 20 -z 10 \
     -l DPPC:4 -l DIPC:3 -l CHOL:3 \
-    -sol W:90 -sol WF:10
+    -sol W
 ```
 
 The periodic box can be defined in multiple ways. Here we build an orthorhombic
@@ -153,16 +153,12 @@ system, we can insert a protein in a lipid bilayer.
 insane \
     -o system.gro -p topol.top \
     -d 10 -pbc hexagonal \
-    -l POPC -sol PW \
+    -l POPC -sol W \
     -f protein.gro -center
 ```
 
 Here, the protein structure we give with the `-f` argument is centered in the
 box along the Z axis with the `-center` argument.
-
-We build this system with [Martini polarizable
-water](http://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1000810)
-using `-sol PW`.
 
 With the `-pbc` option we set the shape of the periodic box to a prism with
 a hexagonal base.
