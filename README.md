@@ -20,26 +20,6 @@ insane \
 
 ## Installation
 
-Insane can be installed either as a single-file program, or as a python module.
-
-### Install insane as a single-file program
-
-Insane depends on python (either version 2 or 3) and on the numpy python library. Make sure you
-have these two requirements installed:
-
-```bash
-python -c 'import numpy'
-```
-
-If this command line outputs an error message, you need to instal either python
-or numpy.
-
-Download the [latest version of
-insane](https://github.com/Tsjerk/Insane/releases/download/v1.0rc1/insane) as
-a single executable.
-
-Run insane: `./insane -h`.
-
 ### Install insane as a python module
 
 Insane is available on [pypi](https://pypi.python.org/pypi/insane/1.0rc1) and
