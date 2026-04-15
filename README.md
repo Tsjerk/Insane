@@ -68,14 +68,14 @@ the end of an existing TOP file.
 
 Insane can build lipid mixtures. Here we build a ternary mixture containing
 a fully saturated lipid (DPPC), a polyunsaturated lipid
-(dilinoleyl-phosphatidylcholine, called DIPC in the Martini force field), and
+(diloleoyl-phosphatidylcholine, called DOPC in the Martini force field), and
 cholesterol.
 
 ```bash
 insane \
     -o bilayer.gro -p topol.top \
     -x 20 -y 20 -z 10 \
-    -l DPPC:4 -l DIPC:3 -l CHOL:3 \
+    -l DPPC:4 -l DOPC:3 -l CHOL:3 \
     -sol W
 ```
 
@@ -84,7 +84,7 @@ box by setting the X, Y, and Z axes separately with `-x`, `-y`, and `-z`,
 respectively.
 
 The `-l` option can be provided multiple times to setup multiple lipid types.
-Here we setup DPPC, DIPC, and cholesterol with a 4:3:3 ratio.
+Here we setup DPPC, DOPC, and cholesterol with a 4:3:3 ratio.
 
 The `-sol` option can also be provided multiple times. Here the solvent is
 composed of 90% of regular Martini water and 10% Martini anti-freeze water.
