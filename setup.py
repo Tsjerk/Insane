@@ -19,19 +19,14 @@ setup(
     # Author details
     author='Tsjerk A. Wassenaar',
 
-    license='GPLv2',
+    license='GPL-2.0-or-later',
 
     classifiers=[
-        'Development Status :: 4 - Beta',
-
         # Indicate who your project is intended for
         'Intended Audience :: Science/Research',
         'Intended Audience :: Developers',
         'Topic :: Scientific/Engineering :: Chemistry',
         'Topic :: Scientific/Engineering :: Physics',
-
-        'License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)',
-
         'Programming Language :: Python :: 3'
     ],
 
