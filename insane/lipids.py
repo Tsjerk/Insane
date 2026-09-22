@@ -145,7 +145,12 @@ class Lipid:
         radius = diam*0.45
         minmax = [ (min(i), max(i)) for i in list(zip(*self.coords))[1:] ]
         mx, my, mz = [ sum(i)/2. for i in minmax ]
-        scale  = radius/math.sqrt((minmax[0][0]-mx)**2 + (minmax[1][0]-my)**2)
+        extent = math.sqrt((minmax[0][0] - mx) ** 2 + (minmax[1][0] - my) ** 2)
+        if extent == 0:
+            # This appears to be a single-column residue. It has no size in the xy-plane.
+            scale = 0
+        else:
+            scale = radius / extent
 
         for i in self.coords:
             i[1] = scale*(i[1]-mx)
