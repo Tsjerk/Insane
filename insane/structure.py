@@ -143,12 +143,12 @@ class Structure(object):
 
     @property
     def charge(self):
-        last = None
         charge = 0
+        seen = set()
         for j in self.atoms:
-            if not j[0].strip().startswith('v') and j[1:3] != last:
+            if not j[0].strip().startswith('v') and j[1:4] not in seen:
                 charge += CHARGES.get(j[1].strip(), 0)
-            last = j[1:3]
+            seen.add(j[1:4])
         return charge
 
     @property
