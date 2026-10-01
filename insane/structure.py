@@ -261,6 +261,13 @@ class Structure(object):
         val, vec = np.linalg.eig(np.dot(dev.T, dev))
         vec = vec[:,val.argsort()[::-1]]
 
+        # The eigenvectors may cause a reflection as well as the desired
+        # rotation. In this case, its determinant will be negative. To reflect
+        # the rotation back to a proper rotation, we flip the sign of the
+        # z-axis value.
+        if np.linalg.det(vec) < 0:
+            vec[:, 2] *= -1
+
         # Rotate the coordinates
         self.coord = np.dot(self.coord, vec)
 
