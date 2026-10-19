@@ -20,7 +20,7 @@
 Utility functions
 """
 
-import pkg_resources
+import importlib.resources
 
 def iter_resource(filename):
     """
@@ -29,6 +29,6 @@ def iter_resource(filename):
     The resource file has to be part of the module and its filenane given
     relative to the module.
     """
-    with pkg_resources.resource_stream(__name__, filename) as resource:
+    with importlib.resources.files(__package__).joinpath(filename).open('r', encoding='utf-8') as resource:
         for line in resource:
-            yield line.decode('utf-8')
+            yield line
