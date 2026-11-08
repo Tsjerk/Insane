@@ -25,7 +25,7 @@ __year__    = "2017"
 import os
 here = os.path.dirname(__file__)
 try:
-    with open(os.path.join(here, 'VERSION.txt')) as infile:
+    with open(os.path.join(here, 'VERSION.txt'), encoding='utf-8') as infile:
         __version__ = infile.readline().strip()
 except:
     __version__ = 'unknown'
